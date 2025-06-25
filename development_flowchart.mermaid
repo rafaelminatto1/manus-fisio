@@ -1,0 +1,87 @@
+graph TD
+    A[🎯 Início do Projeto] --> B{Análise de Requisitos}
+    B --> C[📋 Definir Stack Tecnológico]
+    C --> D[🏗️ Setup do Ambiente]
+    
+    D --> E[🔐 FASE 1 - CORE<br/>Semanas 1-3]
+    E --> E1[⚙️ Configuração Base]
+    E1 --> E2[🔑 Sistema de Autenticação]
+    E2 --> E3[👥 Gestão de Usuários]
+    E3 --> E4[📚 CRUD Notebooks/Pages]
+    E4 --> E5[✏️ Editor Básico]
+    E5 --> E6[🚀 Deploy MVP]
+    
+    E6 --> F{✅ Teste Fase 1}
+    F -->|❌ Falhas| E1
+    F -->|✅ Aprovado| G
+    
+    G[🎯 FASE 2 - GESTÃO<br/>Semanas 4-6]
+    G --> G1[📋 Sistema de Projetos]
+    G1 --> G2[✅ CRUD de Tarefas]
+    G2 --> G3[🔒 Sistema de Permissões]
+    G3 --> G4[📊 Kanban Board]
+    G4 --> G5[🔔 Notificações Básicas]
+    G5 --> G6[📱 Otimização Mobile]
+    
+    G6 --> H{✅ Teste Fase 2}
+    H -->|❌ Falhas| G1
+    H -->|✅ Aprovado| I
+    
+    I[💬 FASE 3 - COLABORAÇÃO<br/>Semanas 7-9]
+    I --> I1[💬 Sistema de Comentários]
+    I1 --> I2[📁 Upload de Arquivos]
+    I2 --> I3[📄 Templates e Procedimentos]
+    I3 --> I4[📊 Dashboard Analytics]
+    I4 --> I5[📱 PWA Features]
+    I5 --> I6[🎨 UI/UX Refinamento]
+    
+    I6 --> J{✅ Teste Fase 3}
+    J -->|❌ Falhas| I1
+    J -->|✅ Aprovado| K
+    
+    K[🚀 FASE 4 - AVANÇADO<br/>Semanas 10-12]
+    K --> K1[⚡ Real-time Collaboration]
+    K1 --> K2[✨ Editor Avançado]
+    K2 --> K3[📅 Integração Calendário]
+    K3 --> K4[📈 Relatórios Avançados]
+    K4 --> K5[🔧 Otimizações Performance]
+    K5 --> K6[🛡️ Security Hardening]
+    
+    K6 --> L{🔍 Teste Final}
+    L -->|❌ Falhas| K1
+    L -->|✅ Aprovado| M
+    
+    M[🎉 DEPLOY PRODUÇÃO]
+    M --> N[📚 Documentação Final]
+    N --> O[👨‍🏫 Treinamento da Equipe]
+    O --> P[🔄 Monitoramento & Suporte]
+    
+    %% Processos Paralelos
+    E --> Q[🧪 Testes Automatizados]
+    G --> Q
+    I --> Q
+    K --> Q
+    
+    E --> R[📖 Documentação Técnica]
+    G --> R
+    I --> R
+    K --> R
+    
+    %% Feedback Loops
+    P --> S{📊 Feedback dos Usuários}
+    S -->|🔧 Melhorias Necessárias| T[🛠️ Sprint de Melhorias]
+    T --> P
+    S -->|✅ Satisfatório| U[✨ Versão Estável]
+    
+    %% Styling
+    classDef phaseStyle fill:#1e293b,stroke:#3b82f6,stroke-width:3px,color:#e2e8f0
+    classDef testStyle fill:#065f46,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    classDef processStyle fill:#7c2d12,stroke:#dc2626,stroke-width:2px,color:#e2e8f0
+    classDef decisionStyle fill:#581c87,stroke:#a855f7,stroke-width:2px,color:#e2e8f0
+    classDef finalStyle fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#e2e8f0
+    
+    class E,G,I,K phaseStyle
+    class F,H,J,L,S testStyle
+    class Q,R,T processStyle
+    class B decisionStyle
+    class M,N,O,P,U finalStyle

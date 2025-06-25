@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental - Sistema de Gestão Clínica</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mindmap {
+            width: 2000px;
+            height: 1500px;
+            position: relative;
+            transform-origin: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .node {
+            position: absolute;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 2px solid transparent;
+            min-width: 120px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+        
+        /* Central Node */
+        .central {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 3px solid #60a5fa;
+            font-size: 24px;
+            padding: 20px 30px;
+            top: 45%;
+            left: 45%;
+            z-index: 10;
+        }
+        
+        /* Main Categories */
+        .category {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 2px solid #475569;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        /* Sub-categories */
+        .subcategory {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border: 1px solid #334155;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Features */
+        .feature {
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 1px solid #10b981;
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+        
+        /* Technology */
+        .tech {
+            background: linear-gradient(135deg, #7c2d12, #dc2626);
+            border: 1px solid #ef4444;
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+        
+        /* Phases */
+        .phase {
+            background: linear-gradient(135deg, #581c87, #7c3aed);
+            border: 1px solid #a855f7;
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+        
+        /* Connection Lines */
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #475569, #64748b);
+            transform-origin: left center;
+            z-index: 1;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #334155;
+            border-color: #64748b;
+        }
+        
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 15px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <button class="control-btn" onclick="zoomIn()">Zoom +</button>
+            <button class="control-btn" onclick="zoomOut()">Zoom -</button>
+            <button class="control-btn" onclick="resetView()">Reset</button>
+            <button class="control-btn" onclick="toggleConnections()">Linhas</button>
+        </div>
+        
+        <div class="mindmap" id="mindmap">
+            <!-- Central Node -->
+            <div class="node central" style="top: 700px; left: 900px;">
+                🏥 Sistema de Gestão<br>Clínica Fisioterapia
+            </div>
+            
+            <!-- Main Categories -->
+            <div class="node category" style="top: 300px; left: 500px;">
+                🔐 Autenticação<br>& Usuários
+            </div>
+            
+            <div class="node category" style="top: 200px; left: 900px;">
+                📚 Gestão de<br>Conhecimento
+            </div>
+            
+            <div class="node category" style="top: 300px; left: 1300px;">
+                🎯 Projetos<br>& Tarefas
+            </div>
+            
+            <div class="node category" style="top: 700px; left: 1400px;">
+                💬 Comunicação<br>& Colaboração
+            </div>
+            
+            <div class="node category" style="top: 1100px; left: 1200px;">
+                📊 Analytics<br>& Relatórios
+            </div>
+            
+            <div class="node category" style="top: 1200px; left: 800px;">
+                🔧 Stack<br>Tecnológico
+            </div>
+            
+            <div class="node category" style="top: 1100px; left: 400px;">
+                📱 Mobile<br>& PWA
+            </div>
+            
+            <div class="node category" style="top: 700px; left: 200px;">
+                🚀 Fases de<br>Implementação
+            </div>
+            
+            <!-- Auth & Users Subcategories -->
+            <div class="node subcategory" style="top: 150px; left: 300px;">
+                👤 Tipos de Usuário
+            </div>
+            <div class="node feature" style="top: 100px; left: 200px;">Admin</div>
+            <div class="node feature" style="top: 100px; left: 320px;">Fisioterapeuta</div>
+            <div class="node feature" style="top: 100px; left: 460px;">Estagiário</div>
+            
+            <div class="node subcategory" style="top: 200px; left: 200px;">
+                🔒 Permissões
+            </div>
+            <div class="node feature" style="top: 150px; left: 80px;">RLS</div>
+            <div class="node feature" style="top: 180px; left: 140px;">Hierárquicas</div>
+            
+            <div class="node subcategory" style="top: 400px; left: 350px;">
+                🔑 Login System
+            </div>
+            <div class="node feature" style="top: 350px; left: 250px;">Email/Senha</div>
+            <div class="node feature" style="top: 380px; left: 350px;">2FA</div>
+            <div class="node feature" style="top: 410px; left: 450px;">Recovery</div>
+            
+            <!-- Knowledge Management -->
+            <div class="node subcategory" style="top: 50px; left: 800px;">
+                📔 Notebooks
+            </div>
+            <div class="node feature" style="top: 20px; left: 700px;">Hierárquicos</div>
+            <div class="node feature" style="top: 20px; left: 850px;">Categorização</div>
+            <div class="node feature" style="top: 20px; left: 1000px;">Ícones/Cores</div>
+            
+            <div class="node subcategory" style="top: 100px; left: 1100px;">
+                📝 Editor Avançado
+            </div>
+            <div class="node feature" style="top: 50px; left: 1050px;">Rich Text</div>
+            <div class="node feature" style="top: 80px; left: 1150px;">Blocos</div>
+            <div class="node feature" style="top: 110px; left: 1050px;">Templates</div>
+            <div class="node feature" style="top: 140px; left: 1150px;">Slash Commands</div>
+            
+            <div class="node subcategory" style="top: 150px; left: 750px;">
+                📄 Pages & Sub-pages
+            </div>
+            <div class="node feature" style="top: 200px; left: 650px;">Hierarquia Infinita</div>
+            <div class="node feature" style="top: 230px; left: 800px;">Versionamento</div>
+            <div class="node feature" style="top: 200px; left: 950px;">Drag & Drop</div>
+            
+            <!-- Projects & Tasks -->
+            <div class="node subcategory" style="top: 150px; left: 1400px;">
+                🎯 Gestão de Projetos
+            </div>
+            <div class="node feature" style="top: 100px; left: 1300px;">Status Tracking</div>
+            <div class="node feature" style="top: 100px; left: 1450px;">Prioridades</div>
+            <div class="node feature" style="top: 130px; left: 1550px;">Participantes</div>
+            <div class="node feature" style="top: 180px; left: 1500px;">Timeline</div>
+            
+            <div class="node subcategory" style="top: 250px; left: 1200px;">
+                ✅ Sistema de Tarefas
+            </div>
+            <div class="node feature" style="top: 200px; left: 1100px;">Kanban Board</div>
+            <div class="node feature" style="top: 280px; left: 1100px;">Sub-tarefas</div>
+            <div class="node feature" style="top: 310px; left: 1200px;">Atribuições</div>
+            <div class="node feature" style="top: 280px; left: 1300px;">Time Tracking</div>
+            
+            <div class="node subcategory" style="top: 400px; left: 1450px;">
+                👁️ Visualizações
+            </div>
+            <div class="node feature" style="top: 350px; left: 1350px;">Kanban</div>
+            <div class="node feature" style="top: 380px; left: 1420px;">Lista</div>
+            <div class="node feature" style="top: 410px; left: 1490px;">Calendar</div>
+            <div class="node feature" style="top: 440px; left: 1560px;">Gantt</div>
+            
+            <!-- Communication -->
+            <div class="node subcategory" style="top: 600px; left: 1600px;">
+                💬 Comentários
+            </div>
+            <div class="node feature" style="top: 550px; left: 1550px;">@Mentions</div>
+            <div class="node feature" style="top: 580px; left: 1650px;">Threads</div>
+            <div class="node feature" style="top: 610px; left: 1720px;">Inline</div>
+            
+            <div class="node subcategory" style="top: 800px; left: 1500px;">
+                🔔 Notificações
+            </div>
+            <div class="node feature" style="top: 750px; left: 1450px;">Real-time</div>
+            <div class="node feature" style="top: 780px; left: 1550px;">Push</div>
+            <div class="node feature" style="top: 810px; left: 1620px;">Centro</div>
+            
+            <div class="node subcategory" style="top: 850px; left: 1300px;">
+                📁 Gestão de Arquivos
+            </div>
+            <div class="node feature" style="top: 800px; left: 1200px;">Upload</div>
+            <div class="node feature" style="top: 830px; left: 1270px;">Preview</div>
+            <div class="node feature" style="top: 860px; left: 1340px;">Versioning</div>
+            
+            <!-- Analytics -->
+            <div class="node subcategory" style="top: 1000px; left: 1350px;">
+                📊 Dashboard
+            </div>
+            <div class="node feature" style="top: 950px; left: 1250px;">Produtividade</div>
+            <div class="node feature" style="top: 980px; left: 1350px;">Performance</div>
+            <div class="node feature" style="top: 1010px; left: 1450px;">Insights</div>
+            
+            <div class="node subcategory" style="top: 1200px; left: 1050px;">
+                📈 Relatórios
+            </div>
+            <div class="node feature" style="top: 1150px; left: 950px;">Time Reports</div>
+            <div class="node feature" style="top: 1180px; left: 1050px;">Team Stats</div>
+            <div class="node feature" style="top: 1210px; left: 1150px;">Progress</div>
+            
+            <!-- Tech Stack -->
+            <div class="node tech" style="top: 1350px; left: 600px;">
+                ⚛️ Next.js 14
+            </div>
+            <div class="node tech" style="top: 1380px; left: 720px;">
+                📘 TypeScript
+            </div>
+            <div class="node tech" style="top: 1350px; left: 850px;">
+                🎨 Tailwind CSS
+            </div>
+            <div class="node tech" style="top: 1320px; left: 980px;">
+                🧩 shadcn/ui
+            </div>
+            <div class="node tech" style="top: 1280px; left: 750px;">
+                🗄️ Supabase
+            </div>
+            <div class="node tech" style="top: 1250px; left: 900px;">
+                🚀 Vercel
+            </div>
+            
+            <!-- Mobile & PWA -->
+            <div class="node subcategory" style="top: 950px; left: 250px;">
+                📱 PWA Features
+            </div>
+            <div class="node feature" style="top: 900px; left: 150px;">Installable</div>
+            <div class="node feature" style="top: 930px; left: 220px;">Offline</div>
+            <div class="node feature" style="top: 960px; left: 290px;">Sync</div>
+            
+            <div class="node subcategory" style="top: 1050px; left: 100px;">
+                📱 Mobile-First
+            </div>
+            <div class="node feature" style="top: 1000px; left: 50px;">Touch UI</div>
+            <div class="node feature" style="top: 1030px; left: 120px;">Responsive</div>
+            <div class="node feature" style="top: 1080px; left: 180px;">Gestures</div>
+            
+            <!-- Implementation Phases -->
+            <div class="node phase" style="top: 550px; left: 50px;">
+                🚀 Fase 1 - Core
+            </div>
+            <div class="node feature" style="top: 500px; left: 20px;">Auth</div>
+            <div class="node feature" style="top: 530px; left: 80px;">CRUD</div>
+            <div class="node feature" style="top: 580px; left: 120px;">Editor</div>
+            
+            <div class="node phase" style="top: 650px; left: 80px;">
+                🎯 Fase 2 - Gestão
+            </div>
+            <div class="node feature" style="top: 600px; left: 50px;">Projetos</div>
+            <div class="node feature" style="top: 630px; left: 120px;">Tarefas</div>
+            <div class="node feature" style="top: 680px; left: 150px;">Kanban</div>
+            
+            <div class="node phase" style="top: 800px; left: 50px;">
+                💬 Fase 3 - Colaboração
+            </div>
+            <div class="node feature" style="top: 750px; left: 20px;">Comentários</div>
+            <div class="node feature" style="top: 780px; left: 80px;">Files</div>
+            <div class="node feature" style="top: 830px; left: 120px;">Templates</div>
+            
+            <div class="node phase" style="top: 950px; left: 80px;">
+                📊 Fase 4 - Avançado
+            </div>
+            <div class="node feature" style="top: 900px; left: 50px;">Real-time</div>
+            <div class="node feature" style="top: 930px; left: 120px;">Analytics</div>
+            <div class="node feature" style="top: 980px; left: 150px;">PWA</div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                Central
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #1e293b, #334155);"></div>
+                Categorias
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #065f46, #047857);"></div>
+                Features
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #7c2d12, #dc2626);"></div>
+                Tecnologias
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #581c87, #7c3aed);"></div>
+                Fases
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scale = 0.6;
+        let showConnections = false;
+        const mindmap = document.getElementById('mindmap');
+        
+        function updateTransform() {
+            mindmap.style.transform = `scale(${scale}) translate(-25%, -25%)`;
+        }
+        
+        function zoomIn() {
+            scale = Math.min(scale + 0.1, 2);
+            updateTransform();
+        }
+        
+        function zoomOut() {
+            scale = Math.max(scale - 0.1, 0.3);
+            updateTransform();
+        }
+        
+        function resetView() {
+            scale = 0.6;
+            updateTransform();
+        }
+        
+        function toggleConnections() {
+            showConnections = !showConnections;
+            // Implementation for connection lines would go here
+            console.log('Connections toggled:', showConnections);
+        }
+        
+        // Initialize
+        updateTransform();
+        
+        // Add hover effects
+        document.querySelectorAll('.node').forEach(node => {
+            node.addEventListener('click', function() {
+                this.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 200);
+            });
+        });
+        
+        // Mouse wheel zoom
+        mindmap.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        });
+    </script>
+</body>
+</html>

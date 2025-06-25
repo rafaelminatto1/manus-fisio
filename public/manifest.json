@@ -1,0 +1,87 @@
+{
+  "name": "Manus Fisio - Sistema de Gestão para Clínica de Fisioterapia",
+  "short_name": "Manus Fisio",
+  "description": "Sistema integrado de gestão para clínicas de fisioterapia com funcionalidades de organização, colaboração e mentoria.",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Acesso rápido ao dashboard principal",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/shortcut-dashboard.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Notebooks",
+      "short_name": "Notebooks",
+      "description": "Visualizar notebooks de protocolos",
+      "url": "/notebooks",
+      "icons": [{ "src": "/icons/shortcut-notebooks.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Projetos",
+      "short_name": "Projetos",
+      "description": "Gerenciar projetos clínicos",
+      "url": "/projects",
+      "icons": [{ "src": "/icons/shortcut-projects.png", "sizes": "96x96" }]
+    }
+  ],
+  "categories": ["medical", "productivity", "utilities"],
+  "lang": "pt-BR",
+  "dir": "ltr"
+} 

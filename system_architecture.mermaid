@@ -1,0 +1,95 @@
+graph TB
+    subgraph "🌐 Frontend Layer"
+        UI[🎨 UI Components<br/>shadcn/ui + Tailwind]
+        APP[⚛️ Next.js 14 App<br/>TypeScript + React]
+        PWA[📱 PWA Features<br/>Service Worker + Manifest]
+        
+        UI --> APP
+        APP --> PWA
+    end
+    
+    subgraph "🔧 Application Layer"
+        AUTH[🔐 Authentication<br/>Supabase Auth]
+        API[🔌 API Routes<br/>Next.js API + Edge Functions]
+        HOOKS[🎣 Custom Hooks<br/>React Query + State]
+        UTILS[🛠️ Utilities<br/>Helpers + Validations]
+        
+        AUTH --> API
+        API --> HOOKS
+        HOOKS --> UTILS
+    end
+    
+    subgraph "📊 Data Layer"
+        DB[(🗄️ PostgreSQL<br/>Supabase Database)]
+        STORAGE[📁 File Storage<br/>Supabase Storage]
+        REALTIME[⚡ Real-time<br/>Supabase Realtime]
+        CACHE[💾 Cache Layer<br/>React Query + Browser]
+        
+        DB --> STORAGE
+        DB --> REALTIME
+        DB --> CACHE
+    end
+    
+    subgraph "☁️ Infrastructure"
+        VERCEL[🚀 Vercel<br/>Hosting + Edge]
+        SUPABASE[🔥 Supabase<br/>Backend as a Service]
+        CDN[🌍 Global CDN<br/>Static Assets]
+        
+        VERCEL --> SUPABASE
+        VERCEL --> CDN
+    end
+    
+    subgraph "👥 User Devices"
+        MOBILE[📱 Mobile<br/>iPhone 11+ / iPad 10+]
+        DESKTOP[💻 Desktop<br/>Windows Notebooks]
+        BROWSER[🌐 Web Browsers<br/>Chrome / Safari / Edge]
+        
+        MOBILE --> BROWSER
+        DESKTOP --> BROWSER
+    end
+    
+    subgraph "🔒 Security Layer"
+        RLS[🛡️ Row Level Security<br/>Database Policies]
+        JWT[🔑 JWT Tokens<br/>Session Management]
+        CORS[🔐 CORS Policy<br/>API Protection]
+        RATE[⏱️ Rate Limiting<br/>API Throttling]
+        
+        RLS --> JWT
+        JWT --> CORS
+        CORS --> RATE
+    end
+    
+    %% Connections
+    BROWSER --> UI
+    APP --> AUTH
+    APP --> API
+    
+    API --> DB
+    API --> STORAGE
+    API --> REALTIME
+    
+    AUTH --> JWT
+    DB --> RLS
+    API --> CORS
+    API --> RATE
+    
+    APP --> VERCEL
+    DB --> SUPABASE
+    STORAGE --> SUPABASE
+    REALTIME --> SUPABASE
+    
+    %% Data Flow
+    UI -.->|User Actions| HOOKS
+    HOOKS -.->|API Calls| API
+    API -.->|Queries| DB
+    DB -.->|Data| API
+    API -.->|Response| HOOKS
+    HOOKS -.->|State Update| UI
+    
+    REALTIME -.->|Live Updates| HOOKS
+    PWA -.->|Offline Sync| CACHE
+    CACHE -.->|Local Data| HOOKS
+    
+    %% Styling
+    classDef frontend fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    classDef application fill:#065f46,stroke:#10b981,stroke-

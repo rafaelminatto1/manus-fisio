@@ -1,0 +1,470 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Dark Mode Profissional - Paleta Principal */
+    --background: 222.2 84% 4.9%; /* #0f172a - slate-900 */
+    --foreground: 210 40% 98%; /* #f8fafc - slate-50 */
+    
+    /* Superfícies */
+    --surface: 217.2 32.6% 17.5%; /* #1e293b - slate-800 */
+    --surface-hover: 215.4 16.3% 26.9%; /* #334155 - slate-700 */
+    
+    /* Cores Primárias */
+    --primary: 217.2 91.2% 59.8%; /* #3b82f6 - blue-500 */
+    --primary-foreground: 222.2 84% 4.9%;
+    --primary-hover: 221.2 83.2% 53.3%; /* #2563eb - blue-600 */
+    
+    /* Cores de Status */
+    --success: 160 84.1% 39.4%; /* #10b981 - emerald-500 */
+    --success-foreground: 355.7 100% 97.3%;
+    
+    --warning: 32.1 94.6% 43.7%; /* #f59e0b - amber-500 */
+    --warning-foreground: 355.7 100% 97.3%;
+    
+    --destructive: 0 84.2% 60.2%; /* #ef4444 - red-500 */
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Cores de Texto */
+    --text-primary: 210 40% 98%; /* #f8fafc - slate-50 */
+    --text-secondary: 214.3 31.8% 91.4%; /* #cbd5e1 - slate-300 */
+    
+    /* Componentes UI */
+    --card: 217.2 32.6% 17.5%; /* #1e293b - slate-800 */
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 217.2 32.6% 17.5%;
+    --popover-foreground: 210 40% 98%;
+    
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 215.4 16.3% 26.9%; /* #334155 - slate-700 */
+    --muted-foreground: 217.9 10.6% 64.9%;
+    
+    --accent: 215.4 16.3% 26.9%;
+    --accent-foreground: 210 40% 98%;
+    
+    --border: 217.9 10.6% 64.9%; /* #475569 - slate-600 */
+    --input: 217.9 10.6% 64.9%;
+    --ring: 217.2 91.2% 59.8%;
+    
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+  
+  /* Seleção de texto */
+  ::selection {
+    @apply bg-primary/30 text-primary-foreground;
+  }
+  
+  /* Focus ring personalizado */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground;
+  }
+  
+  h1 { @apply text-3xl lg:text-4xl; }
+  h2 { @apply text-2xl lg:text-3xl; }
+  h3 { @apply text-xl lg:text-2xl; }
+  h4 { @apply text-lg lg:text-xl; }
+  h5 { @apply text-base lg:text-lg; }
+  h6 { @apply text-sm lg:text-base; }
+}
+
+@layer components {
+  /* Componentes personalizados para fisioterapia */
+  .clinical-card {
+    @apply bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  .protocol-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20;
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center px-2 py-1 rounded-md text-xs font-medium;
+  }
+  
+  .status-active {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+  
+  .status-pending {
+    @apply bg-warning/10 text-warning border border-warning/20;
+  }
+  
+  .status-completed {
+    @apply bg-muted/10 text-muted-foreground border border-muted/20;
+  }
+  
+  /* Editor styles */
+  .editor-container {
+    @apply bg-card border border-border rounded-lg overflow-hidden;
+  }
+  
+  .editor-toolbar {
+    @apply flex items-center gap-1 p-2 border-b border-border bg-surface/50;
+  }
+  
+  .editor-content {
+    @apply p-4 min-h-[200px] focus:outline-none;
+  }
+  
+  /* Kanban styles */
+  .kanban-column {
+    @apply bg-surface/50 rounded-lg p-4 min-h-[500px] w-80;
+  }
+  
+  .kanban-card {
+    @apply bg-card border border-border rounded-md p-3 mb-3 cursor-pointer hover:shadow-md transition-all;
+  }
+  
+  /* Dashboard styles */
+  .metric-card {
+    @apply bg-card border border-border rounded-lg p-6;
+  }
+  
+  .metric-value {
+    @apply text-3xl font-bold text-foreground;
+  }
+  
+  .metric-label {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .metric-change {
+    @apply text-xs font-medium;
+  }
+  
+  .metric-positive {
+    @apply text-success;
+  }
+  
+  .metric-negative {
+    @apply text-destructive;
+  }
+}
+
+@layer utilities {
+  /* Utilitários específicos */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    @apply bg-background/80 backdrop-blur-sm border border-border/50;
+  }
+  
+  .sidebar-width {
+    width: 280px;
+  }
+  
+  .sidebar-collapsed {
+    width: 64px;
+  }
+  
+  /* Animações personalizadas */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounce 2s infinite;
+  }
+  
+  /* Estados de loading */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+  
+  .loading-spinner {
+    @apply animate-spin h-4 w-4 border-2 border-muted border-t-primary rounded-full;
+  }
+}
+
+/* Animations específicas */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Dark Mode Professional Theme - Clínica de Fisioterapia */
+@layer base {
+  .dark {
+    --background: 222.2 84% 4.9%; /* slate-900 #0f172a */
+    --foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --card: 222.2 82% 11%; /* slate-800 #1e293b */
+    --card-foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --popover: 222.2 82% 11%; /* slate-800 #1e293b */
+    --popover-foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --primary: 217.2 91.2% 59.8%; /* blue-500 #3b82f6 */
+    --primary-foreground: 222.2 84% 4.9%; /* slate-900 #0f172a */
+    --secondary: 215 27.9% 16.9%; /* slate-700 #334155 */
+    --secondary-foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --muted: 215 27.9% 16.9%; /* slate-700 #334155 */
+    --muted-foreground: 215.4 16.3% 46.9%; /* slate-500 #64748b */
+    --accent: 215 27.9% 16.9%; /* slate-700 #334155 */
+    --accent-foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --destructive: 0 62.8% 30.6%; /* red-700 #b91c1c */
+    --destructive-foreground: 210 40% 98%; /* slate-50 #f8fafc */
+    --border: 215 27.9% 16.9%; /* slate-700 #334155 */
+    --input: 215 27.9% 16.9%; /* slate-700 #334155 */
+    --ring: 217.2 91.2% 59.8%; /* blue-500 #3b82f6 */
+  }
+}
+
+/* Typography for Medical Context */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-4xl font-bold;
+  }
+  
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+  
+  h4 {
+    @apply text-xl font-medium;
+  }
+  
+  .text-medical {
+    @apply text-medical-500;
+  }
+  
+  .bg-medical {
+    @apply bg-medical-500;
+  }
+  
+  .border-medical {
+    @apply border-medical-500;
+  }
+}
+
+/* Scrollbar Styling */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
+  }
+}
+
+/* Medical Status Indicators */
+@layer components {
+  .status-indicator {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-active {
+    @apply bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-100;
+  }
+  
+  .status-pending {
+    @apply bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-100;
+  }
+  
+  .status-completed {
+    @apply bg-medical-100 text-medical-800 dark:bg-medical-900 dark:text-medical-100;
+  }
+  
+  .status-cancelled {
+    @apply bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-100;
+  }
+}
+
+/* Card Styles for Medical Context */
+@layer components {
+  .medical-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm;
+  }
+  
+  .medical-card-header {
+    @apply flex items-center justify-between pb-4 border-b border-border;
+  }
+  
+  .medical-card-title {
+    @apply text-lg font-semibold text-card-foreground;
+  }
+  
+  .medical-card-description {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .medical-card-content {
+    @apply pt-4;
+  }
+}
+
+/* Button Variants for Medical Context */
+@layer components {
+  .btn-medical {
+    @apply bg-medical-500 text-white hover:bg-medical-600 focus:ring-medical-300;
+  }
+  
+  .btn-success {
+    @apply bg-success-500 text-white hover:bg-success-600 focus:ring-success-300;
+  }
+  
+  .btn-warning {
+    @apply bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-300;
+  }
+  
+  .btn-error {
+    @apply bg-error-500 text-white hover:bg-error-600 focus:ring-error-300;
+  }
+}
+
+/* Layout Specific Styles */
+@layer components {
+  .sidebar {
+    @apply bg-card border-r border-border min-h-screen;
+  }
+  
+  .main-content {
+    @apply bg-background min-h-screen;
+  }
+  
+  .navbar {
+    @apply bg-card border-b border-border;
+  }
+  
+  .content-area {
+    @apply bg-background p-6;
+  }
+}
+
+/* Animation Classes */
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-in-out;
+  }
+  
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+  
+  .animate-pulse-medical {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Focus Styles for Accessibility */
+@layer base {
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Print Styles for Medical Reports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .medical-card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+} 

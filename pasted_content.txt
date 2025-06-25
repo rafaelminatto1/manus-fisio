@@ -1,0 +1,62 @@
+RESPOSTAS ÀS PERGUNTAS ESTRATÉGICAS:
+1. ESTILO VISUAL PREFERIDO:
+B) Dark mode moderno - Para uma clínica de fisioterapia, um visual profissional e moderno é ideal. Dark mode reduz fadiga visual durante longas sessões de trabalho.
+2. ESTRUTURA PRINCIPAL:
+A) Sidebar esquerda + conteúdo principal - Melhor para organização hierárquica de notebooks/notas e navegação rápida entre projetos.
+3. FUNCIONALIDADES PRIORITÁRIAS:
+Ordem de prioridade:
+
+Sistema de autenticação e gestão de usuários
+Editor de notas com estrutura hierárquica
+Sistema de tarefas e projetos
+Gestão de equipe e atribuições
+Upload de arquivos e documentação
+
+4. TECNOLOGIA BASE:
+D) shadcn/ui com Tailwind CSS - Mais estável, componentes prontos e manutenível.
+5. INSPIRAÇÃO VISUAL:
+Combinação de Notion + Linear - Interface limpa do Notion com a eficiência de gestão de projetos do Linear.
+Sistema de Gestão para Clínica de Fisioterapia - Documentação CompletaDocumento # Sistema de Gestão para Clínica de Fisioterapia
+## Documentação Técnica e Funcional Completa
+
+---
+
+## 1. VISÃO GERAL DO PROJETO
+
+### 1.1 Objetivo Principal
+Desenvolver um sistema integrado de gestão para clínica de fisioterapia que combine funcionalAgora vou criar um prompt detalhado para você usar em outras ferramentas de geração de sistemas:Prompt para Geração do Sistema - Lovable/Cursor AIDocumento # PROMPT PARA GERAÇÃO DE SISTEMA DE GESTÃO - CLÍNICA DE FISIOTERAPIA
+
+## CONTEXTO
+Preciso de um sistema completo de gestão para minha clínica de fisioterapia que combine as melhores funcionalidades do Notion, Evernote, Linear, Monday.com, ClickUp e SResumo da Proposta
+Criei uma documentação completa e robusta do seu sistema que combina as melhores funcionalidades de:
+🎯 Funcionalidades Principais:
+
+Gestão Hierárquica: Notebooks → Pages → Sub-pages (Notion/Evernote)
+Projetos e Tarefas: Sistema completo com Kanban, timeline e analytics (Linear/Monday)
+Editor Avançado: Rich text com blocos, templates e versionamento
+Comunicação: Comentários, mentions e notificações em tempo real (Slack)
+Gestão de Equipe: Permissões por cargo, mentoria e tracking de progresso
+
+🔧 Stack Técnica Recomendada:
+
+Next.js 14 + TypeScript + Tailwind + shadcn/ui
+Supabase (completo: auth, database, storage, realtime)
+PWA para uso mobile nativo
+Dark theme moderno
+
+📱 Foco na Sua Clínica:
+
+Templates específicos para fisioterapia
+Sistema de mentoria estagiário-fisioterapeuta
+Permissões específicas por cargo
+Analytics de produtividade da equipe
+
+🚀 Implementação em Fases:
+
+MVP (3 semanas): Auth + Editor + Tarefas básicas
+Gestão (3 semanas): Projetos + Kanban + Permissões
+Colaboração (3 semanas): Comentários + Files + Templates
+Avançado (3 semanas): Real-time + Analytics + PWA
+
+Posso ajudar você a implementar este sistema passo a passo ou você pode usar o prompt detalhado que criei para gerar o sistema completo em ferramentas como Lovable ou Cursor AI.
+Qual abordagem prefere? Quer que comecemos a implementação aqui mesmo ou prefere usar o prompt em outras ferramentas primeiro?

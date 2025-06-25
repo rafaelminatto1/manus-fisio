@@ -1,0 +1,147 @@
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Home,
+  BookOpen, 
+  Target,
+  Users,
+  Calendar,
+  Settings,
+  Bell,
+  Search,
+  Plus,
+  Heart
+} from 'lucide-react'
+
+const navigationItems = [
+  {
+    href: '/',
+    label: 'Dashboard',
+    icon: Home,
+    badge: null
+  },
+  {
+    href: '/notebooks',
+    label: 'Notebooks',
+    icon: BookOpen,
+    badge: null
+  },
+  {
+    href: '/projects',
+    label: 'Projetos',
+    icon: Target,
+    badge: '12'
+  },
+  {
+    href: '/team',
+    label: 'Equipe',
+    icon: Users,
+    badge: '5'
+  },
+  {
+    href: '/calendar',
+    label: 'Calendário',
+    icon: Calendar,
+    badge: null
+  }
+]
+
+const quickActions = [
+  {
+    href: '/notebooks/new',
+    label: 'Novo Notebook',
+    icon: BookOpen
+  },
+  {
+    href: '/projects/new',
+    label: 'Novo Projeto',
+    icon: Target
+  },
+  {
+    href: '/calendar/new',
+    label: 'Agendar',
+    icon: Calendar
+  }
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+
+  return (
+    <div className="sidebar w-64 p-4 flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center gap-2 mb-8">
+        <Heart className="h-8 w-8 text-medical-500" />
+        <h1 className="text-xl font-bold text-foreground">Manus Fisio</h1>
+      </div>
+      
+      {/* Quick Search */}
+      <Button variant="outline" className="w-full justify-start mb-6" size="sm">
+        <Search className="mr-2 h-4 w-4" />
+        Buscar...
+        <kbd className="ml-auto text-xs text-muted-foreground">⌘K</kbd>
+      </Button>
+
+      {/* Navigation */}
+      <nav className="space-y-2 flex-1">
+        {navigationItems.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link key={item.href} href={item.href}>
+              <Button 
+                variant={isActive ? "default" : "ghost"} 
+                className="w-full justify-start" 
+                size="sm"
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+                {item.badge && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {item.badge}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Quick Actions */}
+      <div className="mt-auto pt-4 border-t">
+        <h3 className="font-semibold text-sm text-muted-foreground mb-3">AÇÕES RÁPIDAS</h3>
+        <div className="space-y-2">
+          {quickActions.map((action) => (
+            <Link key={action.href} href={action.href}>
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <action.icon className="mr-2 h-4 w-4" />
+                {action.label}
+              </Button>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* User Profile / Settings */}
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-medical-500 flex items-center justify-center text-white text-sm font-medium">
+            RS
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium">Dr. Rafael Santos</div>
+            <div className="text-xs text-muted-foreground">Fisioterapeuta</div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Bell className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button variant="ghost" className="w-full justify-start" size="sm">
+          <Settings className="mr-2 h-4 w-4" />
+          Configurações
+        </Button>
+      </div>
+    </div>
+  )
+} 

@@ -1,0 +1,138 @@
+graph TB
+    subgraph "🌐 Frontend Layer - Dark Mode Professional"
+        UI[🎨 shadcn/ui Components<br/>Dark Theme + Tailwind]
+        APP[⚛️ Next.js 14 App<br/>TypeScript + React]
+        PWA[📱 PWA Features<br/>Offline + Installable]
+        EDITOR[✏️ Rich Editor<br/>Blocks + Collaboration]
+        
+        UI --> APP
+        APP --> PWA
+        APP --> EDITOR
+    end
+    
+    subgraph "🏗️ Application Layer - Enterprise Grade"
+        AUTH[🔐 Enterprise Auth<br/>MFA + RBAC + Audit]
+        API[🔌 Multi-Protocol APIs<br/>REST + GraphQL + WebSocket]
+        COLLAB[💬 Real-time Collab<br/>Comments + Mentions + Live Edit]
+        WORKFLOWS[🎯 Clinical Workflows<br/>Projects + Tasks + Templates]
+        
+        AUTH --> API
+        API --> COLLAB
+        API --> WORKFLOWS
+    end
+    
+    subgraph "📊 Data Layer - LGPD Compliant"
+        DB[(🗄️ PostgreSQL<br/>8 Tables + Hierarchical)]
+        STORAGE[📁 Secure Storage<br/>Files + Versions + Audit]
+        REALTIME[⚡ Supabase Realtime<br/>Live Updates + Sync]
+        CACHE[💾 Multi-layer Cache<br/>Redis + Browser + Query]
+        
+        DB --> STORAGE
+        DB --> REALTIME
+        DB --> CACHE
+    end
+    
+    subgraph "☁️ Infrastructure - Cloud Native"
+        VERCEL[🚀 Vercel Platform<br/>Edge + Functions + CDN]
+        SUPABASE[🔥 Supabase Cloud<br/>Managed Backend + Security]
+        MONITORING[📊 Monitoring<br/>Sentry + Analytics + Alerts]
+        
+        VERCEL --> SUPABASE
+        VERCEL --> MONITORING
+    end
+    
+    subgraph "👥 User Experience - Clinic Focused"
+        MOBILE[📱 Mobile PWA<br/>Touch + Offline + Sync]
+        DESKTOP[💻 Desktop App<br/>Full Features + Shortcuts]
+        NOTEBOOKS[📚 Hierarchical Notebooks<br/>Pages + Sub-pages + Templates]
+        DASHBOARD[📊 Executive Dashboard<br/>Metrics + Analytics + Reports]
+        
+        MOBILE --> NOTEBOOKS
+        DESKTOP --> NOTEBOOKS
+        NOTEBOOKS --> DASHBOARD
+    end
+    
+    subgraph "🔒 Security & Compliance - Medical Grade"
+        RLS[🛡️ Row Level Security<br/>Database Policies + Audit]
+        LGPD[⚖️ LGPD Compliance<br/>Consent + Rights + Pseudonymization]
+        ENCRYPTION[🔐 End-to-End Security<br/>TLS + JWT + Data Encryption]
+        AUDIT[📋 Complete Audit<br/>Actions + Access + Changes]
+        
+        RLS --> LGPD
+        LGPD --> ENCRYPTION
+        ENCRYPTION --> AUDIT
+    end
+    
+    subgraph "🎯 Clinical Features - Physiotherapy Specific"
+        MENTORSHIP[👨‍🏫 Mentorship System<br/>Physiotherapist + Intern]
+        PROTOCOLS[📋 Clinical Protocols<br/>Templates + Procedures + Guidelines]
+        ANALYTICS[📈 Productivity Analytics<br/>Team Performance + Insights]
+        INTEGRATION[🔗 Calendar Integration<br/>Scheduling + Appointments]
+        
+        MENTORSHIP --> PROTOCOLS
+        PROTOCOLS --> ANALYTICS
+        ANALYTICS --> INTEGRATION
+    end
+    
+    %% Main Connections
+    NOTEBOOKS --> UI
+    DASHBOARD --> UI
+    APP --> AUTH
+    APP --> API
+    
+    API --> DB
+    API --> STORAGE
+    API --> REALTIME
+    
+    COLLAB --> REALTIME
+    WORKFLOWS --> DB
+    
+    AUTH --> RLS
+    DB --> LGPD
+    API --> ENCRYPTION
+    
+    APP --> VERCEL
+    DB --> SUPABASE
+    STORAGE --> SUPABASE
+    REALTIME --> SUPABASE
+    
+    MENTORSHIP --> WORKFLOWS
+    PROTOCOLS --> NOTEBOOKS
+    ANALYTICS --> DASHBOARD
+    
+    %% Data Flow - Enhanced
+    UI -.->|User Actions| COLLAB
+    COLLAB -.->|Real-time Updates| API
+    API -.->|Secure Queries| DB
+    DB -.->|Audited Data| API
+    API -.->|Validated Response| COLLAB
+    COLLAB -.->|Live State Update| UI
+    
+    REALTIME -.->|Live Collaboration| COLLAB
+    PWA -.->|Offline Sync| CACHE
+    CACHE -.->|Local Data| COLLAB
+    AUDIT -.->|Compliance Logs| MONITORING
+    
+    %% Clinical Workflow
+    MENTORSHIP -.->|Supervision| WORKFLOWS
+    PROTOCOLS -.->|Templates| EDITOR
+    ANALYTICS -.->|Insights| DASHBOARD
+    INTEGRATION -.->|Scheduling| WORKFLOWS
+    
+    %% Styling - Enhanced
+    classDef frontend fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    classDef application fill:#065f46,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    classDef data fill:#7c2d12,stroke:#dc2626,stroke-width:2px,color:#e2e8f0
+    classDef infrastructure fill:#581c87,stroke:#a855f7,stroke-width:2px,color:#e2e8f0
+    classDef security fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#e2e8f0
+    classDef clinical fill:#be185d,stroke:#ec4899,stroke-width:2px,color:#e2e8f0
+    classDef experience fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    
+    class UI,APP,PWA,EDITOR frontend
+    class AUTH,API,COLLAB,WORKFLOWS application
+    class DB,STORAGE,REALTIME,CACHE data
+    class VERCEL,SUPABASE,MONITORING infrastructure
+    class RLS,LGPD,ENCRYPTION,AUDIT security
+    class MENTORSHIP,PROTOCOLS,ANALYTICS,INTEGRATION clinical
+    class MOBILE,DESKTOP,NOTEBOOKS,DASHBOARD experience
+
