@@ -164,10 +164,12 @@ export function Sidebar() {
           </Button>
         </div>
         <div className="space-y-1">
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Configurações
-          </Button>
+          <Link href="/settings">
+            <Button variant="ghost" className="w-full justify-start" size="sm">
+              <Settings className="mr-2 h-4 w-4" />
+              Configurações
+            </Button>
+          </Link>
           <Button 
             variant="ghost" 
             className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" 

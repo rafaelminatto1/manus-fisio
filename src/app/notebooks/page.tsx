@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input'
 import { Loading } from '@/components/ui/loading'
 import RichEditor from '@/components/editor/rich-editor'
 import { TemplatesSelector, Template } from '@/components/editor/templates'
+import { CollaborationPanel } from '@/components/ui/collaboration-panel'
 
 // Types for real data
 interface Notebook {
@@ -349,38 +350,101 @@ export default function NotebooksPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar aos Notebooks
           </Button>
-          
-          <div className="space-y-4 mb-6">
-            <Input
-              placeholder="Título do notebook"
-              value={notebookTitle}
-              onChange={(e) => setNotebookTitle(e.target.value)}
-              className="text-lg font-semibold"
-            />
-            <Input
-              placeholder="Descrição (opcional)"
-              value={notebookDescription}
-              onChange={(e) => setNotebookDescription(e.target.value)}
-            />
-          </div>
         </div>
 
-        <RichEditor
-          content={editorContent}
-          onChange={setEditorContent}
-          placeholder="Comece a escrever seu protocolo..."
-          className="mb-6"
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Editor Principal */}
+          <div className="lg:col-span-2">
+            <div className="space-y-4 mb-6">
+              <Input
+                placeholder="Título do notebook"
+                value={notebookTitle}
+                onChange={(e) => setNotebookTitle(e.target.value)}
+                className="text-lg font-semibold"
+              />
+              <Input
+                placeholder="Descrição (opcional)"
+                value={notebookDescription}
+                onChange={(e) => setNotebookDescription(e.target.value)}
+              />
+            </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setShowEditor(false)}>
-            <X className="h-4 w-4 mr-2" />
-            Cancelar
-          </Button>
-          <Button onClick={handleSaveNotebook}>
-            <Save className="h-4 w-4 mr-2" />
-            Salvar Notebook
-          </Button>
+            <RichEditor
+              content={editorContent}
+              onChange={setEditorContent}
+              placeholder="Comece a escrever seu protocolo..."
+              className="mb-6"
+            />
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditor(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveNotebook}>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Notebook
+              </Button>
+            </div>
+          </div>
+
+          {/* Painel de Colaboração */}
+          <div className="lg:col-span-1">
+            <CollaborationPanel
+              targetType="page"
+              targetId={editingNotebook?.id || 'new'}
+              comments={[
+                {
+                  id: '1',
+                  content: 'Excelente protocolo! Sugiro adicionar mais detalhes sobre a frequência dos exercícios.',
+                  author_id: 'user-1',
+                  author_name: 'Dr. Rafael Santos',
+                  target_type: 'page',
+                  target_id: editingNotebook?.id || 'new',
+                  mentions: [],
+                  created_at: new Date(Date.now() - 3600000),
+                  replies: [
+                    {
+                      id: '2',
+                      content: 'Concordo! Vou incluir uma tabela com as frequências recomendadas.',
+                      author_id: 'user-2',
+                      author_name: 'Ana Silva',
+                      target_type: 'page',
+                      target_id: editingNotebook?.id || 'new',
+                      parent_comment_id: '1',
+                      mentions: ['user-1'],
+                      created_at: new Date(Date.now() - 1800000)
+                    }
+                  ]
+                }
+              ]}
+              onAddComment={(content, parentId) => {
+                console.log('Adding comment:', content, parentId)
+                // Implementar adição de comentário
+              }}
+              onMention={(userId) => {
+                console.log('Mentioning user:', userId)
+                // Implementar menção de usuário
+              }}
+              activeUsers={[
+                {
+                  id: 'user-1',
+                  name: 'Dr. Rafael Santos',
+                  status: 'editing'
+                },
+                {
+                  id: 'user-2', 
+                  name: 'Ana Silva',
+                  status: 'viewing'
+                },
+                {
+                  id: 'user-3',
+                  name: 'João Oliveira',
+                  status: 'online'
+                }
+              ]}
+            />
+          </div>
         </div>
       </div>
     )

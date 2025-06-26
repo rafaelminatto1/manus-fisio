@@ -9,6 +9,7 @@ import { SetupNotice } from '@/components/ui/setup-notice'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
 import { useAuth } from '@/hooks/use-auth'
 import { createClient } from '@/lib/auth'
 import { 
@@ -23,7 +24,8 @@ import {
   User,
   GraduationCap,
   Activity,
-  Plus
+  Plus,
+  BarChart3
 } from 'lucide-react'
 
 // Types for real data
@@ -110,6 +112,7 @@ export default function Dashboard() {
   const [events, setEvents] = useState<UpcomingEvent[]>(mockEvents)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAnalytics, setShowAnalytics] = useState(false)
 
   const supabase = createClient()
   const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -228,6 +231,34 @@ export default function Dashboard() {
 
   const completionRate = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0
 
+  // Prepare analytics data
+  const analyticsMetrics = {
+    projects_active: stats.projects,
+    tasks_pending: stats.totalTasks - stats.completedTasks,
+    team_productivity: Math.round((stats.completedTasks / Math.max(stats.totalTasks, 1)) * 100),
+    compliance_score: 98, // Mock compliance score
+    mentorship_progress: [
+      {
+        mentor_name: 'Dr. Rafael Santos',
+        mentee_name: 'Ana Silva',
+        progress: 85,
+        competencies: 12
+      },
+      {
+        mentor_name: 'Dra. Maria Costa',
+        mentee_name: 'João Oliveira',
+        progress: 72,
+        competencies: 8
+      },
+      {
+        mentor_name: 'Dr. Carlos Lima',
+        mentee_name: 'Sofia Ferreira',
+        progress: 91,
+        competencies: 15
+      }
+    ]
+  }
+
   return (
     <AuthGuard>
       <DashboardLayout>
@@ -235,18 +266,39 @@ export default function Dashboard() {
           <SetupNotice />
           
           {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Bem-vindo, {user?.full_name?.split(' ')[0] || 'Usuário'}!
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Aqui está um resumo das atividades da sua clínica de fisioterapia.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Bem-vindo, {user?.full_name?.split(' ')[0] || 'Usuário'}!
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Aqui está um resumo das atividades da sua clínica de fisioterapia.
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              variant={showAnalytics ? "default" : "outline"}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              {showAnalytics ? 'Ocultar Analytics' : 'Ver Analytics'}
+            </Button>
           </div>
 
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Analytics Dashboard - Conditional */}
+          {showAnalytics && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Analytics Avançado</h2>
+              </div>
+              <AnalyticsDashboard metrics={analyticsMetrics} />
             </div>
           )}
 
