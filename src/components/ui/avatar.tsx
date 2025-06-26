@@ -7,6 +7,10 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   fallback?: string
 }
 
+interface AvatarFallbackProps extends React.HTMLAttributes<HTMLDivElement> {
+  children?: React.ReactNode
+}
+
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ className, src, alt, fallback, ...props }, ref) => {
     return (
@@ -34,4 +38,21 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 )
 Avatar.displayName = "Avatar"
 
-export { Avatar }
+const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(
+  ({ className, children, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", className)}
+        {...props}
+      >
+        <span className="text-sm font-medium text-muted-foreground">
+          {children}
+        </span>
+      </div>
+    )
+  }
+)
+AvatarFallback.displayName = "AvatarFallback"
+
+export { Avatar, AvatarFallback }
