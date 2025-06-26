@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Allow access to static files and public resources
+  // Allow access to static files and public resources (sem autenticação)
   if (
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/api') ||
@@ -20,7 +20,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/sw.js') ||
     request.nextUrl.pathname.startsWith('/workbox-')
   ) {
-    return response
+    // Return without authentication check for static files
+    return NextResponse.next()
   }
 
   // Allow access to public routes (for testing and landing page)
@@ -131,6 +132,6 @@ export const config = {
     /*
      * Match all request paths except static files
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons).*)',
   ],
 } 

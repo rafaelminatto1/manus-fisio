@@ -169,7 +169,7 @@ export default function NotebooksPage() {
         .from('notebooks')
         .select(`
           *,
-          owner:users!notebooks_owner_id_fkey(full_name, email)
+          owner:users!notebooks_created_by_fkey(full_name)
         `)
         .order('updated_at', { ascending: false })
 
@@ -213,14 +213,14 @@ export default function NotebooksPage() {
         return
       }
 
-      // Modo real com Supabase
+      // Modo real com Supabase (corrigido para schema real)
       const notebookData = {
         title: template ? template.title : 'Novo Notebook',
         description: template ? template.description : '',
-        content: '',
-        template_type: template ? template.category : null,
-        page_count: 0,
-        owner_id: user.id,
+        icon: template ? template.icon : '📝',
+        color: template ? template.color : 'blue',
+        category: template ? template.category : 'Geral',
+        created_by: user.id,
         is_public: false
       }
 
@@ -295,14 +295,14 @@ export default function NotebooksPage() {
         return
       }
 
-      // Modo real com Supabase
+      // Modo real com Supabase (corrigido para schema real)
       const notebookData = {
         title: notebookTitle,
         description: notebookDescription,
-        content: editorContent,
-        template_type: 'custom',
-        page_count: Math.ceil(editorContent.length / 1000),
-        owner_id: user.id,
+        icon: '📝',
+        color: 'blue',
+        category: 'Personalizado',
+        created_by: user.id,
         is_public: false
       }
 

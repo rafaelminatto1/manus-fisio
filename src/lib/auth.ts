@@ -17,9 +17,8 @@ export type User = {
 // Get environment variables with defaults for development
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
 
-// Mock user for development
+// Mock user for development (only when credentials are missing)
 export const mockUser: User = {
   id: 'mock-user-123',
   email: 'admin@clinica.com',
@@ -32,9 +31,9 @@ export const mockUser: User = {
 
 // Client-side auth client
 export const createClient = () => {
-  // Se estivermos em modo mock ou sem credenciais, retorna um cliente mock
-  if (isMockMode || !supabaseUrl || !supabaseAnonKey) {
-    console.warn('🚧 Usando modo MOCK - Configure as credenciais Supabase para produção')
+  // Verificar se as credenciais estão disponíveis
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('🚧 Credenciais do Supabase não encontradas. Usando modo mock.')
     
     // Cliente mock básico para desenvolvimento
     return {
@@ -77,9 +76,14 @@ export const createClient = () => {
       from: () => ({
         select: () => ({
           eq: () => ({
-            single: () => Promise.resolve({ data: mockUser, error: null })
-          })
-        })
+            single: () => Promise.resolve({ data: mockUser, error: null }),
+            order: () => Promise.resolve({ data: [mockUser], error: null })
+          }),
+          order: () => Promise.resolve({ data: [mockUser], error: null })
+        }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => Promise.resolve({ data: null, error: null }),
+        delete: () => Promise.resolve({ data: null, error: null })
       })
     } as any
   }
@@ -89,6 +93,16 @@ export const createClient = () => {
     supabaseUrl!,
     supabaseAnonKey!
   )
+}
+
+// Função para verificar se está em modo mock
+export const isMockMode = () => {
+  return !supabaseUrl || !supabaseAnonKey || process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+}
+
+// Função para verificar se as credenciais estão configuradas
+export const hasSupabaseCredentials = () => {
+  return !!(supabaseUrl && supabaseAnonKey)
 }
 
 // Role checking utilities (client-side)

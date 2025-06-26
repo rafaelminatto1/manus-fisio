@@ -1,345 +1,359 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { createClient, isMockMode } from '@/lib/auth'
+import { useAuth } from '@/hooks/use-auth'
 import { 
   Bell, 
   X, 
-  AlertTriangle, 
-  Info, 
-  CheckCircle, 
+  Calendar, 
+  Users, 
+  FolderKanban, 
+  AlertTriangle,
+  CheckCircle,
   Clock,
-  User,
-  Calendar,
-  FileText,
-  Zap,
-  Brain,
-  Filter,
-  Settings,
-  Volume2,
-  VolumeX
+  MessageSquare,
+  BookOpen,
+  Stethoscope,
+  GraduationCap,
+  TrendingUp
 } from 'lucide-react'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
-interface SmartNotification {
+interface Notification {
   id: string
+  type: 'appointment' | 'supervision' | 'task' | 'system' | 'mentorship' | 'urgent' | 'reminder'
   title: string
   message: string
-  type: 'urgent' | 'important' | 'info' | 'success'
-  category: 'system' | 'mentorship' | 'deadline' | 'collaboration' | 'ai'
-  timestamp: Date
+  priority: 'low' | 'medium' | 'high' | 'urgent'
   read: boolean
-  priority: number
-  aiSuggestion?: string
-  actions?: Array<{
-    label: string
-    action: string
-    variant?: 'default' | 'outline' | 'destructive'
-  }>
+  created_at: string
+  action_url?: string
+  metadata?: Record<string, any>
 }
 
 interface SmartNotificationsProps {
-  isOpen: boolean
-  onClose: () => void
+  showAll?: boolean
+  maxVisible?: number
+  className?: string
 }
 
-export function SmartNotifications({ isOpen, onClose }: SmartNotificationsProps) {
-  const [notifications, setNotifications] = useState<SmartNotification[]>([
-    {
-      id: '1',
-      title: 'Supervisão Urgente Pendente',
-      message: 'João Silva precisa de supervisão para o protocolo de TMJ. Prazo: hoje 16:00',
-      type: 'urgent',
-      category: 'mentorship',
-      timestamp: new Date(Date.now() - 1800000), // 30 min ago
-      read: false,
-      priority: 10,
-      aiSuggestion: 'Recomendo reagendar para amanhã 14:00 baseado na disponibilidade',
-      actions: [
-        { label: 'Agendar Agora', action: 'schedule', variant: 'default' },
-        { label: 'Reagendar', action: 'reschedule', variant: 'outline' }
-      ]
-    },
-    {
-      id: '2',
-      title: 'IA: Padrão Detectado',
-      message: 'Identifiquei que 3 estagiários têm dificuldades similares em avaliação postural',
-      type: 'important',
-      category: 'ai',
-      timestamp: new Date(Date.now() - 3600000), // 1h ago
-      read: false,
-      priority: 8,
-      aiSuggestion: 'Sugiro criar um workshop sobre avaliação postural para a equipe',
-      actions: [
-        { label: 'Criar Workshop', action: 'create-workshop', variant: 'default' },
-        { label: 'Ver Detalhes', action: 'view-details', variant: 'outline' }
-      ]
-    },
-    {
-      id: '3',
-      title: 'Relatório LGPD Disponível',
-      message: 'Relatório mensal de conformidade LGPD foi gerado automaticamente',
-      type: 'info',
-      category: 'system',
-      timestamp: new Date(Date.now() - 7200000), // 2h ago
-      read: false,
-      priority: 5,
-      actions: [
-        { label: 'Visualizar', action: 'view-report', variant: 'outline' }
-      ]
-    },
-    {
-      id: '4',
-      title: 'Meta de Produtividade Atingida',
-      message: 'Parabéns! A equipe atingiu 95% da meta mensal de produtividade',
-      type: 'success',
-      category: 'system',
-      timestamp: new Date(Date.now() - 10800000), // 3h ago
-      read: true,
-      priority: 3
-    }
-  ])
+// Mock notifications for development
+const mockNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'supervision',
+    title: 'Supervisão Agendada',
+    message: 'Supervisão com Maria Silva agendada para hoje às 14:00',
+    priority: 'high',
+    read: false,
+    created_at: new Date().toISOString(),
+    action_url: '/calendar',
+    metadata: { intern_name: 'Maria Silva', time: '14:00' }
+  },
+  {
+    id: '2',
+    type: 'task',
+    title: 'Tarefa Atrasada',
+    message: 'Protocolo de exercícios está 2 dias atrasado',
+    priority: 'urgent',
+    read: false,
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    action_url: '/projects',
+    metadata: { project_name: 'Protocolo COVID-19', days_overdue: 2 }
+  },
+  {
+    id: '3',
+    type: 'mentorship',
+    title: 'Avaliação Pendente',
+    message: 'Pedro Alves completou 350h - Avaliação necessária',
+    priority: 'medium',
+    read: false,
+    created_at: new Date(Date.now() - 7200000).toISOString(),
+    action_url: '/team',
+    metadata: { intern_name: 'Pedro Alves', hours_completed: 350 }
+  },
+  {
+    id: '4',
+    type: 'appointment',
+    title: 'Nova Consulta',
+    message: 'João Silva agendou consulta para amanhã',
+    priority: 'medium',
+    read: true,
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    action_url: '/calendar',
+    metadata: { patient_name: 'João Silva' }
+  },
+  {
+    id: '5',
+    type: 'system',
+    title: 'Backup Concluído',
+    message: 'Backup automático dos dados foi realizado com sucesso',
+    priority: 'low',
+    read: true,
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+    metadata: { backup_size: '2.3GB' }
+  }
+]
 
-  const [filter, setFilter] = useState<'all' | 'unread' | 'urgent'>('all')
-  const [soundEnabled, setSoundEnabled] = useState(true)
+export function SmartNotifications({ 
+  showAll = false, 
+  maxVisible = 5, 
+  className = '' 
+}: SmartNotificationsProps) {
+  const { user } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const [loading, setLoading] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
-  // Simulate real-time notifications
+  const supabase = createClient()
+  const isUsingMock = isMockMode()
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7) { // 30% chance every 10 seconds
-        addRandomNotification()
-      }
-    }, 10000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  const addRandomNotification = () => {
-    const randomNotifications = [
-      {
-        title: 'Nova Colaboração',
-        message: 'Ana Silva comentou no seu protocolo de reabilitação',
-        type: 'info' as const,
-        category: 'collaboration' as const,
-        priority: 6
-      },
-      {
-        title: 'Lembrete de Prazo',
-        message: 'Relatório de supervisão de Maria Costa vence em 2 dias',
-        type: 'important' as const,
-        category: 'deadline' as const,
-        priority: 7
-      },
-      {
-        title: 'IA: Sugestão de Melhoria',
-        message: 'Detectei oportunidade de otimização no protocolo de joelho',
-        type: 'info' as const,
-        category: 'ai' as const,
-        priority: 6,
-        aiSuggestion: 'Baseado nos dados, sugiro adicionar exercícios de propriocepção'
-      }
-    ]
-
-    const randomNotif = randomNotifications[Math.floor(Math.random() * randomNotifications.length)]
-    
-    const newNotification: SmartNotification = {
-      id: Date.now().toString(),
-      ...randomNotif,
-      timestamp: new Date(),
-      read: false,
-      actions: [
-        { label: 'Ver Detalhes', action: 'view', variant: 'outline' }
-      ]
+    if (!isUsingMock && user) {
+      loadNotifications()
+      subscribeToNotifications()
+    } else {
+      setNotifications(mockNotifications)
     }
+  }, [user, isUsingMock])
 
-    setNotifications(prev => [newNotification, ...prev].slice(0, 10))
+  useEffect(() => {
+    const unread = notifications.filter(n => !n.read).length
+    setUnreadCount(unread)
+  }, [notifications])
+
+  const loadNotifications = async () => {
+    if (isUsingMock) return
     
-    if (soundEnabled) {
-      // Play notification sound (simplified)
-      console.log('🔔 Nova notificação!')
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(showAll ? 100 : maxVisible)
+
+      if (error) throw error
+      setNotifications(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ))
+  const subscribeToNotifications = useCallback(() => {
+    if (isUsingMock || !user) return
+
+    const subscription = supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newNotification = payload.new as Notification
+          setNotifications(prev => [newNotification, ...prev])
+          
+          // Mostrar notificação do browser se permitido
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(newNotification.title, {
+              body: newNotification.message,
+              icon: '/favicon.ico'
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user, isUsingMock])
+
+  const markAsRead = async (notificationId: string) => {
+    // Atualizar estado local imediatamente
+    setNotifications(prev => 
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    )
+
+    if (!isUsingMock) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('id', notificationId)
+      } catch (error) {
+        console.error('Erro ao marcar notificação como lida:', error)
+      }
+    }
   }
 
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
+  const markAllAsRead = async () => {
+    // Atualizar estado local imediatamente
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+
+    if (!isUsingMock) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('user_id', user?.id)
+          .eq('read', false)
+      } catch (error) {
+        console.error('Erro ao marcar todas as notificações como lidas:', error)
+      }
+    }
   }
 
-  const handleAction = (notificationId: string, action: string) => {
-    console.log(`Action: ${action} for notification: ${notificationId}`)
-    markAsRead(notificationId)
-    
-    // Simulate action feedback
-    switch (action) {
-      case 'schedule':
-        alert('Supervisão agendada com sucesso!')
-        break
-      case 'create-workshop':
-        alert('Workshop criado! Convites enviados para a equipe.')
-        break
-      case 'view-report':
-        alert('Abrindo relatório LGPD...')
-        break
+  const deleteNotification = async (notificationId: string) => {
+    // Atualizar estado local imediatamente
+    setNotifications(prev => prev.filter(n => n.id !== notificationId))
+
+    if (!isUsingMock) {
+      try {
+        await supabase
+          .from('notifications')
+          .delete()
+          .eq('id', notificationId)
+      } catch (error) {
+        console.error('Erro ao deletar notificação:', error)
+      }
+    }
+  }
+
+  const getNotificationIcon = (type: Notification['type']) => {
+    switch (type) {
+      case 'appointment':
+        return <Calendar className="h-4 w-4" />
+      case 'supervision':
+        return <GraduationCap className="h-4 w-4" />
+      case 'task':
+        return <FolderKanban className="h-4 w-4" />
+      case 'mentorship':
+        return <Users className="h-4 w-4" />
+      case 'urgent':
+        return <AlertTriangle className="h-4 w-4" />
+      case 'reminder':
+        return <Clock className="h-4 w-4" />
+      case 'system':
+        return <CheckCircle className="h-4 w-4" />
       default:
-        alert(`Ação "${action}" executada!`)
+        return <Bell className="h-4 w-4" />
     }
   }
 
-  const getNotificationIcon = (type: string, category: string) => {
-    if (category === 'ai') return <Brain className="h-4 w-4" />
-    
-    switch (type) {
-      case 'urgent': return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'important': return <Clock className="h-4 w-4 text-orange-500" />
-      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />
-      default: return <Info className="h-4 w-4 text-blue-500" />
+  const getPriorityColor = (priority: Notification['priority']) => {
+    switch (priority) {
+      case 'urgent':
+        return 'bg-red-500'
+      case 'high':
+        return 'bg-orange-500'
+      case 'medium':
+        return 'bg-blue-500'
+      case 'low':
+        return 'bg-green-500'
+      default:
+        return 'bg-gray-500'
     }
   }
 
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case 'urgent': return 'border-l-red-500 bg-red-50 dark:bg-red-950'
-      case 'important': return 'border-l-orange-500 bg-orange-50 dark:bg-orange-950'
-      case 'success': return 'border-l-green-500 bg-green-50 dark:bg-green-950'
-      default: return 'border-l-blue-500 bg-blue-50 dark:bg-blue-950'
-    }
+  const visibleNotifications = showAll 
+    ? notifications 
+    : notifications.slice(0, maxVisible)
+
+  if (loading) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notificações
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">Carregando...</div>
+        </CardContent>
+      </Card>
+    )
   }
-
-  const filteredNotifications = notifications
-    .filter(n => {
-      switch (filter) {
-        case 'unread': return !n.read
-        case 'urgent': return n.type === 'urgent'
-        default: return true
-      }
-    })
-    .sort((a, b) => b.priority - a.priority)
-
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
-      <div className="flex items-start justify-center min-h-screen p-4 pt-20">
-        <Card 
-          className="w-full max-w-2xl max-h-[80vh] overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                Notificações Inteligentes
-                {unreadCount > 0 && (
-                  <Badge variant="destructive">{unreadCount}</Badge>
-                )}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                >
-                  {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* Filters */}
-            <div className="flex items-center gap-2 mt-4">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Button
-                variant={filter === 'all' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter('all')}
+    <Card className={className}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notificações
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {unreadCount}
+              </Badge>
+            )}
+          </CardTitle>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={markAllAsRead}
+            >
+              Marcar todas como lidas
+            </Button>
+          )}
+        </div>
+        <CardDescription>
+          Notificações inteligentes para fisioterapia
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        {visibleNotifications.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhuma notificação no momento</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {visibleNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-3 rounded-lg border transition-colors ${
+                  notification.read 
+                    ? 'bg-background border-border opacity-60' 
+                    : 'bg-muted border-blue-200'
+                }`}
               >
-                Todas ({notifications.length})
-              </Button>
-              <Button
-                variant={filter === 'unread' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter('unread')}
-              >
-                Não lidas ({unreadCount})
-              </Button>
-              <Button
-                variant={filter === 'urgent' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter('urgent')}
-              >
-                Urgentes ({notifications.filter(n => n.type === 'urgent').length})
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0 overflow-y-auto max-h-96">
-            <div className="space-y-1">
-              {filteredNotifications.length > 0 ? (
-                filteredNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 border-l-4 ${getNotificationColor(notification.type)} ${
-                      !notification.read ? 'opacity-100' : 'opacity-60'
-                    } hover:opacity-100 transition-opacity`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="mt-1">
-                          {getNotificationIcon(notification.type, notification.category)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-sm font-medium">{notification.title}</h4>
-                            <Badge variant="outline" className="text-xs">
-                              {notification.category}
-                            </Badge>
-                            {notification.category === 'ai' && <Zap className="h-3 w-3 text-yellow-500" />}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {notification.message}
-                          </p>
-                          
-                          {notification.aiSuggestion && (
-                            <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2 mb-2">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Brain className="h-3 w-3 text-yellow-600" />
-                                <span className="text-xs font-medium text-yellow-700 dark:text-yellow-300">
-                                  Sugestão da IA
-                                </span>
-                              </div>
-                              <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                                {notification.aiSuggestion}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {notification.actions && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {notification.actions.map((action, index) => (
-                                <Button
-                                  key={index}
-                                  variant={action.variant || 'outline'}
-                                  size="sm"
-                                  className="text-xs h-6"
-                                  onClick={() => handleAction(notification.id, action.action)}
-                                >
-                                  {action.label}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
-                          
-                          <p className="text-xs text-muted-foreground">
-                            {notification.timestamp.toLocaleString('pt-BR')}
-                          </p>
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-full text-white ${getPriorityColor(notification.priority)}`}>
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium text-sm">
+                          {notification.title}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {notification.message}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {notification.type}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(notification.created_at), 'PPp', { locale: ptBR })}
+                          </span>
                         </div>
                       </div>
                       
@@ -356,38 +370,73 @@ export function SmartNotifications({ isOpen, onClose }: SmartNotificationsProps)
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeNotification(notification.id)}
+                          onClick={() => deleteNotification(notification.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Nenhuma notificação encontrada</p>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {!showAll && notifications.length > maxVisible && (
+          <div className="text-center mt-4">
+            <Button variant="outline" size="sm">
+              Ver todas ({notifications.length - maxVisible} mais)
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
-// Hook para gerenciar notificações inteligentes
+// Hook para gerenciar notificações
 export function useSmartNotifications() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(3) // Mock count
+  const { user } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    const unread = notifications.filter(n => !n.read).length
+    setUnreadCount(unread)
+  }, [notifications])
+
+  const addNotification = (notification: Omit<Notification, 'id' | 'created_at'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString()
+    }
+    
+    setNotifications(prev => [newNotification, ...prev])
+    
+    // Mostrar notificação do browser se permitido
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(newNotification.title, {
+        body: newNotification.message,
+        icon: '/favicon.ico'
+      })
+    }
+  }
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission()
+      return permission === 'granted'
+    }
+    return false
+  }
 
   return {
-    isOpen,
+    notifications,
     unreadCount,
-    openNotifications: () => setIsOpen(true),
-    closeNotifications: () => setIsOpen(false),
-    toggleNotifications: () => setIsOpen(prev => !prev)
+    addNotification,
+    requestNotificationPermission,
+    setNotifications
   }
 } 

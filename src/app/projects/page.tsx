@@ -6,42 +6,60 @@ import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/use-auth'
 import { createClient } from '@/lib/auth'
 import { 
+  FolderKanban, 
   Plus, 
-  Filter, 
-  Search, 
-  Calendar, 
-  Users, 
+  Calendar,
   Clock,
+  Users,
   Target,
-  MoreVertical,
-  CheckCircle2,
+  TrendingUp,
+  BarChart3,
+  CheckCircle,
   AlertCircle,
-  Pause,
+  User,
+  Edit,
+  Filter,
+  Search,
+  MoreVertical,
   Play,
-  FileText
+  Pause,
+  Archive,
+  Download
 } from 'lucide-react'
+import { format, differenceInDays, parseISO, isAfter, isBefore } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core'
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
-// Types for real data
+// Interfaces expandidas
 interface Project {
   id: string
   title: string
   description?: string
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  owner_id: string
   due_date?: string
-  start_date?: string
   progress: number
+  budget?: number
+  category: 'clinical' | 'research' | 'education' | 'administrative'
+  created_by: string
   created_at: string
   updated_at: string
-  owner?: {
-    full_name: string
-  }
-  tasks_count?: number
-  completed_tasks_count?: number
+  owner?: TeamMember
+  collaborators?: ProjectCollaborator[]
+  tasks?: Task[]
+  tags?: string[]
 }
 
 interface Task {
@@ -49,169 +67,275 @@ interface Task {
   project_id: string
   title: string
   description?: string
-  status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
+  status: 'todo' | 'in_progress' | 'review' | 'done'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  assignee_id?: string
+  assigned_to?: string
   due_date?: string
+  estimated_hours?: number
+  actual_hours: number
+  order_index: number
+  dependencies?: string[]
+  checklist?: ChecklistItem[]
+  attachments?: Attachment[]
   created_by: string
   created_at: string
   updated_at: string
+  assignee?: TeamMember
 }
 
-// Mock data fallback
+interface ChecklistItem {
+  id: string
+  text: string
+  completed: boolean
+}
+
+interface Attachment {
+  id: string
+  name: string
+  url: string
+  type: string
+  size: number
+}
+
+interface TeamMember {
+  id: string
+  full_name: string
+  email: string
+  role: string
+  avatar_url?: string
+}
+
+interface ProjectCollaborator {
+  project_id: string
+  user_id: string
+  permission: 'read' | 'write' | 'admin'
+  user?: TeamMember
+}
+
+interface ProjectStats {
+  total_projects: number
+  active_projects: number
+  completed_this_month: number
+  overdue_projects: number
+  team_productivity: number
+  average_completion_time: number
+}
+
+// Mock data expandido
 const mockProjects: Project[] = [
   {
     id: '1',
-    title: 'Reabilitação Pós-Cirúrgica - João Silva',
-    description: 'Protocolo de reabilitação após cirurgia de LCA',
+    title: 'Protocolo de Reabilitação Pós-COVID',
+    description: 'Desenvolvimento de protocolo específico para pacientes em recuperação de COVID-19',
     status: 'active',
     priority: 'high',
-    owner_id: 'mock-user',
-    due_date: '2024-02-15',
-    start_date: '2024-01-10',
-    progress: 58,
-    created_at: '2024-01-10T10:00:00Z',
-    updated_at: '2024-01-15T14:30:00Z',
-    owner: { full_name: 'Dr. Rafael Santos' },
-    tasks_count: 12,
-    completed_tasks_count: 7
+    due_date: '2024-03-15',
+    progress: 65,
+    budget: 15000,
+    category: 'clinical',
+    created_by: '1',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-20T00:00:00Z',
+    tags: ['covid', 'reabilitação', 'protocolo'],
+    owner: {
+      id: '1',
+      full_name: 'Dr. Rafael Minatto',
+      email: 'rafael.minatto@yahoo.com.br',
+      role: 'admin'
+    }
   },
   {
     id: '2',
-    title: 'Fisioterapia Neurológica - Ana Costa',
-    description: 'Tratamento para hemiplegia pós-AVC',
+    title: 'Estudo de Caso - Fisioterapia Respiratória',
+    description: 'Análise de casos clínicos para desenvolvimento de metodologia',
     status: 'planning',
     priority: 'medium',
-    owner_id: 'mock-user',
-    due_date: '2024-02-28',
-    start_date: '2024-01-15',
+    due_date: '2024-04-30',
     progress: 25,
-    created_at: '2024-01-08T09:15:00Z',
-    updated_at: '2024-01-14T16:45:00Z',
-    owner: { full_name: 'Dra. Ana Silva' },
-    tasks_count: 8,
-    completed_tasks_count: 2
+    budget: 8000,
+    category: 'research',
+    created_by: '2',
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-25T00:00:00Z',
+    tags: ['pesquisa', 'respiratória'],
+    owner: {
+      id: '2',
+      full_name: 'Dra. Ana Silva',
+      email: 'ana.silva@clinica.com',
+      role: 'mentor'
+    }
   }
 ]
 
-const statusConfig = {
-  planning: { label: 'Planejamento', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200', icon: Clock },
-  active: { label: 'Ativo', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: Play },
-  on_hold: { label: 'Em Espera', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: Pause },
-  completed: { label: 'Concluído', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: CheckCircle2 },
-  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: AlertCircle }
+const mockTasks: Task[] = [
+  {
+    id: '1',
+    project_id: '1',
+    title: 'Revisão bibliográfica sobre COVID-19',
+    description: 'Pesquisar artigos científicos mais recentes sobre reabilitação pós-COVID',
+    status: 'done',
+    priority: 'high',
+    assigned_to: '3',
+    due_date: '2024-01-30',
+    estimated_hours: 20,
+    actual_hours: 18,
+    order_index: 0,
+    checklist: [
+      { id: '1', text: 'Buscar artigos PubMed', completed: true },
+      { id: '2', text: 'Analisar 50 artigos', completed: true },
+      { id: '3', text: 'Criar resumo executivo', completed: false }
+    ],
+    created_by: '1',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-25T00:00:00Z',
+    assignee: {
+      id: '3',
+      full_name: 'Maria Santos',
+      email: 'maria.santos@univ.edu',
+      role: 'intern'
+    }
+  },
+  {
+    id: '2',
+    project_id: '1',
+    title: 'Elaborar protocolo de exercícios',
+    description: 'Desenvolver sequência de exercícios específicos para reabilitação pulmonar',
+    status: 'in_progress',
+    priority: 'high',
+    assigned_to: '1',
+    due_date: '2024-02-15',
+    estimated_hours: 40,
+    actual_hours: 25,
+    order_index: 1,
+    dependencies: ['1'],
+    created_by: '1',
+    created_at: '2024-01-10T00:00:00Z',
+    updated_at: '2024-01-30T00:00:00Z',
+    assignee: {
+      id: '1',
+      full_name: 'Dr. Rafael Minatto',
+      email: 'rafael.minatto@yahoo.com.br',
+      role: 'admin'
+    }
+  }
+]
+
+const mockStats: ProjectStats = {
+  total_projects: 12,
+  active_projects: 6,
+  completed_this_month: 3,
+  overdue_projects: 2,
+  team_productivity: 87.5,
+  average_completion_time: 21
 }
 
-const priorityConfig = {
-  low: { label: 'Baixa', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  medium: { label: 'Média', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-  high: { label: 'Alta', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
-  urgent: { label: 'Urgente', color: 'bg-red-500 text-white' },
-}
+const columns = [
+  { id: 'todo', title: 'A Fazer', color: 'bg-slate-100 border-slate-300' },
+  { id: 'in_progress', title: 'Em Progresso', color: 'bg-blue-100 border-blue-300' },
+  { id: 'review', title: 'Em Revisão', color: 'bg-orange-100 border-orange-300' },
+  { id: 'done', title: 'Concluído', color: 'bg-green-100 border-green-300' }
+]
 
-function ProjectCard({ project }: { project: Project }) {
-  const statusInfo = statusConfig[project.status]
-  const priorityInfo = priorityConfig[project.priority]
-  const StatusIcon = statusInfo.icon
+// Componente Task Sortable
+function SortableTask({ task, onClick }: { task: Task; onClick: (task: Task) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id })
 
-  const completionRate = project.tasks_count && project.tasks_count > 0 
-    ? Math.round((project.completed_tasks_count || 0) / project.tasks_count * 100)
-    : 0
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const getPriorityColor = (priority: Task['priority']) => {
+    switch (priority) {
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border-red-200'
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border-orange-200'
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'low':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const isOverdue = task.due_date && isAfter(new Date(), new Date(task.due_date))
 
   return (
-    <Card className="hover:shadow-md transition-shadow mb-4">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusIcon className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="outline" className={statusInfo.color}>
-              {statusInfo.label}
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="p-3 bg-card border rounded-lg cursor-grab hover:shadow-md transition-shadow"
+      onClick={() => onClick(task)}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-medium line-clamp-2">{task.title}</h4>
+        <div className="flex gap-1">
+          <Badge className={getPriorityColor(task.priority)} variant="outline">
+            {task.priority}
+          </Badge>
+          {isOverdue && (
+            <Badge variant="destructive">
+              Atrasado
             </Badge>
-            <Badge variant="outline" className={priorityInfo.color}>
-              {priorityInfo.label}
-            </Badge>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          )}
         </div>
-        <CardTitle className="text-lg leading-tight">{project.title}</CardTitle>
-        {project.description && (
-          <CardDescription className="text-sm">
-            {project.description}
-          </CardDescription>
-        )}
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progresso</span>
-            <span>{completionRate}%</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all"
-              style={{ width: `${completionRate}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{project.completed_tasks_count || 0}/{project.tasks_count || 0} tarefas</span>
-            {project.due_date && (
-              <span>Vence em {new Date(project.due_date).toLocaleDateString('pt-BR')}</span>
-            )}
-          </div>
-        </div>
+      </div>
 
-        {/* Owner and dates */}
-        <div className="flex items-center justify-between text-sm">
+      {task.description && (
+        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+          {task.description}
+        </p>
+      )}
+
+      {task.checklist && task.checklist.length > 0 && (
+        <div className="mb-2">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              {project.owner?.full_name || 'Sem responsável'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
+            <CheckCircle className="h-3 w-3" />
             <span className="text-xs">
-              {new Date(project.updated_at).toLocaleDateString('pt-BR')}
+              {task.checklist.filter(item => item.completed).length}/{task.checklist.length}
             </span>
           </div>
+          <Progress 
+            value={(task.checklist.filter(item => item.completed).length / task.checklist.length) * 100} 
+            className="h-1 mt-1" 
+          />
         </div>
-      </CardContent>
-    </Card>
-  )
-}
+      )}
 
-function KanbanColumn({ title, projects, status }: { title: string, projects: Project[], status: string }) {
-  return (
-    <div className="flex-1 min-w-80">
-      <div className="bg-muted/50 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-foreground flex items-center gap-2">
-            {title}
-            <Badge variant="secondary" className="ml-2">
-              {projects.length}
-            </Badge>
-          </h3>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="space-y-3 min-h-96">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-          
-          {projects.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhum projeto</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {task.assignee && (
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-xs">
+                {task.assignee.full_name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          {task.estimated_hours && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {task.actual_hours}h/{task.estimated_hours}h
             </div>
           )}
         </div>
+
+        {task.due_date && (
+          <span className={`text-xs ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
+            {format(new Date(task.due_date), 'dd/MM')}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -220,247 +344,631 @@ function KanbanColumn({ title, projects, status }: { title: string, projects: Pr
 export default function ProjectsPage() {
   const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>(mockProjects)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [stats, setStats] = useState<ProjectStats>(mockStats)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'timeline'>('kanban')
+  const [showProjectForm, setShowProjectForm] = useState(false)
+  const [showTaskForm, setShowTaskForm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+
+  // Form states
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    description: '',
+    status: 'planning' as Project['status'],
+    priority: 'medium' as Project['priority'],
+    due_date: '',
+    category: 'clinical' as Project['category'],
+    budget: 0,
+    tags: [] as string[]
+  })
+
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    status: 'todo' as Task['status'],
+    priority: 'medium' as Task['priority'],
+    assigned_to: '',
+    due_date: '',
+    estimated_hours: 0,
+    project_id: ''
+  })
 
   const supabase = createClient()
-  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
 
   useEffect(() => {
-    if (isMockMode || !user) {
-      setLoading(false)
-      return
+    if (!isMockMode) {
+      loadProjectsData()
+      loadStats()
     }
+  }, [])
 
-    loadProjects()
-  }, [user, isMockMode])
-
-  const loadProjects = async () => {
+  const loadProjectsData = async () => {
     try {
       setLoading(true)
-      setError(null)
-
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
-          id,
-          title,
-          description,
-          status,
-          priority,
-          owner_id,
-          due_date,
-          start_date,
-          progress,
-          created_at,
-          updated_at,
-          owner:owner_id (
-            full_name
-          )
+          *,
+          owner:users!projects_created_by_fkey(full_name, role)
         `)
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
-      if (projectsError) {
-        throw projectsError
-      }
+      if (projectsError) throw projectsError
 
-      // Get task counts for each project
-      const projectsWithCounts = await Promise.all(
-        (projectsData || []).map(async (project) => {
-          const [totalTasks, completedTasks] = await Promise.all([
-            supabase.from('tasks').select('id', { count: 'exact' }).eq('project_id', project.id),
-            supabase.from('tasks').select('id', { count: 'exact' }).eq('project_id', project.id).eq('status', 'done')
-          ])
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assignee:assigned_to(full_name, email, role)
+        `)
+        .order('order_index', { ascending: true })
 
-          return {
-            ...project,
-            tasks_count: totalTasks.count || 0,
-            completed_tasks_count: completedTasks.count || 0
-          }
-        })
-      )
+      if (tasksError) throw tasksError
 
-      setProjects(projectsWithCounts)
-
-    } catch (err) {
-      console.error('Error loading projects:', err)
-      setError('Erro ao carregar projetos')
-      // Fallback to mock data on error
-      setProjects(mockProjects)
+      setProjects(projectsData || [])
+      setTasks(tasksData || [])
+    } catch (error) {
+      console.error('Erro ao carregar projetos:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const createProject = async () => {
-    if (isMockMode) {
-      alert('Funcionalidade disponível com dados reais do Supabase')
-      return
-    }
-
+  const loadStats = async () => {
     try {
-      const newProject = {
-        title: 'Novo Projeto',
-        description: 'Descrição do projeto',
-        status: 'planning' as const,
-        priority: 'medium' as const,
-        owner_id: user?.id,
-        progress: 0
-      }
-
       const { data, error } = await supabase
-        .from('projects')
-        .insert([newProject])
-        .select()
-        .single()
+        .rpc('get_project_stats')
 
       if (error) throw error
-
-      // Reload projects
-      loadProjects()
-
-      console.log('Project created:', data)
-      
-    } catch (err) {
-      console.error('Error creating project:', err)
-      setError('Erro ao criar projeto')
+      setStats(data || mockStats)
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error)
     }
   }
 
-  const filteredProjects = projects.filter(project =>
-    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const createProject = async () => {
+    try {
+      if (!projectForm.title) return
+
+      const newProject: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'progress'> = {
+        ...projectForm,
+        created_by: user?.id || 'mock-user'
+      }
+
+      if (isMockMode) {
+        const mockProject: Project = {
+          ...newProject,
+          id: Date.now().toString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          progress: 0
+        }
+        setProjects(prev => [mockProject, ...prev])
+      } else {
+        const { data, error } = await supabase
+          .from('projects')
+          .insert([newProject])
+          .select()
+          .single()
+
+        if (error) throw error
+        setProjects(prev => [data, ...prev])
+      }
+
+      setShowProjectForm(false)
+      resetProjectForm()
+      if (!isMockMode) loadStats()
+    } catch (error) {
+      console.error('Erro ao criar projeto:', error)
+    }
+  }
+
+  const createTask = async () => {
+    try {
+      if (!taskForm.title || !taskForm.project_id) return
+
+      const newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
+        ...taskForm,
+        actual_hours: 0,
+        order_index: tasks.filter(t => t.status === taskForm.status).length,
+        created_by: user?.id || 'mock-user'
+      }
+
+      if (isMockMode) {
+        const mockTask: Task = {
+          ...newTask,
+          id: Date.now().toString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        setTasks(prev => [...prev, mockTask])
+      } else {
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert([newTask])
+          .select()
+          .single()
+
+        if (error) throw error
+        setTasks(prev => [...prev, data])
+      }
+
+      setShowTaskForm(false)
+      resetTaskForm()
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error)
+    }
+  }
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = tasks.find(t => t.id === event.active.id)
+    setDraggedTask(task || null)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over || !draggedTask) return
+
+    const newStatus = over.id as Task['status']
+    
+    if (draggedTask.status !== newStatus) {
+      setTasks(prev => prev.map(task => 
+        task.id === active.id 
+          ? { ...task, status: newStatus, updated_at: new Date().toISOString() }
+          : task
+      ))
+
+      // Update in database if not mock mode
+      if (!isMockMode) {
+        supabase
+          .from('tasks')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', active.id)
+          .then(() => loadStats())
+      }
+    }
+
+    setDraggedTask(null)
+  }
+
+  const resetProjectForm = () => {
+    setProjectForm({
+      title: '',
+      description: '',
+      status: 'planning',
+      priority: 'medium',
+      due_date: '',
+      category: 'clinical',
+      budget: 0,
+      tags: []
+    })
+  }
+
+  const resetTaskForm = () => {
+    setTaskForm({
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      assigned_to: '',
+      due_date: '',
+      estimated_hours: 0,
+      project_id: ''
+    })
+  }
+
+  const getProjectProgress = (projectId: string) => {
+    const projectTasks = tasks.filter(t => t.project_id === projectId)
+    if (projectTasks.length === 0) return 0
+    const completedTasks = projectTasks.filter(t => t.status === 'done').length
+    return Math.round((completedTasks / projectTasks.length) * 100)
+  }
+
+  const getStatusColor = (status: Project['status']) => {
+    switch (status) {
+      case 'planning':
+        return 'bg-gray-100 text-gray-800'
+      case 'active':
+        return 'bg-blue-100 text-blue-800'
+      case 'on_hold':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'completed':
+        return 'bg-green-100 text-green-800'
+      case 'cancelled':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriorityColor = (priority: Project['priority']) => {
+    switch (priority) {
+      case 'urgent':
+        return 'bg-red-500'
+      case 'high':
+        return 'bg-orange-500'
+      case 'medium':
+        return 'bg-yellow-500'
+      case 'low':
+        return 'bg-blue-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
+  const isProjectOverdue = (project: Project) => {
+    return project.due_date && isAfter(new Date(), new Date(project.due_date)) && project.status !== 'completed'
+  }
+
+  const renderStatsCards = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Projetos</p>
+              <p className="text-2xl font-bold">{stats.total_projects}</p>
+            </div>
+            <FolderKanban className="h-8 w-8 text-blue-500" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Projetos Ativos</p>
+              <p className="text-2xl font-bold">{stats.active_projects}</p>
+            </div>
+            <Play className="h-8 w-8 text-green-500" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Concluídos/Mês</p>
+              <p className="text-2xl font-bold">{stats.completed_this_month}</p>
+            </div>
+            <CheckCircle className="h-8 w-8 text-emerald-500" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Em Atraso</p>
+              <p className="text-2xl font-bold">{stats.overdue_projects}</p>
+            </div>
+            <AlertCircle className="h-8 w-8 text-red-500" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Produtividade</p>
+              <p className="text-2xl font-bold">{stats.team_productivity}%</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-purple-500" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
+              <p className="text-2xl font-bold">{stats.average_completion_time}d</p>
+            </div>
+            <Clock className="h-8 w-8 text-orange-500" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 
-  const projectsByStatus = {
-    planning: filteredProjects.filter(p => p.status === 'planning'),
-    active: filteredProjects.filter(p => p.status === 'active'),
-    on_hold: filteredProjects.filter(p => p.status === 'on_hold'),
-    completed: filteredProjects.filter(p => p.status === 'completed'),
-  }
-
-  if (loading) {
-    return (
-      <AuthGuard>
-        <DashboardLayout>
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Projetos</h1>
-                <p className="text-muted-foreground mt-2">
-                  Gerencie projetos e acompanhe o progresso da equipe
-                </p>
+  const renderKanbanView = () => (
+    <DndContext 
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      collisionDetection={closestCorners}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {columns.map(column => {
+          const columnTasks = tasks.filter(task => task.status === column.id)
+          
+          return (
+            <div key={column.id} className={`rounded-lg border-2 border-dashed p-4 ${column.color}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">{column.title}</h3>
+                <Badge variant="secondary">{columnTasks.length}</Badge>
               </div>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-muted/50 rounded-lg p-4 animate-pulse">
-                  <div className="h-4 bg-muted rounded mb-4" />
-                  <div className="space-y-3">
-                    <div className="h-20 bg-muted rounded" />
-                    <div className="h-20 bg-muted rounded" />
-                  </div>
+              
+              <SortableContext 
+                items={columnTasks.map(task => task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {columnTasks.map(task => (
+                    <SortableTask 
+                      key={task.id} 
+                      task={task} 
+                      onClick={setSelectedTask}
+                    />
+                  ))}
                 </div>
-              ))}
+              </SortableContext>
             </div>
+          )
+        })}
+      </div>
+      
+      <DragOverlay>
+        {draggedTask && (
+          <div className="p-3 bg-card border rounded-lg shadow-lg opacity-90">
+            <h4 className="text-sm font-medium">{draggedTask.title}</h4>
           </div>
-        </DashboardLayout>
-      </AuthGuard>
-    )
-  }
+        )}
+      </DragOverlay>
+    </DndContext>
+  )
+
+  const renderProjectCard = (project: Project) => (
+    <Card key={project.id} className="hover:shadow-md transition-shadow cursor-pointer" 
+          onClick={() => setSelectedProject(project)}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full ${getPriorityColor(project.priority)}`} />
+              <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
+              {isProjectOverdue(project) && (
+                <Badge variant="destructive">Atrasado</Badge>
+              )}
+            </div>
+            <CardDescription className="line-clamp-2">
+              {project.description}
+            </CardDescription>
+          </div>
+          <Badge className={getStatusColor(project.status)}>
+            {project.status}
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Progresso</span>
+            <span>{getProjectProgress(project.id)}%</span>
+          </div>
+          <Progress value={getProjectProgress(project.id)} className="h-2" />
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>{tasks.filter(t => t.project_id === project.id).length} tarefas</span>
+          </div>
+          {project.due_date && (
+            <div className={`flex items-center gap-1 ${isProjectOverdue(project) ? 'text-red-600' : 'text-muted-foreground'}`}>
+              <Calendar className="h-4 w-4" />
+              {format(new Date(project.due_date), 'dd/MM/yyyy')}
+            </div>
+          )}
+        </div>
+
+        {project.tags && project.tags.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {project.tags.slice(0, 3).map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {project.tags.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{project.tags.length - 3}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {project.owner && (
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-xs">
+                  {project.owner.full_name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {project.owner?.full_name}
+            </span>
+          </div>
+          
+          {project.budget && (
+            <span className="text-xs text-muted-foreground">
+              R$ {project.budget.toLocaleString()}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <AuthGuard>
       <DashboardLayout>
-        <div className="space-y-8">
+        <div className="flex-1 space-y-6 p-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Projetos</h1>
-              <p className="text-muted-foreground mt-2">
-                Gerencie projetos e acompanhe o progresso da equipe
+              <h2 className="text-3xl font-bold tracking-tight">Projetos</h2>
+              <p className="text-muted-foreground">
+                Gerencie projetos clínicos, pesquisas e iniciativas
               </p>
             </div>
-            
-            <div className="flex gap-2">
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
               </Button>
-              <Button onClick={createProject}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowProjectForm(true)}>
+                <Plus className="mr-2 h-4 w-4" />
                 Novo Projeto
               </Button>
             </div>
           </div>
 
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-destructive text-sm">{error}</p>
+          {/* Stats Cards */}
+          {renderStatsCards()}
+
+          {/* Main Content */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="kanban">Kanban</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              </TabsList>
+
+              <div className="flex items-center gap-2">
+                <Select>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Filtrar por..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="active">Ativos</SelectItem>
+                    <SelectItem value="completed">Concluídos</SelectItem>
+                    <SelectItem value="overdue">Em Atraso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
 
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar projetos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+            <TabsContent value="overview">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(renderProjectCard)}
+              </div>
+            </TabsContent>
 
-          {/* Kanban Board */}
-          <div className="flex gap-6 overflow-x-auto pb-6">
-            <KanbanColumn 
-              title="Planejamento" 
-              projects={projectsByStatus.planning} 
-              status="planning"
-            />
-            <KanbanColumn 
-              title="Ativo" 
-              projects={projectsByStatus.active} 
-              status="active"
-            />
-            <KanbanColumn 
-              title="Em Espera" 
-              projects={projectsByStatus.on_hold} 
-              status="on_hold"
-            />
-            <KanbanColumn 
-              title="Concluído" 
-              projects={projectsByStatus.completed} 
-              status="completed"
-            />
-          </div>
-
-          {/* Empty State */}
-          {filteredProjects.length === 0 && !loading && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  {searchTerm ? 'Nenhum projeto encontrado' : 'Nenhum projeto criado'}
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchTerm 
-                    ? 'Tente ajustar os termos de busca'
-                    : 'Crie seu primeiro projeto para começar a organizar o trabalho da equipe'
-                  }
-                </p>
-                {!searchTerm && (
-                  <Button onClick={createProject}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeiro Projeto
+            <TabsContent value="kanban">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Quadro Kanban</h3>
+                  <Button onClick={() => setShowTaskForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Tarefa
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                </div>
+                {renderKanbanView()}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="timeline">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Timeline dos Projetos</CardTitle>
+                  <CardDescription>Visualização temporal dos projetos e marcos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {projects
+                      .filter(p => p.due_date)
+                      .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+                      .map(project => (
+                        <div key={project.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                          <div className={`w-4 h-4 rounded-full ${getPriorityColor(project.priority)}`} />
+                          <div className="flex-1">
+                            <h4 className="font-medium">{project.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Prazo: {format(new Date(project.due_date!), 'PPP', { locale: ptBR })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={getStatusColor(project.status)}>
+                              {project.status}
+                            </Badge>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {getProjectProgress(project.id)}% concluído
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Distribuição por Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['planning', 'active', 'on_hold', 'completed', 'cancelled'].map(status => {
+                        const count = projects.filter(p => p.status === status).length
+                        const percentage = projects.length > 0 ? (count / projects.length) * 100 : 0
+                        return (
+                          <div key={status} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="capitalize">{status}</span>
+                              <span>{count} ({percentage.toFixed(1)}%)</span>
+                            </div>
+                            <Progress value={percentage} className="h-2" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Distribuição por Categoria</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['clinical', 'research', 'education', 'administrative'].map(category => {
+                        const count = projects.filter(p => p.category === category).length
+                        const percentage = projects.length > 0 ? (count / projects.length) * 100 : 0
+                        return (
+                          <div key={category} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="capitalize">{category}</span>
+                              <span>{count} ({percentage.toFixed(1)}%)</span>
+                            </div>
+                            <Progress value={percentage} className="h-2" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </DashboardLayout>
     </AuthGuard>

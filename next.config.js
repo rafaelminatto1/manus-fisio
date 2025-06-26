@@ -6,10 +6,14 @@ const nextConfig = {
   
   // Configuração de build
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['@radix-ui/react-icons'],
   },
   
   // Configuração de TypeScript e ESLint para produção
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hycudcwtuocmufhpsnmr.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Y3VkY3d0dW9jbXVmaHBzbm1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4ODk3NTEsImV4cCI6MjA2NjQ2NTc1MX0.PgNh5aomG9n_ABe6xHFyHiPMathWT4A94l_wOvewXzg'
+  },
   typescript: {
     // Temporariamente permitir erros até corrigir compatibilidade
     ignoreBuildErrors: true,
@@ -22,19 +26,11 @@ const nextConfig = {
   
   // Otimização de imagens
   images: {
-    domains: ['localhost', 'supabase.co'],
+    domains: ['images.unsplash.com', 'avatars.githubusercontent.com'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'hycudcwtuocmufahpsnmr.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
+        hostname: '**',
       },
     ],
     formats: ['image/avif', 'image/webp'],
@@ -57,7 +53,7 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            value: 'origin-when-cross-origin',
           },
           {
             key: 'Strict-Transport-Security',

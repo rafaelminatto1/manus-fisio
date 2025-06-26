@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient, mockUser } from '@/lib/auth'
+import { createClient, mockUser, isMockMode, hasSupabaseCredentials } from '@/lib/auth'
 import type { User } from '@/lib/auth'
 import type { Session } from '@supabase/supabase-js'
 
@@ -22,18 +22,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Verificar se as credenciais do Supabase estão configuradas
-  const hasSupabaseCredentials = !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-
-  const supabase = hasSupabaseCredentials ? createClient() : null
+  const supabase = createClient()
+  const isUsingMock = isMockMode()
 
   useEffect(() => {
-    // Se não tem credenciais do Supabase, usar modo mock
-    if (!hasSupabaseCredentials || !supabase) {
-      console.warn('⚠️ Credenciais do Supabase não encontradas. Usando modo mock.')
+    // Se não tem credenciais do Supabase ou está em modo mock, usar dados mock
+    if (isUsingMock) {
+      console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
       setUser(mockUser)
       setLoading(false)
       return
@@ -64,23 +59,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase, hasSupabaseCredentials])
+  }, [isUsingMock])
 
   const fetchUserProfile = async (userId: string) => {
-    if (!supabase) {
+    if (isUsingMock) {
       setUser(mockUser)
       setLoading(false)
       return
     }
 
     try {
-      // Se estivermos em modo mock, usa os dados mock
-      if (process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || userId === mockUser.id) {
-        setUser(mockUser)
-        setLoading(false)
-        return
-      }
-
       const { data: profile, error } = await supabase
         .from('users')
         .select('*')
@@ -89,15 +77,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error)
-        // Em caso de erro, usar dados mock como fallback
-        setUser(mockUser)
+        // Em caso de erro, usar dados mock como fallback apenas em dev
+        if (process.env.NODE_ENV === 'development') {
+          setUser(mockUser)
+        } else {
+          setUser(null)
+        }
       } else {
         setUser(profile as User)
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
-      // Em caso de erro, usar dados mock como fallback
-      setUser(mockUser)
+      // Em caso de erro, usar dados mock como fallback apenas em dev
+      if (process.env.NODE_ENV === 'development') {
+        setUser(mockUser)
+      } else {
+        setUser(null)
+      }
     } finally {
       setLoading(false)
     }
@@ -106,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true)
     
-    if (!supabase) {
+    if (isUsingMock) {
       // Modo mock - simular login
       if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
         setUser(mockUser)
@@ -121,9 +117,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     })
+    
     if (!error && session?.user) {
       await fetchUserProfile(session.user.id)
     }
+    
     setLoading(false)
     return { error }
   }
@@ -131,9 +129,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, userData?: any) => {
     setLoading(true)
     
-    if (!supabase) {
+    if (isUsingMock) {
       setLoading(false)
-      return { error: { message: 'Supabase não configurado' } }
+      return { error: { message: 'Cadastro não disponível no modo mock' } }
     }
 
     const { error } = await supabase.auth.signUp({
@@ -143,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: userData,
       },
     })
+    
     setLoading(false)
     return { error }
   }
@@ -150,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     setLoading(true)
     
-    if (supabase) {
+    if (!isUsingMock) {
       await supabase.auth.signOut()
     }
     
@@ -160,8 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetPassword = async (email: string) => {
-    if (!supabase) {
-      return { error: { message: 'Supabase não configurado' } }
+    if (isUsingMock) {
+      return { error: { message: 'Reset de senha não disponível no modo mock' } }
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email)
