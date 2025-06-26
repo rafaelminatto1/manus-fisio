@@ -8,6 +8,21 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Allow access to static files and public resources
+  if (
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.includes('.') || // Files with extensions (.json, .png, .ico, etc.)
+    request.nextUrl.pathname === '/manifest.json' ||
+    request.nextUrl.pathname.startsWith('/icons/') ||
+    request.nextUrl.pathname === '/favicon.ico' ||
+    request.nextUrl.pathname === '/favicon.svg' ||
+    request.nextUrl.pathname.startsWith('/sw.js') ||
+    request.nextUrl.pathname.startsWith('/workbox-')
+  ) {
+    return response
+  }
+
   // Get environment variables with fallbacks
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
@@ -83,7 +98,8 @@ export async function middleware(request: NextRequest) {
       '/projects', 
       '/team',
       '/calendar',
-      '/settings'
+      '/settings',
+      '/dashboard-pro'
     ]
 
     const isProtectedRoute = protectedRoutes.some(route => 
@@ -105,13 +121,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - api routes
+     * Match all request paths except static files
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 } 
