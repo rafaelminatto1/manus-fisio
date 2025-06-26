@@ -373,39 +373,62 @@ export default function TeamPage() {
   }, [user, isMockMode])
 
   const loadTeamData = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-      setError(null)
-
-      // Load team members
-      const { data: membersData, error: membersError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('is_active', true)
-        .order('role', { ascending: true })
-
-      if (membersError) throw membersError
-
-      // Load mentorships
-      const { data: mentorshipsData, error: mentorshipsError } = await supabase
-        .from('mentorships')
-        .select(`
-          *,
-          mentor:mentor_id (full_name, email),
-          intern:intern_id (full_name, email)
-        `)
-        .eq('status', 'active')
-
-      if (mentorshipsError) throw mentorshipsError
-
-      setTeamMembers(membersData || [])
-      setMentorships(mentorshipsData || [])
-
+      // Mock data simples para demonstração
+      const mockTeamData = [
+        {
+          id: '1',
+          full_name: 'Dr. Maria Santos',
+          email: 'maria.santos@clinic.com',
+          role: 'mentor' as const,
+          crefito: 'CREFITO-1 12345',
+          phone: '(11) 99999-0001',
+          specialty: 'Fisioterapia Neurológica',
+          is_active: true,
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01'
+        },
+        {
+          id: '2',
+          full_name: 'Dr. João Silva',
+          email: 'joao.silva@clinic.com',
+          role: 'mentor' as const,
+          crefito: 'CREFITO-1 12346',
+          phone: '(11) 99999-0002',
+          specialty: 'Fisioterapia Ortopédica',
+          is_active: true,
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01'
+        },
+        {
+          id: '3',
+          full_name: 'Ana Costa',
+          email: 'ana.costa@student.com',
+          role: 'intern' as const,
+          phone: '(11) 99999-0003',
+          specialty: 'Fisioterapia',
+          is_active: true,
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01'
+        },
+        {
+          id: '4',
+          full_name: 'Pedro Oliveira',
+          email: 'pedro.oliveira@student.com',
+          role: 'intern' as const,
+          phone: '(11) 99999-0004',
+          specialty: 'Fisioterapia',
+          is_active: true,
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01'
+        }
+      ]
+      
+      setTeamMembers(mockTeamData)
     } catch (err) {
       console.error('Error loading team data:', err)
       setError('Erro ao carregar dados da equipe')
-      // Fallback to mock data
-      setTeamMembers(mockTeamMembers)
     } finally {
       setLoading(false)
     }
@@ -444,60 +467,11 @@ export default function TeamPage() {
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-8">
-      {/* Sidebar */}
-      <div className="sidebar w-64 p-4">
-        <div className="flex items-center gap-2 mb-8">
-          <Users className="h-8 w-8 text-medical-500" />
-          <h1 className="text-xl font-bold text-foreground">Manus Fisio</h1>
-        </div>
-        
-        <nav className="space-y-2">
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Dashboard
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Notebooks
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Projetos
-          </Button>
-          <Button variant="default" className="w-full justify-start" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Equipe
-          </Button>
-        </nav>
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h3 className="font-semibold text-sm text-muted-foreground mb-3">AÇÕES RÁPIDAS</h3>
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Supervisão
-            </Button>
-            <Button variant="outline" className="w-full justify-start" size="sm">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Mensagens
-            </Button>
-            <Button variant="outline" className="w-full justify-start" size="sm">
-              <Calendar className="mr-2 h-4 w-4" />
-              Agendar
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="navbar p-6 border-b">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold">Equipe</h2>
-              <p className="text-muted-foreground">Gestão de mentores e estagiários</p>
+              <h1 className="text-3xl font-bold text-foreground">Equipe</h1>
+              <p className="text-muted-foreground mt-2">Gestão de mentores e estagiários</p>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm">
@@ -514,11 +488,9 @@ export default function TeamPage() {
               </Button>
             </div>
           </div>
-        </header>
 
-        {/* Stats Overview */}
-        <div className="p-6 border-b bg-muted/30">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-muted/30 rounded-lg">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-medical-100 rounded-lg">
                 <GraduationCap className="h-5 w-5 text-medical-600" />
@@ -545,7 +517,7 @@ export default function TeamPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {mentors.reduce((sum, m) => sum + (m.completedSupervisions || 0), 0)}
+                  {mentors.reduce((sum, m) => sum + ((m as any).completedSupervisions || 0), 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Supervisões Realizadas</div>
               </div>
@@ -557,16 +529,13 @@ export default function TeamPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">
-                  {interns.reduce((sum, i) => sum + (i.hoursCompleted || 0), 0)}
+                  {interns.reduce((sum, i) => sum + ((i as any).hoursCompleted || 0), 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Horas de Estágio</div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Team Content */}
-        <main className="flex-1 p-6 space-y-8">
           {/* Mentors Section */}
           <section>
             <div className="flex items-center justify-between mb-6">
@@ -604,8 +573,8 @@ export default function TeamPage() {
               ))}
             </div>
           </section>
-        </main>
-      </div>
-    </div>
+        </div>
+      </DashboardLayout>
+    </AuthGuard>
   )
 } 

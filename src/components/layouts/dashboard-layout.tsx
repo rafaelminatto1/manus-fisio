@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { NotificationsPanel, mockNotifications } from '@/components/ui/notifications-panel'
 import { useAuth } from '@/hooks/use-auth'
 import { 
   Search, 
@@ -23,9 +24,25 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState(mockNotifications)
 
-  const handleSignOut = async () => {
-    await signOut()
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    )
+  }
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(n => ({ ...n, read: true }))
+    )
+  }
+
+  const handleDeleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
   }
 
   const getRoleBadge = (role: string) => {
@@ -41,116 +58,131 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <Sidebar />
-        
-        <div className="flex-1 ml-64">
-          {/* Header */}
-          <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
-            <div className="flex h-16 items-center justify-between px-6">
-              {/* Search */}
-              <div className="flex items-center gap-4 flex-1 max-w-md">
-                <div className="relative w-full">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar pacientes, protocolos..."
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-
-              {/* Right side */}
-              <div className="flex items-center gap-4">
-                {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-medical-500 rounded-full text-xs"></span>
-                </Button>
-
-                {/* User Menu */}
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 px-3"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-medical-500 flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-medium leading-none">
-                          {user?.full_name || 'Usuário'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {user?.email}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-
-                  {showUserMenu && (
-                    <Card className="absolute right-0 top-full mt-2 w-72 z-50">
-                      <CardContent className="p-4 space-y-4">
-                        {/* User Info */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">{user?.full_name}</h4>
-                            {getRoleBadge(user?.role || 'guest')}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{user?.email}</p>
-                          {user?.crefito && (
-                            <p className="text-xs text-muted-foreground">CREFITO: {user.crefito}</p>
-                          )}
-                          {user?.specialty && (
-                            <p className="text-xs text-muted-foreground">Especialidade: {user.specialty}</p>
-                          )}
-                          {user?.university && (
-                            <p className="text-xs text-muted-foreground">
-                              {user.university} - {user.semester}º semestre
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="border-t pt-4 space-y-2">
-                          <Button variant="ghost" className="w-full justify-start" size="sm">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Configurações
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            className="w-full justify-start text-destructive hover:text-destructive" 
-                            size="sm"
-                            onClick={handleSignOut}
-                          >
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Sair
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+    <div className="min-h-screen bg-slate-950 flex">
+      {/* Sidebar */}
+      <Sidebar />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-slate-900 border-b border-slate-800 px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Search */}
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Buscar..." 
+                  className="pl-10 bg-slate-800 border-slate-700 text-white placeholder-slate-400"
+                />
               </div>
             </div>
-          </header>
 
-          {/* Main Content */}
-          <main className="p-6">
-            {children}
-          </main>
-        </div>
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              {/* Notifications */}
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setShowNotifications(true)}
+                  className="text-slate-300 hover:text-white hover:bg-slate-800"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+
+              {/* Settings */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-slate-300 hover:text-white hover:bg-slate-800"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+
+              {/* User Menu */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800"
+                >
+                  <div className="h-8 w-8 rounded-full bg-medical-500 flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm font-medium">
+                    {(user as any)?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+
+                {/* User Dropdown */}
+                {showUserMenu && (
+                  <Card className="absolute right-0 top-full mt-2 w-48 z-50 bg-slate-900 border-slate-700">
+                    <CardContent className="p-2">
+                      <div className="space-y-1">
+                        <div className="px-3 py-2 text-sm text-slate-400">
+                          {user?.email}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Perfil
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Configurações
+                        </Button>
+                        <hr className="border-slate-700" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={signOut}
+                          className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sair
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
       </div>
 
-      {/* Click outside to close user menu */}
-      {showUserMenu && (
-        <div 
-          className="fixed inset-0 z-30" 
-          onClick={() => setShowUserMenu(false)}
-        />
-      )}
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        onDeleteNotification={handleDeleteNotification}
+      />
     </div>
   )
 } 
