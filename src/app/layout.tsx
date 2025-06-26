@@ -1,33 +1,50 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
+import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/hooks/use-auth'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useState } from 'react'
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter'
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Manus Fisio - Sistema de Gestão Clínica',
-  description: 'Sistema integrado de gestão para clínicas de fisioterapia com supervisão de estagiários',
-  keywords: ['fisioterapia', 'gestão clínica', 'supervisão', 'estagiários', 'protocolos'],
-  authors: [{ name: 'Manus Team' }],
-  robots: 'index, follow',
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#0f172a',
-  manifest: '/manifest.json',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+  description: 'Sistema integrado de gestão para clínica de fisioterapia com funcionalidades de mentoria, projetos e colaboração.',
+  metadataBase: new URL('https://manus-fisio.vercel.app'),
+  keywords: ['fisioterapia', 'gestão', 'clínica', 'mentoria', 'projetos', 'colaboração'],
+  authors: [{ name: 'Manus Fisio Team' }],
+  creator: 'Manus Fisio',
+  publisher: 'Manus Fisio',
+  robots: {
+    index: true,
+    follow: true,
   },
   openGraph: {
-    title: 'Manus Fisio - Sistema de Gestão Clínica',
-    description: 'Sistema integrado de gestão para clínicas de fisioterapia',
     type: 'website',
     locale: 'pt_BR',
+    url: 'https://manus-fisio.vercel.app',
+    title: 'Manus Fisio - Sistema de Gestão Clínica',
+    description: 'Sistema integrado de gestão para clínica de fisioterapia',
+    siteName: 'Manus Fisio',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Manus Fisio - Sistema de Gestão Clínica',
+    description: 'Sistema integrado de gestão para clínica de fisioterapia',
+  },
+  manifest: '/manifest.json',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
 }
 
 export default function RootLayout({

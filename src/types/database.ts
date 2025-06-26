@@ -373,8 +373,9 @@ export interface Database {
 // Enums
 export enum UserRole {
   ADMIN = 'admin',
-  FISIOTERAPEUTA = 'fisioterapeuta',
-  ESTAGIARIO = 'estagiario'
+  MENTOR = 'mentor',
+  INTERN = 'intern',
+  GUEST = 'guest'
 }
 
 export enum ProjectStatus {

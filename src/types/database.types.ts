@@ -6,7 +6,7 @@ export interface Database {
           id: string
           email: string
           full_name: string
-          role: 'admin' | 'fisioterapeuta' | 'estagiario'
+          role: 'admin' | 'mentor' | 'intern' | 'guest'
           crefito?: string
           phone?: string
           avatar_url?: string
@@ -19,7 +19,7 @@ export interface Database {
           id?: string
           email: string
           full_name: string
-          role: 'admin' | 'fisioterapeuta' | 'estagiario'
+          role: 'admin' | 'mentor' | 'intern' | 'guest'
           crefito?: string
           phone?: string
           avatar_url?: string
@@ -32,7 +32,7 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string
-          role?: 'admin' | 'fisioterapeuta' | 'estagiario'
+          role?: 'admin' | 'mentor' | 'intern' | 'guest'
           crefito?: string
           phone?: string
           avatar_url?: string
@@ -382,7 +382,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      user_role: 'admin' | 'fisioterapeuta' | 'estagiario'
+      user_role: 'admin' | 'mentor' | 'intern' | 'guest'
       project_status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
       task_status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
       priority_level: 'low' | 'medium' | 'high' | 'urgent'

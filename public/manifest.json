@@ -1,13 +1,29 @@
 {
-  "name": "Manus Fisio - Sistema de Gestão para Clínica de Fisioterapia",
+  "name": "Manus Fisio - Sistema de Gestão Clínica",
   "short_name": "Manus Fisio",
-  "description": "Sistema integrado de gestão para clínicas de fisioterapia com funcionalidades de organização, colaboração e mentoria.",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a",
-  "display": "standalone",
-  "orientation": "portrait",
-  "scope": "/",
+  "description": "Sistema integrado de gestão para clínica de fisioterapia com funcionalidades de mentoria, projetos e colaboração",
   "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["medical", "productivity", "business"],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/icons/screenshot-mobile.png", 
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -17,7 +33,7 @@
     },
     {
       "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
+      "sizes": "96x96", 
       "type": "image/png",
       "purpose": "maskable any"
     },
@@ -63,25 +79,49 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Acesso rápido ao dashboard principal",
-      "url": "/dashboard",
-      "icons": [{ "src": "/icons/shortcut-dashboard.png", "sizes": "96x96" }]
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/shortcut-dashboard.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Notebooks",
-      "short_name": "Notebooks",
-      "description": "Visualizar notebooks de protocolos",
+      "short_name": "Notebooks", 
+      "description": "Acesso rápido aos notebooks",
       "url": "/notebooks",
-      "icons": [{ "src": "/icons/shortcut-notebooks.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-notebooks.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Projetos",
       "short_name": "Projetos",
-      "description": "Gerenciar projetos clínicos",
-      "url": "/projects",
-      "icons": [{ "src": "/icons/shortcut-projects.png", "sizes": "96x96" }]
+      "description": "Acesso rápido aos projetos",
+      "url": "/projects", 
+      "icons": [
+        {
+          "src": "/icons/shortcut-projects.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
-  "categories": ["medical", "productivity", "utilities"],
-  "lang": "pt-BR",
-  "dir": "ltr"
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 } 

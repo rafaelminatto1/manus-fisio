@@ -3,11 +3,35 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- Create enum types
-CREATE TYPE user_role AS ENUM ('admin', 'mentor', 'intern', 'guest');
-CREATE TYPE project_status AS ENUM ('planning', 'active', 'on_hold', 'completed', 'cancelled');
-CREATE TYPE task_status AS ENUM ('todo', 'in_progress', 'review', 'done');
-CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-CREATE TYPE mentorship_status AS ENUM ('active', 'completed', 'suspended');
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('admin', 'mentor', 'intern', 'guest');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE project_status AS ENUM ('planning', 'active', 'on_hold', 'completed', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE task_status AS ENUM ('todo', 'in_progress', 'review', 'done');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE mentorship_status AS ENUM ('active', 'completed', 'suspended');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE users (

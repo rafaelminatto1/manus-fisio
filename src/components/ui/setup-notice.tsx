@@ -1,15 +1,20 @@
 'use client'
 
-import { Alert, AlertDescription } from './alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from './button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { Badge } from './badge'
-import { ExternalLink, Database, Settings, CheckCircle } from 'lucide-react'
+import { ExternalLink, Database, Settings, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 
 export function SetupNotice() {
   const [dismissed, setDismissed] = useState(false)
-  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+  const hasSupabaseCredentials = !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !hasSupabaseCredentials
 
   if (!isMockMode || dismissed) {
     return null
@@ -34,10 +39,33 @@ export function SetupNotice() {
         </CardHeader>
         
         <CardContent className="space-y-3">
-          <Alert className="border-blue-200/30 bg-blue-50/50">
-            <Database className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              Para dados reais, configure o Supabase seguindo o arquivo <strong>PROXIMOS_PASSOS.md</strong>
+          <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">
+              {!hasSupabaseCredentials ? 'Configuração do Supabase Necessária' : 'Modo de Demonstração'}
+            </AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              {!hasSupabaseCredentials ? (
+                <div className="space-y-2">
+                  <p>
+                    <Database className="inline h-4 w-4 mr-1" />
+                    As credenciais do Supabase não foram encontradas. O sistema está funcionando em modo mock.
+                  </p>
+                  <div className="text-sm space-y-1">
+                    <p><strong>Para configurar o Supabase:</strong></p>
+                    <ol className="list-decimal list-inside ml-4 space-y-1">
+                      <li>Crie um arquivo <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">.env.local</code> na raiz do projeto</li>
+                      <li>Adicione suas credenciais do Supabase (veja <code>CREDENCIAIS_CONFIGURADAS.md</code>)</li>
+                      <li>Reinicie o servidor com <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">npm run dev</code></li>
+                    </ol>
+                  </div>
+                </div>
+              ) : (
+                <p>
+                  <Settings className="inline h-4 w-4 mr-1" />
+                  Você está usando dados de demonstração. Para usar dados reais, descomente NEXT_PUBLIC_MOCK_AUTH no arquivo .env.local
+                </p>
+              )}
             </AlertDescription>
           </Alert>
 

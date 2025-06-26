@@ -1,6 +1,13 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
+import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/hooks/use-auth'
+import { createClient } from '@/lib/auth'
 import { 
   Users, 
   Plus, 
@@ -18,8 +25,36 @@ import {
   MoreVertical
 } from 'lucide-react'
 
-// Mock data para demonstração
-const teamMembers = [
+// Types for real data
+interface TeamMember {
+  id: string
+  full_name: string
+  email: string
+  role: 'admin' | 'mentor' | 'intern' | 'guest'
+  crefito?: string
+  phone?: string
+  specialty?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface Mentorship {
+  id: string
+  mentor_id: string
+  intern_id: string
+  status: 'active' | 'completed' | 'paused'
+  start_date: string
+  end_date?: string
+  hours_completed: number
+  hours_required: number
+  created_at: string
+  mentor?: TeamMember
+  intern?: TeamMember
+}
+
+// Mock data fallback
+const mockTeamMembers = [
   {
     id: '1',
     name: 'Dr. Rafael Santos',
@@ -317,11 +352,98 @@ function InternCard({ member }: { member: any }) {
 }
 
 export default function TeamPage() {
+  const { user } = useAuth()
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [mentorships, setMentorships] = useState<Mentorship[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const supabase = createClient()
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  useEffect(() => {
+    if (isMockMode || !user) {
+      // Use mock data
+      setTeamMembers(mockTeamMembers)
+      setLoading(false)
+      return
+    }
+
+    loadTeamData()
+  }, [user, isMockMode])
+
+  const loadTeamData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Load team members
+      const { data: membersData, error: membersError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('is_active', true)
+        .order('role', { ascending: true })
+
+      if (membersError) throw membersError
+
+      // Load mentorships
+      const { data: mentorshipsData, error: mentorshipsError } = await supabase
+        .from('mentorships')
+        .select(`
+          *,
+          mentor:mentor_id (full_name, email),
+          intern:intern_id (full_name, email)
+        `)
+        .eq('status', 'active')
+
+      if (mentorshipsError) throw mentorshipsError
+
+      setTeamMembers(membersData || [])
+      setMentorships(mentorshipsData || [])
+
+    } catch (err) {
+      console.error('Error loading team data:', err)
+      setError('Erro ao carregar dados da equipe')
+      // Fallback to mock data
+      setTeamMembers(mockTeamMembers)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const mentors = teamMembers.filter(member => member.role === 'mentor')
   const interns = teamMembers.filter(member => member.role === 'intern')
 
+  if (loading) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Equipe</h1>
+              <p className="text-muted-foreground mt-2">Carregando dados da equipe...</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-muted rounded mb-4" />
+                    <div className="h-3 bg-muted rounded mb-2" />
+                    <div className="h-3 bg-muted rounded w-2/3" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
+
   return (
-    <div className="flex h-screen bg-background">
+    <AuthGuard>
+      <DashboardLayout>
+        <div className="space-y-8">
       {/* Sidebar */}
       <div className="sidebar w-64 p-4">
         <div className="flex items-center gap-2 mb-8">

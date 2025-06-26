@@ -21,9 +21,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  
+  // Verificar se as credenciais do Supabase estão configuradas
+  const hasSupabaseCredentials = !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+
+  const supabase = hasSupabaseCredentials ? createClient() : null
 
   useEffect(() => {
+    // Se não tem credenciais do Supabase, usar modo mock
+    if (!hasSupabaseCredentials || !supabase) {
+      console.warn('⚠️ Credenciais do Supabase não encontradas. Usando modo mock.')
+      setUser(mockUser)
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -49,9 +64,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase, hasSupabaseCredentials])
 
   const fetchUserProfile = async (userId: string) => {
+    if (!supabase) {
+      setUser(mockUser)
+      setLoading(false)
+      return
+    }
+
     try {
       // Se estivermos em modo mock, usa os dados mock
       if (process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || userId === mockUser.id) {
@@ -68,13 +89,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error)
-        setUser(null)
+        // Em caso de erro, usar dados mock como fallback
+        setUser(mockUser)
       } else {
         setUser(profile as User)
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
-      setUser(null)
+      // Em caso de erro, usar dados mock como fallback
+      setUser(mockUser)
     } finally {
       setLoading(false)
     }
@@ -82,6 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true)
+    
+    if (!supabase) {
+      // Modo mock - simular login
+      if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
+        setUser(mockUser)
+        setLoading(false)
+        return { error: null }
+      }
+      setLoading(false)
+      return { error: { message: 'Email ou senha inválidos' } }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -95,6 +130,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, userData?: any) => {
     setLoading(true)
+    
+    if (!supabase) {
+      setLoading(false)
+      return { error: { message: 'Supabase não configurado' } }
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -108,13 +149,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setLoading(true)
-    await supabase.auth.signOut()
+    
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
+    
     setUser(null)
     setSession(null)
     setLoading(false)
   }
 
   const resetPassword = async (email: string) => {
+    if (!supabase) {
+      return { error: { message: 'Supabase não configurado' } }
+    }
+
     const { error } = await supabase.auth.resetPasswordForEmail(email)
     return { error }
   }

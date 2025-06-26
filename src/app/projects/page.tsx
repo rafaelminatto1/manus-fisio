@@ -1,6 +1,13 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
+import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/hooks/use-auth'
+import { createClient } from '@/lib/auth'
 import { 
   Plus, 
   Filter, 
@@ -13,22 +20,61 @@ import {
   CheckCircle2,
   AlertCircle,
   Pause,
-  Play
+  Play,
+  FileText
 } from 'lucide-react'
 
-// Mock data para demonstração
-const projects = [
+// Types for real data
+interface Project {
+  id: string
+  title: string
+  description?: string
+  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  owner_id: string
+  due_date?: string
+  start_date?: string
+  progress: number
+  created_at: string
+  updated_at: string
+  owner?: {
+    full_name: string
+  }
+  tasks_count?: number
+  completed_tasks_count?: number
+}
+
+interface Task {
+  id: string
+  project_id: string
+  title: string
+  description?: string
+  status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  assignee_id?: string
+  due_date?: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+// Mock data fallback
+const mockProjects: Project[] = [
   {
     id: '1',
     title: 'Reabilitação Pós-Cirúrgica - João Silva',
     description: 'Protocolo de reabilitação após cirurgia de LCA',
     status: 'active',
     priority: 'high',
-    dueDate: '2024-02-15',
-    assignees: ['Dr. Santos', 'Maria Oliveira'],
-    tasksTotal: 12,
-    tasksCompleted: 7,
-    progress: 58
+    owner_id: 'mock-user',
+    due_date: '2024-02-15',
+    start_date: '2024-01-10',
+    progress: 58,
+    created_at: '2024-01-10T10:00:00Z',
+    updated_at: '2024-01-15T14:30:00Z',
+    owner: { full_name: 'Dr. Rafael Santos' },
+    tasks_count: 12,
+    completed_tasks_count: 7
   },
   {
     id: '2',
@@ -36,75 +82,47 @@ const projects = [
     description: 'Tratamento para hemiplegia pós-AVC',
     status: 'planning',
     priority: 'medium',
-    dueDate: '2024-02-28',
-    assignees: ['Dr. Silva', 'Pedro Alves'],
-    tasksTotal: 8,
-    tasksCompleted: 2,
-    progress: 25
-  },
-  {
-    id: '3',
-    title: 'Programa de Prevenção Escolar',
-    description: 'Programa de ergonomia e prevenção para estudantes',
-    status: 'on_hold',
-    priority: 'low',
-    dueDate: '2024-03-10',
-    assignees: ['Dra. Lima'],
-    tasksTotal: 15,
-    tasksCompleted: 5,
-    progress: 33
-  },
-  {
-    id: '4',
-    title: 'Pesquisa - Dor Lombar Crônica',
-    description: 'Estudo comparativo de técnicas de tratamento',
-    status: 'completed',
-    priority: 'high',
-    dueDate: '2024-01-30',
-    assignees: ['Dr. Santos', 'Ana Silva', 'Carlos Torres'],
-    tasksTotal: 20,
-    tasksCompleted: 20,
-    progress: 100
+    owner_id: 'mock-user',
+    due_date: '2024-02-28',
+    start_date: '2024-01-15',
+    progress: 25,
+    created_at: '2024-01-08T09:15:00Z',
+    updated_at: '2024-01-14T16:45:00Z',
+    owner: { full_name: 'Dra. Ana Silva' },
+    tasks_count: 8,
+    completed_tasks_count: 2
   }
 ]
 
 const statusConfig = {
-  planning: { label: 'Planejamento', color: 'bg-slate-100 text-slate-800', icon: Clock },
-  active: { label: 'Ativo', color: 'bg-medical-100 text-medical-800', icon: Play },
-  on_hold: { label: 'Em Espera', color: 'bg-warning-100 text-warning-800', icon: Pause },
-  completed: { label: 'Concluído', color: 'bg-success-100 text-success-800', icon: CheckCircle2 },
+  planning: { label: 'Planejamento', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200', icon: Clock },
+  active: { label: 'Ativo', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: Play },
+  on_hold: { label: 'Em Espera', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: Pause },
+  completed: { label: 'Concluído', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: CheckCircle2 },
+  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: AlertCircle }
 }
 
 const priorityConfig = {
-  low: { label: 'Baixa', color: 'bg-slate-100 text-slate-700' },
-  medium: { label: 'Média', color: 'bg-warning-100 text-warning-700' },
-  high: { label: 'Alta', color: 'bg-error-100 text-error-700' },
-  urgent: { label: 'Urgente', color: 'bg-error-500 text-white' },
+  low: { label: 'Baixa', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  medium: { label: 'Média', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
+  high: { label: 'Alta', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
+  urgent: { label: 'Urgente', color: 'bg-red-500 text-white' },
 }
 
-interface ProjectType {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  dueDate: string;
-  assignees: string[];
-  tasksTotal: number;
-  tasksCompleted: number;
-  progress: number;
-}
-
-function ProjectCard({ project }: { project: ProjectType }) {
-  const statusInfo = statusConfig[project.status as keyof typeof statusConfig]
-  const priorityInfo = priorityConfig[project.priority as keyof typeof priorityConfig]
+function ProjectCard({ project }: { project: Project }) {
+  const statusInfo = statusConfig[project.status]
+  const priorityInfo = priorityConfig[project.priority]
   const StatusIcon = statusInfo.icon
 
+  const completionRate = project.tasks_count && project.tasks_count > 0 
+    ? Math.round((project.completed_tasks_count || 0) / project.tasks_count * 100)
+    : 0
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow mb-4">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <StatusIcon className="h-4 w-4 text-muted-foreground" />
             <Badge variant="outline" className={statusInfo.color}>
               {statusInfo.label}
@@ -118,9 +136,11 @@ function ProjectCard({ project }: { project: ProjectType }) {
           </Button>
         </div>
         <CardTitle className="text-lg leading-tight">{project.title}</CardTitle>
-        <CardDescription className="text-sm">
-          {project.description}
-        </CardDescription>
+        {project.description && (
+          <CardDescription className="text-sm">
+            {project.description}
+          </CardDescription>
+        )}
       </CardHeader>
       
       <CardContent className="space-y-4">
@@ -128,42 +148,35 @@ function ProjectCard({ project }: { project: ProjectType }) {
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Progresso</span>
-            <span>{project.progress}%</span>
+            <span>{completionRate}%</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
-              className="bg-medical-500 h-2 rounded-full transition-all"
-              style={{ width: `${project.progress}%` }}
+              className="bg-primary h-2 rounded-full transition-all"
+              style={{ width: `${completionRate}%` }}
             />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{project.tasksCompleted}/{project.tasksTotal} tarefas</span>
-            <span>Vence em {project.dueDate}</span>
+            <span>{project.completed_tasks_count || 0}/{project.tasks_count || 0} tarefas</span>
+            {project.due_date && (
+              <span>Vence em {new Date(project.due_date).toLocaleDateString('pt-BR')}</span>
+            )}
           </div>
         </div>
 
-        {/* Assignees */}
-        <div className="flex items-center justify-between">
+        {/* Owner and dates */}
+        <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {project.assignees.length} membro{project.assignees.length > 1 ? 's' : ''}
+            <span className="text-muted-foreground">
+              {project.owner?.full_name || 'Sem responsável'}
             </span>
           </div>
-          <div className="flex -space-x-2">
-            {project.assignees.slice(0, 3).map((assignee: string, index: number) => (
-              <div 
-                key={index}
-                className="w-8 h-8 rounded-full bg-medical-500 border-2 border-background flex items-center justify-center text-xs font-medium text-white"
-              >
-                {assignee.split(' ').map(n => n[0]).join('')}
-              </div>
-            ))}
-            {project.assignees.length > 3 && (
-              <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                +{project.assignees.length - 3}
-              </div>
-            )}
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span className="text-xs">
+              {new Date(project.updated_at).toLocaleDateString('pt-BR')}
+            </span>
           </div>
         </div>
       </CardContent>
@@ -171,154 +184,285 @@ function ProjectCard({ project }: { project: ProjectType }) {
   )
 }
 
+function KanbanColumn({ title, projects, status }: { title: string, projects: Project[], status: string }) {
+  return (
+    <div className="flex-1 min-w-80">
+      <div className="bg-muted/50 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-medium text-foreground flex items-center gap-2">
+            {title}
+            <Badge variant="secondary" className="ml-2">
+              {projects.length}
+            </Badge>
+          </h3>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="space-y-3 min-h-96">
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+          
+          {projects.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhum projeto</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProjectsPage() {
+  const { user } = useAuth()
+  const [projects, setProjects] = useState<Project[]>(mockProjects)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const supabase = createClient()
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  useEffect(() => {
+    if (isMockMode || !user) {
+      setLoading(false)
+      return
+    }
+
+    loadProjects()
+  }, [user, isMockMode])
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select(`
+          id,
+          title,
+          description,
+          status,
+          priority,
+          owner_id,
+          due_date,
+          start_date,
+          progress,
+          created_at,
+          updated_at,
+          owner:owner_id (
+            full_name
+          )
+        `)
+        .order('updated_at', { ascending: false })
+
+      if (projectsError) {
+        throw projectsError
+      }
+
+      // Get task counts for each project
+      const projectsWithCounts = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          const [totalTasks, completedTasks] = await Promise.all([
+            supabase.from('tasks').select('id', { count: 'exact' }).eq('project_id', project.id),
+            supabase.from('tasks').select('id', { count: 'exact' }).eq('project_id', project.id).eq('status', 'done')
+          ])
+
+          return {
+            ...project,
+            tasks_count: totalTasks.count || 0,
+            completed_tasks_count: completedTasks.count || 0
+          }
+        })
+      )
+
+      setProjects(projectsWithCounts)
+
+    } catch (err) {
+      console.error('Error loading projects:', err)
+      setError('Erro ao carregar projetos')
+      // Fallback to mock data on error
+      setProjects(mockProjects)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createProject = async () => {
+    if (isMockMode) {
+      alert('Funcionalidade disponível com dados reais do Supabase')
+      return
+    }
+
+    try {
+      const newProject = {
+        title: 'Novo Projeto',
+        description: 'Descrição do projeto',
+        status: 'planning' as const,
+        priority: 'medium' as const,
+        owner_id: user?.id,
+        progress: 0
+      }
+
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([newProject])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Reload projects
+      loadProjects()
+
+      console.log('Project created:', data)
+      
+    } catch (err) {
+      console.error('Error creating project:', err)
+      setError('Erro ao criar projeto')
+    }
+  }
+
+  const filteredProjects = projects.filter(project =>
+    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   const projectsByStatus = {
-    planning: projects.filter(p => p.status === 'planning'),
-    active: projects.filter(p => p.status === 'active'),
-    on_hold: projects.filter(p => p.status === 'on_hold'),
-    completed: projects.filter(p => p.status === 'completed'),
+    planning: filteredProjects.filter(p => p.status === 'planning'),
+    active: filteredProjects.filter(p => p.status === 'active'),
+    on_hold: filteredProjects.filter(p => p.status === 'on_hold'),
+    completed: filteredProjects.filter(p => p.status === 'completed'),
+  }
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Projetos</h1>
+                <p className="text-muted-foreground mt-2">
+                  Gerencie projetos e acompanhe o progresso da equipe
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-muted/50 rounded-lg p-4 animate-pulse">
+                  <div className="h-4 bg-muted rounded mb-4" />
+                  <div className="space-y-3">
+                    <div className="h-20 bg-muted rounded" />
+                    <div className="h-20 bg-muted rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="sidebar w-64 p-4">
-        <div className="flex items-center gap-2 mb-8">
-          <Target className="h-8 w-8 text-medical-500" />
-          <h1 className="text-xl font-bold text-foreground">Manus Fisio</h1>
-        </div>
-        
-        <nav className="space-y-2">
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Target className="mr-2 h-4 w-4" />
-            Dashboard
-          </Button>
-          <Button variant="default" className="w-full justify-start" size="sm">
-            <Target className="mr-2 h-4 w-4" />
-            Projetos
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <CheckCircle2 className="mr-2 h-4 w-4" />
-            Tarefas
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Users className="mr-2 h-4 w-4" />
-            Equipe
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Calendário
-          </Button>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="navbar p-6 border-b">
+    <AuthGuard>
+      <DashboardLayout>
+        <div className="space-y-8">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold">Projetos Clínicos</h2>
-              <p className="text-muted-foreground">Gerencie projetos de reabilitação e pesquisa</p>
+              <h1 className="text-3xl font-bold text-foreground">Projetos</h1>
+              <p className="text-muted-foreground mt-2">
+                Gerencie projetos e acompanhe o progresso da equipe
+              </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
+            
+            <div className="flex gap-2">
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
                 Filtros
               </Button>
-              <Button variant="outline" size="sm">
-                <Search className="mr-2 h-4 w-4" />
-                Buscar
-              </Button>
-              <Button className="btn-medical">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button onClick={createProject}>
+                <Plus className="h-4 w-4 mr-2" />
                 Novo Projeto
               </Button>
             </div>
           </div>
-        </header>
 
-        {/* Kanban Board */}
-        <main className="flex-1 p-6 overflow-x-auto">
-          <div className="flex gap-6 min-w-max">
-            {/* Planning Column */}
-            <div className="w-80 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-slate-500" />
-                  <h3 className="font-semibold">Planejamento</h3>
-                  <Badge variant="secondary">{projectsByStatus.planning.length}</Badge>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {projectsByStatus.planning.map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-destructive text-sm">{error}</p>
             </div>
+          )}
 
-            {/* Active Column */}
-            <div className="w-80 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Play className="h-5 w-5 text-medical-500" />
-                  <h3 className="font-semibold">Ativo</h3>
-                  <Badge variant="secondary">{projectsByStatus.active.length}</Badge>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {projectsByStatus.active.map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            </div>
-
-            {/* On Hold Column */}
-            <div className="w-80 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Pause className="h-5 w-5 text-warning-500" />
-                  <h3 className="font-semibold">Em Espera</h3>
-                  <Badge variant="secondary">{projectsByStatus.on_hold.length}</Badge>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {projectsByStatus.on_hold.map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            </div>
-
-            {/* Completed Column */}
-            <div className="w-80 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-success-500" />
-                  <h3 className="font-semibold">Concluído</h3>
-                  <Badge variant="secondary">{projectsByStatus.completed.length}</Badge>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {projectsByStatus.completed.map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            </div>
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Buscar projetos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
           </div>
-        </main>
-      </div>
-    </div>
+
+          {/* Kanban Board */}
+          <div className="flex gap-6 overflow-x-auto pb-6">
+            <KanbanColumn 
+              title="Planejamento" 
+              projects={projectsByStatus.planning} 
+              status="planning"
+            />
+            <KanbanColumn 
+              title="Ativo" 
+              projects={projectsByStatus.active} 
+              status="active"
+            />
+            <KanbanColumn 
+              title="Em Espera" 
+              projects={projectsByStatus.on_hold} 
+              status="on_hold"
+            />
+            <KanbanColumn 
+              title="Concluído" 
+              projects={projectsByStatus.completed} 
+              status="completed"
+            />
+          </div>
+
+          {/* Empty State */}
+          {filteredProjects.length === 0 && !loading && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  {searchTerm ? 'Nenhum projeto encontrado' : 'Nenhum projeto criado'}
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchTerm 
+                    ? 'Tente ajustar os termos de busca'
+                    : 'Crie seu primeiro projeto para começar a organizar o trabalho da equipe'
+                  }
+                </p>
+                {!searchTerm && (
+                  <Button onClick={createProject}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Primeiro Projeto
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </DashboardLayout>
+    </AuthGuard>
   )
 } 

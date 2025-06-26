@@ -1,5 +1,8 @@
 'use client'
 
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { SetupNotice } from '@/components/ui/setup-notice'
@@ -7,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
+import { createClient } from '@/lib/auth'
 import { 
   BookOpen, 
   Users, 
@@ -18,241 +22,285 @@ import {
   AlertCircle,
   User,
   GraduationCap,
-  Activity
+  Activity,
+  Plus
 } from 'lucide-react'
 
-// Mock data - In production this would come from Supabase
-const mockStats = {
+// Types for real data
+interface DashboardStats {
+  notebooks: number
+  projects: number
+  activeInterns: number
+  completedTasks: number
+  totalTasks: number
+  activeMentorships: number
+}
+
+interface RecentActivity {
+  id: string
+  action: string
+  resource_type: string
+  user_id: string
+  created_at: string
+  user?: {
+    full_name: string
+  }
+}
+
+interface UpcomingEvent {
+  id: string
+  title: string
+  type: 'supervision' | 'meeting' | 'deadline'
+  date: string
+  time?: string
+  participants?: string[]
+}
+
+// Mock data fallback
+const mockStats: DashboardStats = {
   notebooks: 5,
   projects: 12,
   activeInterns: 4,
-  completedTasks: 28,
-  pendingTasks: 15,
-  upcomingEvents: 3
+  completedTasks: 23,
+  totalTasks: 31,
+  activeMentorships: 3
 }
 
-const mockRecentActivities = [
+const mockActivities: RecentActivity[] = [
   {
-    id: 1,
-    type: 'task_completed',
-    user: 'Maria Silva',
-    action: 'concluiu a tarefa',
-    target: 'Avaliação inicial - João Santos',
-    time: '2h atrás'
+    id: '1',
+    action: 'create',
+    resource_type: 'notebook',
+    user_id: 'mock-user',
+    created_at: new Date().toISOString(),
+    user: { full_name: 'Dr. Rafael Santos' }
   },
   {
-    id: 2,
-    type: 'notebook_created',
-    user: 'Dr. Rafael Santos',
-    action: 'criou o notebook',
-    target: 'Protocolos de Fisioterapia Respiratória',
-    time: '4h atrás'
-  },
-  {
-    id: 3,
-    type: 'comment_added',
-    user: 'Pedro Alves',
-    action: 'comentou em',
-    target: 'Projeto Reabilitação LCA',
-    time: '6h atrás'
+    id: '2',
+    action: 'update',
+    resource_type: 'project',
+    user_id: 'mock-user',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    user: { full_name: 'Ana Silva' }
   }
 ]
 
-const mockUpcomingEvents = [
+const mockEvents: UpcomingEvent[] = [
   {
-    id: 1,
-    title: 'Supervisão - Maria Silva',
+    id: '1',
+    title: 'Supervisão - Protocolo TMJ',
     type: 'supervision',
-    time: 'Hoje, 14:00',
-    mentor: 'Dr. Rafael Santos'
+    date: '2025-01-15',
+    time: '14:00'
   },
   {
-    id: 2,
-    title: 'Avaliação Semestral',
-    type: 'evaluation',
-    time: 'Amanhã, 09:00',
-    mentor: 'Dra. Ana Lima'
-  },
-  {
-    id: 3,
-    title: 'Workshop: Dor Lombar',
-    type: 'workshop',
-    time: 'Sex, 16:00',
-    mentor: 'Dr. Carlos Oliveira'
+    id: '2',
+    title: 'Reunião de Equipe',
+    type: 'meeting',
+    date: '2025-01-16',
+    time: '09:00'
   }
 ]
 
-export default function DashboardPage() {
+export default function Dashboard() {
   const { user } = useAuth()
+  const router = useRouter()
+  const [stats, setStats] = useState<DashboardStats>(mockStats)
+  const [activities, setActivities] = useState<RecentActivity[]>(mockActivities)
+  const [events, setEvents] = useState<UpcomingEvent[]>(mockEvents)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'task_completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'notebook_created':
-        return <BookOpen className="h-4 w-4 text-blue-500" />
-      case 'comment_added':
-        return <Activity className="h-4 w-4 text-yellow-500" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />
+  const supabase = createClient()
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  useEffect(() => {
+    if (isMockMode || !user) {
+      setLoading(false)
+      return
+    }
+
+    loadDashboardData()
+  }, [user, isMockMode])
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Load statistics
+      const [
+        notebooksResult,
+        projectsResult,
+        tasksResult,
+        mentorshipsResult,
+        usersResult
+      ] = await Promise.all([
+        supabase.from('notebooks').select('id', { count: 'exact' }),
+        supabase.from('projects').select('id', { count: 'exact' }),
+        supabase.from('tasks').select('id, status', { count: 'exact' }),
+        supabase.from('mentorships').select('id', { count: 'exact' }).eq('status', 'active'),
+        supabase.from('users').select('id', { count: 'exact' }).eq('role', 'intern').eq('is_active', true)
+      ])
+
+      // Calculate completed tasks
+      const completedTasksResult = await supabase
+        .from('tasks')
+        .select('id', { count: 'exact' })
+        .eq('status', 'done')
+
+      const newStats: DashboardStats = {
+        notebooks: notebooksResult.count || 0,
+        projects: projectsResult.count || 0,
+        activeInterns: usersResult.count || 0,
+        completedTasks: completedTasksResult.count || 0,
+        totalTasks: tasksResult.count || 0,
+        activeMentorships: mentorshipsResult.count || 0
+      }
+
+      setStats(newStats)
+
+      // Load recent activities
+      const activitiesResult = await supabase
+        .from('activity_logs')
+        .select(`
+          id,
+          action,
+          resource_type,
+          user_id,
+          created_at,
+          users:user_id (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (activitiesResult.data) {
+        setActivities(activitiesResult.data.map(activity => ({
+          ...activity,
+          user: activity.users
+        })))
+      }
+
+      // For now, keep mock events (calendar integration would be next phase)
+      setEvents(mockEvents)
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err)
+      setError('Erro ao carregar dados do dashboard')
+      // Fallback to mock data on error
+      setStats(mockStats)
+      setActivities(mockActivities)
+      setEvents(mockEvents)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'supervision':
-        return <User className="h-4 w-4 text-medical-500" />
-      case 'evaluation':
-        return <GraduationCap className="h-4 w-4 text-blue-500" />
-      case 'workshop':
-        return <Users className="h-4 w-4 text-green-500" />
-      default:
-        return <Calendar className="h-4 w-4 text-gray-500" />
+  const getActivityIcon = (resourceType: string) => {
+    switch (resourceType) {
+      case 'notebook': return <BookOpen className="h-4 w-4" />
+      case 'project': return <FolderKanban className="h-4 w-4" />
+      case 'task': return <CheckCircle className="h-4 w-4" />
+      case 'user': return <User className="h-4 w-4" />
+      default: return <Activity className="h-4 w-4" />
     }
   }
+
+  const getActivityMessage = (activity: RecentActivity) => {
+    const actionMap = {
+      create: 'criou',
+      update: 'atualizou',
+      delete: 'removeu',
+      login: 'fez login'
+    }
+    
+    const resourceMap = {
+      notebook: 'notebook',
+      project: 'projeto',
+      task: 'tarefa',
+      user: 'usuário'
+    }
+
+    return `${activity.user?.full_name || 'Usuário'} ${actionMap[activity.action as keyof typeof actionMap] || activity.action} ${resourceMap[activity.resource_type as keyof typeof resourceMap] || activity.resource_type}`
+  }
+
+  const completionRate = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0
 
   return (
     <AuthGuard>
-      <SetupNotice />
       <DashboardLayout>
-        <div className="space-y-6">
-          {/* Welcome Section */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold">
+        <div className="space-y-8">
+          <SetupNotice />
+          
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
               Bem-vindo, {user?.full_name?.split(' ')[0] || 'Usuário'}!
             </h1>
-            <p className="text-muted-foreground">
-              {user?.role === 'mentor' 
-                ? 'Aqui está um resumo das atividades da sua equipe e supervisionados.'
-                : user?.role === 'intern'
-                ? 'Acompanhe seu progresso e atividades de estágio.'
-                : 'Visão geral do sistema de gestão clínica.'
-              }
+            <p className="text-muted-foreground mt-2">
+              Aqui está um resumo das atividades da sua clínica de fisioterapia.
             </p>
           </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Statistics Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Notebooks</CardTitle>
+                <CardTitle className="text-sm font-medium">Notebooks Ativos</CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.notebooks}</div>
+                <div className="text-2xl font-bold">{loading ? '...' : stats.notebooks}</div>
                 <p className="text-xs text-muted-foreground">
-                  +2 novos esta semana
+                  Protocolos e documentos
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
+                <CardTitle className="text-sm font-medium">Projetos em Andamento</CardTitle>
                 <FolderKanban className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.projects}</div>
+                <div className="text-2xl font-bold">{loading ? '...' : stats.projects}</div>
                 <p className="text-xs text-muted-foreground">
-                  {mockStats.pendingTasks} tarefas pendentes
+                  Estudos e pesquisas
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {user?.role === 'mentor' ? 'Estagiários' : 'Supervisão'}
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Estagiários Ativos</CardTitle>
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.activeInterns}</div>
+                <div className="text-2xl font-bold">{loading ? '...' : stats.activeInterns}</div>
                 <p className="text-xs text-muted-foreground">
-                  {user?.role === 'mentor' ? 'supervisionados ativos' : 'horas concluídas esta semana'}
+                  Em supervisão
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Produtividade</CardTitle>
+                <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {Math.round((mockStats.completedTasks / (mockStats.completedTasks + mockStats.pendingTasks)) * 100)}%
-                </div>
+                <div className="text-2xl font-bold">{loading ? '...' : `${completionRate}%`}</div>
                 <p className="text-xs text-muted-foreground">
-                  {mockStats.completedTasks} tarefas concluídas
+                  {stats.completedTasks} de {stats.totalTasks} tarefas
                 </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Recent Activities */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Atividades Recentes
-                </CardTitle>
-                <CardDescription>
-                  Últimas ações realizadas na plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockRecentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      {getActivityIcon(activity.type)}
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm">
-                          <span className="font-medium">{activity.user}</span>{' '}
-                          {activity.action}{' '}
-                          <span className="font-medium">{activity.target}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Upcoming Events */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Próximos Eventos
-                </CardTitle>
-                <CardDescription>
-                  Supervisões, avaliações e workshops agendados
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockUpcomingEvents.map((event) => (
-                    <div key={event.id} className="flex items-start gap-3">
-                      {getEventIcon(event.type)}
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">{event.title}</p>
-                        <p className="text-xs text-muted-foreground">{event.time}</p>
-                        {event.mentor && (
-                          <p className="text-xs text-muted-foreground">
-                            com {event.mentor}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {event.type === 'supervision' ? 'Supervisão' :
-                         event.type === 'evaluation' ? 'Avaliação' : 'Workshop'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -262,34 +310,127 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Ações Rápidas</CardTitle>
               <CardDescription>
-                Acesse rapidamente as funcionalidades mais usadas
+                Acesse rapidamente as funcionalidades mais utilizadas
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Button className="btn-medical">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Novo Notebook
-                </Button>
-                <Button variant="outline">
-                  <FolderKanban className="h-4 w-4 mr-2" />
-                  Criar Projeto
-                </Button>
-                <Button variant="outline">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar Supervisão
-                </Button>
-                {user?.role === 'mentor' && (
-                  <Button variant="outline">
-                    <Users className="h-4 w-4 mr-2" />
-                    Avaliar Estagiário
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Link href="/notebooks">
+                  <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center gap-2">
+                    <BookOpen className="h-6 w-6" />
+                    <span className="text-sm">Novo Notebook</span>
                   </Button>
-                )}
+                </Link>
+                
+                <Link href="/projects">
+                  <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center gap-2">
+                    <FolderKanban className="h-6 w-6" />
+                    <span className="text-sm">Novo Projeto</span>
+                  </Button>
+                </Link>
+                
+                <Link href="/team">
+                  <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center gap-2">
+                    <Users className="h-6 w-6" />
+                    <span className="text-sm">Gerenciar Equipe</span>
+                  </Button>
+                </Link>
+                
+                <Link href="/calendar">
+                  <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-center gap-2">
+                    <Calendar className="h-6 w-6" />
+                    <span className="text-sm">Agendar Supervisão</span>
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Recent Activities */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Atividades Recentes</CardTitle>
+                <CardDescription>
+                  Últimas ações realizadas no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {loading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse" />
+                      <div className="h-4 bg-muted rounded animate-pulse" />
+                      <div className="h-4 bg-muted rounded animate-pulse" />
+                    </div>
+                  ) : activities.length > 0 ? (
+                    activities.slice(0, 5).map((activity) => (
+                      <div key={activity.id} className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          {getActivityIcon(activity.resource_type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">
+                            {getActivityMessage(activity)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma atividade recente
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Events */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximos Eventos</CardTitle>
+                <CardDescription>
+                  Supervisões e reuniões agendadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {events.length > 0 ? (
+                    events.map((event) => (
+                      <div key={event.id} className="flex items-center gap-3">
+                        <div className="p-2 bg-success/10 rounded-full">
+                          <Calendar className="h-4 w-4 text-success" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">
+                            {event.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(event.date).toLocaleDateString('pt-BR')}
+                            {event.time && ` às ${event.time}`}
+                          </p>
+                        </div>
+                        <Badge variant="outline">
+                          {event.type === 'supervision' && 'Supervisão'}
+                          {event.type === 'meeting' && 'Reunião'}
+                          {event.type === 'deadline' && 'Prazo'}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum evento agendado
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}
