@@ -1,0 +1,74 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Local env files (importantes para não vazar credenciais)
+.env*.local
+.env
+.env.example
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Development files
+.vercel
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage
+.nyc_output
+
+# Supabase local development
+.supabase
+
+# Documentation files (não necessários em produção)
+*.md
+SISTEMA_*.md
+APLICAR_*.md
+CONFIGURACAO_*.md
+CREDENCIAIS_*.md
+FASE_*.md
+GUIA_*.md
+IMPLEMENTACAO_*.md
+PROXIMOS_*.md
+REVISAO_*.md
+RESOLVER_*.md
+SCHEMA_*.md
+SINCRONIZAR_*.sql
+SOLUCAO_*.md
+*.pdf
+*.mermaid
+*.html
+todo.md
+pasted_content.txt
+
+# Scripts de desenvolvimento
+scripts/
+apply-schema-direct.js
+
+# Arquivos SQL de desenvolvimento
+*.sql 

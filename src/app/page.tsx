@@ -10,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
+import { ThemeCustomizer, useThemeCustomizer } from '@/components/ui/theme-customizer'
+import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
+import { AIAssistant, useAIAssistant } from '@/components/ui/ai-assistant'
 import { useAuth } from '@/hooks/use-auth'
 import { createClient } from '@/lib/auth'
 import { 
@@ -25,7 +28,12 @@ import {
   GraduationCap,
   Activity,
   Plus,
-  BarChart3
+  BarChart3,
+  Palette,
+  Bot,
+  Grid3X3,
+  Sparkles,
+  Zap
 } from 'lucide-react'
 
 // Types for real data
@@ -113,6 +121,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
+
+  // Advanced features hooks
+  const themeCustomizer = useThemeCustomizer()
+  const dashboardWidgets = useDashboardWidgets()
+  const aiAssistant = useAIAssistant()
+  const [showAdvancedDashboard, setShowAdvancedDashboard] = useState(false)
 
   const supabase = createClient()
   const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -275,7 +289,8 @@ export default function Dashboard() {
                 Aqui está um resumo das atividades da sua clínica de fisioterapia.
               </p>
             </div>
-            <Button 
+            <div className="flex items-center gap-3">
+                          <Button 
               onClick={() => setShowAnalytics(!showAnalytics)}
               variant={showAnalytics ? "default" : "outline"}
               className="flex items-center gap-2"
@@ -283,6 +298,51 @@ export default function Dashboard() {
               <BarChart3 className="h-4 w-4" />
               {showAnalytics ? 'Ocultar Analytics' : 'Ver Analytics'}
             </Button>
+            
+            {/* Botão Modo Avançado */}
+            <div className="relative">
+              <Button 
+                onClick={() => alert('🚀 Modo Avançado com IA em desenvolvimento!\n\nRecursos que estarão disponíveis:\n• IA Assistant especializada em fisioterapia\n• Busca semântica inteligente\n• Notificações com priorização automática\n• Personalização avançada de temas\n• Automação de tarefas\n• Insights preditivos\n• Dashboard com widgets customizáveis\n\nEm breve!')}
+                variant="outline"
+                className="flex items-center gap-2 bg-gradient-to-r from-primary/10 to-blue-500/10 border-primary/30 hover:from-primary/20 hover:to-blue-500/20 transition-all duration-300"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    <div className="absolute inset-0 w-2 h-2 bg-primary rounded-full animate-ping" />
+                  </div>
+                  <span className="text-sm font-medium bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                    Modo Pro IA
+                  </span>
+                </div>
+              </Button>
+              <div className="absolute -top-1 -right-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full animate-bounce" />
+              </div>
+            </div>
+              
+              {/* Botão Modo Avançado */}
+              <div className="relative">
+                <Button 
+                  onClick={() => alert('🚀 Modo Avançado com IA em desenvolvimento!\n\nRecursos que estarão disponíveis:\n• IA Assistant especializada em fisioterapia\n• Busca semântica inteligente\n• Notificações com priorização automática\n• Personalização avançada de temas\n• Automação de tarefas\n• Insights preditivos\n• Dashboard com widgets customizáveis\n\nEm breve!')}
+                  variant="outline"
+                  className="flex items-center gap-2 bg-gradient-to-r from-primary/10 to-blue-500/10 border-primary/30 hover:from-primary/20 hover:to-blue-500/20 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <div className="absolute inset-0 w-2 h-2 bg-primary rounded-full animate-ping" />
+                    </div>
+                    <span className="text-sm font-medium bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                      Modo Pro IA
+                    </span>
+                  </div>
+                </Button>
+                <div className="absolute -top-1 -right-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full animate-bounce" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {error && (
