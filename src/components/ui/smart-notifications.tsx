@@ -139,10 +139,20 @@ export function SmartNotifications({
         .order('created_at', { ascending: false })
         .limit(showAll ? 100 : maxVisible)
 
-      if (error) throw error
+      if (error) {
+        // Se tabela não existir (404), usar dados mock
+        if (error.message?.includes('relation "public.notifications" does not exist')) {
+          console.log('Tabela notifications não existe, usando dados mock')
+          setNotifications(mockNotifications)
+          return
+        }
+        throw error
+      }
       setNotifications(data || [])
     } catch (error) {
       console.error('Erro ao carregar notificações:', error)
+      // Fallback para dados mock em caso de erro
+      setNotifications(mockNotifications)
     } finally {
       setLoading(false)
     }

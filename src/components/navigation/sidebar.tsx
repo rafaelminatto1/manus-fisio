@@ -52,17 +52,17 @@ const navigationItems = [
 
 const quickActions = [
   {
-    href: '/notebooks/new',
+    href: '/notebooks',
     label: 'Novo Notebook',
     icon: BookOpen
   },
   {
-    href: '/projects/new',
+    href: '/projects',
     label: 'Novo Projeto',
     icon: Target
   },
   {
-    href: '/calendar/new',
+    href: '/calendar',
     label: 'Agendar',
     icon: Calendar
   }
