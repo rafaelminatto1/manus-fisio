@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { NotificationsPanel, mockNotifications } from '@/components/ui/notifications-panel'
+import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
+import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 import { useAuth } from '@/hooks/use-auth'
 import { 
   Search, 
@@ -13,9 +15,12 @@ import {
   Settings, 
   User, 
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Keyboard,
+  Command
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -26,8 +31,66 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState(mockNotifications)
+  const router = useRouter()
+
+  // Hooks para sistemas avançados
+  const { isOpen: searchOpen, openSearch, closeSearch } = useGlobalSearch()
+  const { isOpen: shortcutsOpen, openShortcuts, closeShortcuts } = useKeyboardShortcuts()
 
   const unreadCount = notifications.filter(n => !n.read).length
+
+  // Navegação por atalhos
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Não processar se estiver em um input
+      const activeElement = document.activeElement
+      if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+        return
+      }
+
+      // Atalhos de navegação com G + letra
+      if (e.key === 'g' || e.key === 'G') {
+        const handleSecondKey = (e2: KeyboardEvent) => {
+          switch (e2.key.toLowerCase()) {
+            case 'h':
+              router.push('/')
+              break
+            case 'n':
+              router.push('/notebooks')
+              break
+            case 'p':
+              router.push('/projects')
+              break
+            case 't':
+              router.push('/team')
+              break
+            case 'c':
+              router.push('/calendar')
+              break
+            case 's':
+              router.push('/settings')
+              break
+          }
+          document.removeEventListener('keydown', handleSecondKey)
+        }
+        document.addEventListener('keydown', handleSecondKey)
+        
+        // Remove listener após 2 segundos
+        setTimeout(() => {
+          document.removeEventListener('keydown', handleSecondKey)
+        }, 2000)
+      }
+
+      // Atalho para mostrar shortcuts
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        openShortcuts()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [router, openShortcuts])
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev => 
@@ -72,14 +135,31 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                  placeholder="Buscar..." 
-                  className="pl-10 bg-slate-800 border-slate-700 text-white placeholder-slate-400"
+                  placeholder="Buscar... (⌘K)" 
+                  className="pl-10 bg-slate-800 border-slate-700 text-white placeholder-slate-400 cursor-pointer"
+                  onClick={openSearch}
+                  readOnly
                 />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded text-xs">⌘</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded text-xs">K</kbd>
+                </div>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-3">
+              {/* Keyboard Shortcuts */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={openShortcuts}
+                className="text-slate-300 hover:text-white hover:bg-slate-800"
+                title="Atalhos de teclado (?)"
+              >
+                <Keyboard className="h-5 w-5" />
+              </Button>
+
               {/* Notifications */}
               <div className="relative">
                 <Button 
@@ -104,6 +184,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button 
                 variant="ghost" 
                 size="icon"
+                onClick={() => router.push('/settings')}
                 className="text-slate-300 hover:text-white hover:bg-slate-800"
               >
                 <Settings className="h-5 w-5" />
@@ -144,10 +225,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => router.push('/settings')}
                           className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Configurações
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={openShortcuts}
+                          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
+                        >
+                          <Keyboard className="h-4 w-4 mr-2" />
+                          Atalhos
                         </Button>
                         <hr className="border-slate-700" />
                         <Button
@@ -166,6 +257,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
           </div>
+
+          {/* Quick Navigation Hint */}
+          <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+            <div className="flex items-center gap-1">
+              <Command className="h-3 w-3" />
+              <span>Pressione</span>
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">G</kbd>
+              <span>+</span>
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">H</kbd>
+              <span>para Dashboard</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">?</kbd>
+              <span>para ver todos os atalhos</span>
+            </div>
+          </div>
         </header>
 
         {/* Main Content Area */}
@@ -174,7 +281,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
       </div>
 
-      {/* Notifications Panel */}
+      {/* Advanced Panels */}
       <NotificationsPanel
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
@@ -182,6 +289,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onMarkAsRead={handleMarkAsRead}
         onMarkAllAsRead={handleMarkAllAsRead}
         onDeleteNotification={handleDeleteNotification}
+      />
+
+      <GlobalSearch
+        isOpen={searchOpen}
+        onClose={closeSearch}
+      />
+
+      <KeyboardShortcuts
+        isOpen={shortcutsOpen}
+        onClose={closeShortcuts}
       />
     </div>
   )
