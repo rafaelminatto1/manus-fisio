@@ -10,15 +10,15 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
+  // Configuração de TypeScript e ESLint para produção
   typescript: {
-    // !! TEMPORÁRIO !! Permitir builds de produção mesmo com erros de TypeScript
-    // Apenas para deploy inicial - corrigir após deploy
-    ignoreBuildErrors: true,
+    // Removido ignoreBuildErrors - agora com Next.js atualizado
+    ignoreBuildErrors: false,
   },
   
   eslint: {
-    // Ignorar erros de ESLint durante build (temporário)
-    ignoreDuringBuilds: true,
+    // Removido ignoreDuringBuilds - melhor prática
+    ignoreDuringBuilds: false,
   },
   
   // Otimização de imagens
@@ -42,7 +42,7 @@ const nextConfig = {
     minimumCacheTTL: 31536000,
   },
   
-  // Headers de segurança
+  // Headers de segurança aprimorados
   async headers() {
     return [
       {
@@ -62,11 +62,15 @@ const nextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
+            value: 'max-age=31536000; includeSubDomains; preload',
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
           },
           {
             key: 'Content-Security-Policy',
@@ -74,10 +78,14 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'", 
-              "img-src 'self' data: https:",
+              "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://hycudcwtuocmufahpsnmr.supabase.co",
+              "media-src 'self' blob:",
+              "object-src 'none'",
               "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
             ].join('; '),
           },
         ],
@@ -113,6 +121,15 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
   
@@ -134,7 +151,17 @@ const nextConfig = {
         destination: '/auth/login',
         permanent: true,
       },
+      {
+        source: '/dashboard',
+        destination: '/',
+        permanent: true,
+      },
     ];
+  },
+  
+  // Otimizações de build
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 };
 
