@@ -6,7 +6,7 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/.vercel/',
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
@@ -39,6 +39,6 @@ module.exports = {
     '<rootDir>/src/**/*.{test,spec}.{js,jsx,ts,tsx}',
   ],
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.mjs$))',
+    '/node_modules/(?!(@supabase|isows|@radix-ui|lucide-react)/)',
   ],
 } 
