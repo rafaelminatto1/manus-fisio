@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
-import { ThemeCustomizer, useThemeCustomizer } from '@/components/ui/theme-customizer'
+import { ThemeCustomizer } from '@/components/ui/theme-customizer'
 import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
 import { useAuth } from '@/hooks/use-auth'
 import { createClient, isMockMode } from '@/lib/auth'
@@ -182,7 +182,6 @@ export default function Dashboard() {
   const [selectedView, setSelectedView] = useState('overview')
 
   // Advanced features hooks
-  const themeCustomizer = useThemeCustomizer()
   const dashboardWidgets = useDashboardWidgets()
   const [showAdvancedDashboard, setShowAdvancedDashboard] = useState(false)
 
@@ -354,20 +353,14 @@ export default function Dashboard() {
                 {showAdvancedDashboard ? 'Dashboard Padrão' : 'Dashboard Avançado'}
               </Button>
 
-              {/* Analytics Button */}
-              <Button onClick={() => setShowAnalytics(true)} variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Analytics
-              </Button>
-
-              {/* Theme Customizer */}
+              {/* Analytics Dashboard */}
               <Button
-                onClick={themeCustomizer.toggle}
+                onClick={() => setShowAnalytics(!showAnalytics)}
                 variant="outline"
                 size="sm"
               >
-                <Palette className="h-4 w-4 mr-2" />
-                Temas
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
               </Button>
             </div>
           </div>

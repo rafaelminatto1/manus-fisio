@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 import { AIAssistant } from '@/components/ui/ai-assistant'
+import { ThemeCustomizer } from '@/components/ui/theme-customizer'
+import { PerformanceMonitor } from '@/components/ui/performance-monitor'
 import { useAuth } from '@/hooks/use-auth'
 import { 
   Search, 
