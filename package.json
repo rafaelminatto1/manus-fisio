@@ -16,7 +16,10 @@
     "db:generate": "supabase gen types typescript --project-id hycudcwtuocmufahpsnmr --schema public > src/types/database.types.ts",
     "build:vercel": "npm run build",
     "security:audit": "npm audit --audit-level=high",
-    "security:fix": "npm audit fix --force"
+    "security:fix": "npm audit fix --force",
+    "monitor": "node scripts/monitor-deploy.js",
+    "monitor:force": "node scripts/monitor-deploy.js --force",
+    "deploy:check": "npm run build && npm run monitor:force"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
