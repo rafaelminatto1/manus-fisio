@@ -1,137 +1,62 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  // Allow access to static files and public resources (sem autenticação)
-  if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname.includes('.') || // Files with extensions (.json, .png, .ico, etc.)
-    request.nextUrl.pathname === '/manifest.json' ||
-    request.nextUrl.pathname.startsWith('/icons/') ||
-    request.nextUrl.pathname === '/favicon.ico' ||
-    request.nextUrl.pathname === '/favicon.svg' ||
-    request.nextUrl.pathname.startsWith('/sw.js') ||
-    request.nextUrl.pathname.startsWith('/workbox-')
-  ) {
-    // Return without authentication check for static files
-    return NextResponse.next()
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  
+  // Permitir acesso público aos endpoints MCP
+  if (req.nextUrl.pathname.startsWith('/api/mcp/')) {
+    return res
   }
 
-  // Allow access to public routes (for testing and landing page)
-  if (
-    request.nextUrl.pathname === '/public' ||
-    request.nextUrl.pathname.startsWith('/public/')
-  ) {
-    return response
+  // Permitir acesso público aos endpoints de API de saúde
+  if (req.nextUrl.pathname.startsWith('/api/health')) {
+    return res
   }
 
-  // Get environment variables with fallbacks
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
-
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    // Auth routes - redirect to dashboard if already authenticated
-    if (request.nextUrl.pathname.startsWith('/auth/login')) {
-      if (user) {
-        return NextResponse.redirect(new URL('/', request.url))
-      }
-      return response
-    }
-
-    // Auth callback route - allow through
-    if (request.nextUrl.pathname.startsWith('/auth/callback')) {
-      return response
-    }
-
-    // Protected routes - redirect to login if not authenticated
-    const protectedRoutes = [
-      '/',
-      '/notebooks',
-      '/projects', 
-      '/team',
-      '/calendar',
-      '/settings',
-      '/dashboard-pro'
-    ]
-
-    const isProtectedRoute = protectedRoutes.some(route => 
-      request.nextUrl.pathname === route || 
-      request.nextUrl.pathname.startsWith(route + '/')
-    )
-
-    if (isProtectedRoute && !user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
-
-    return response
-  } catch (error) {
-    console.warn('Auth middleware error:', error)
-    return response
+  // Permitir acesso público aos endpoints de autenticação
+  if (req.nextUrl.pathname.startsWith('/api/auth/')) {
+    return res
   }
+
+  // Permitir acesso público aos endpoints de AI
+  if (req.nextUrl.pathname.startsWith('/api/ai/')) {
+    return res
+  }
+
+  // Para outras rotas, verificar autenticação
+  const supabase = createMiddlewareClient({ req, res })
+
+  // Verificar se há uma sessão válida
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  // Se não há sessão e está tentando acessar uma rota protegida
+  if (!session && req.nextUrl.pathname !== '/auth/login' && !req.nextUrl.pathname.startsWith('/api/')) {
+    // Redirecionar para login
+    return NextResponse.redirect(new URL('/auth/login', req.url))
+  }
+
+  // Se há sessão e está tentando acessar a página de login
+  if (session && req.nextUrl.pathname === '/auth/login') {
+    // Redirecionar para dashboard
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  return res
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except static files
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 } 
