@@ -2,9 +2,8 @@ import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/hooks/use-auth'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { useState } from 'react'
+import { QueryProvider } from '@/components/providers/query-provider'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -59,11 +58,18 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <div id="root" className="min-h-screen bg-background text-foreground">
-            {children}
-          </div>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <div id="root" className="min-h-screen bg-background text-foreground">
+              {children}
+            </div>
+            <Toaster 
+              position="top-right"
+              richColors
+              closeButton
+            />
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )

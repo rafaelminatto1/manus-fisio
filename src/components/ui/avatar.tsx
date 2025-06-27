@@ -7,6 +7,8 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   fallback?: string
 }
 
+interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+
 interface AvatarFallbackProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode
 }
@@ -38,6 +40,19 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 )
 Avatar.displayName = "Avatar"
 
+const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <img
+        ref={ref}
+        className={cn("aspect-square h-full w-full object-cover", className)}
+        {...props}
+      />
+    )
+  }
+)
+AvatarImage.displayName = "AvatarImage"
+
 const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(
   ({ className, children, ...props }, ref) => {
     return (
@@ -55,4 +70,4 @@ const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(
 )
 AvatarFallback.displayName = "AvatarFallback"
 
-export { Avatar, AvatarFallback }
+export { Avatar, AvatarImage, AvatarFallback }
