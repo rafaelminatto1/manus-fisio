@@ -70,7 +70,7 @@ export function CalendarFilters({ filters, onFiltersChange }: CalendarFiltersPro
 
   const hasActiveFilters = filters.eventTypes.length > 0 || filters.attendees.length > 0
 
-  const selectedUsers = users.filter(user => filters.attendees.includes(user.id))
+  const selectedUsers = users.filter((user: any) => filters.attendees.includes(user.id))
 
   return (
     <div className="space-y-4">
@@ -125,7 +125,7 @@ export function CalendarFilters({ filters, onFiltersChange }: CalendarFiltersPro
         {/* Participantes selecionados */}
         {selectedUsers.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
-            {selectedUsers.map((user) => (
+            {selectedUsers.map((user: any) => (
               <Badge
                 key={user.id}
                 variant="secondary"
@@ -134,7 +134,7 @@ export function CalendarFilters({ filters, onFiltersChange }: CalendarFiltersPro
                 <Avatar className="h-4 w-4">
                   <AvatarImage src={user.avatar_url || ''} />
                   <AvatarFallback className="text-xs">
-                    {user.full_name.split(' ').map(n => n[0]).join('')}
+                    {user.full_name.split(' ').map((n: any) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-xs">{user.full_name}</span>
@@ -158,14 +158,14 @@ export function CalendarFilters({ filters, onFiltersChange }: CalendarFiltersPro
           </SelectTrigger>
           <SelectContent>
             {users
-              .filter(user => !filters.attendees.includes(user.id))
-              .map((user) => (
+              .filter((user: any) => !filters.attendees.includes(user.id))
+              .map((user: any) => (
                 <SelectItem key={user.id} value={user.id}>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-5 w-5">
                       <AvatarImage src={user.avatar_url || ''} />
                       <AvatarFallback className="text-xs">
-                        {user.full_name.split(' ').map(n => n[0]).join('')}
+                        {user.full_name.split(' ').map((n: any) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">

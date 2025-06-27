@@ -37,6 +37,14 @@ export const metadata: Metadata = {
     description: 'Sistema integrado de gestão para clínica de fisioterapia',
   },
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Manus Fisio',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export const viewport: Viewport = {
@@ -49,13 +57,6 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
   ],
-  other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'apple-mobile-web-app-title': 'Manus Fisio',
-    'mobile-web-app-capable': 'yes',
-    'format-detection': 'telephone=no',
-  }
 }
 
 export default function RootLayout({

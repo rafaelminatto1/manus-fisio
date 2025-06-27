@@ -49,8 +49,8 @@ export function EventDetailsModal({ open, onClose, event, onEdit }: EventDetails
     break: 'bg-red-100 text-red-800',
   }
 
-  const attendeeUsers = users.filter(user => event.attendees.includes(user.id))
-  const creator = users.find(user => user.id === event.created_by)
+  const attendeeUsers = users.filter((user: any) => event.attendees.includes(user.id))
+  const creator = users.find((user: any) => user.id === event.created_by)
 
   const handleDelete = async () => {
     if (confirm('Tem certeza que deseja excluir este evento?')) {
@@ -154,7 +154,7 @@ export function EventDetailsModal({ open, onClose, event, onEdit }: EventDetails
                 <Avatar className="h-6 w-6">
                   <AvatarImage src={creator.avatar_url || ''} />
                   <AvatarFallback>
-                    {creator.full_name.split(' ').map(n => n[0]).join('')}
+                    {creator.full_name.split(' ').map((n: any) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -175,12 +175,12 @@ export function EventDetailsModal({ open, onClose, event, onEdit }: EventDetails
                 </span>
               </div>
               <div className="space-y-2">
-                {attendeeUsers.map((attendee) => (
+                {attendeeUsers.map((attendee: any) => (
                   <div key={attendee.id} className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={attendee.avatar_url || ''} />
                       <AvatarFallback>
-                        {attendee.full_name.split(' ').map(n => n[0]).join('')}
+                        {attendee.full_name.split(' ').map((n: any) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">

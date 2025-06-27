@@ -140,7 +140,7 @@ export function CalendarView({ className }: CalendarViewProps) {
   // Estilo customizado para eventos
   const eventStyleGetter = (event: any) => {
     const eventType = event.resource.event_type
-    const backgroundColor = eventTypeColors[eventType] || '#6b7280'
+    const backgroundColor = eventTypeColors[eventType as keyof typeof eventTypeColors] || '#6b7280'
     
     return {
       style: {

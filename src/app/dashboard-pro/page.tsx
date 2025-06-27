@@ -243,7 +243,7 @@ export default function DashboardPro() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AnalyticsDashboard metrics={analyticsMetrics} />
+              <AnalyticsDashboard />
             </CardContent>
           </Card>
 

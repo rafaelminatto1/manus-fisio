@@ -133,8 +133,8 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
   }
 
   const selectedAttendees = form.watch('attendees')
-  const selectedUsers = users.filter(user => selectedAttendees.includes(user.id))
-  const availableUsers = users.filter(user => !selectedAttendees.includes(user.id))
+  const selectedUsers = users.filter((user: any) => selectedAttendees.includes(user.id))
+  const availableUsers = users.filter((user: any) => !selectedAttendees.includes(user.id))
 
   const eventTypeLabels = {
     appointment: 'Consulta',
@@ -270,7 +270,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Participantes selecionados:</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedUsers.map((user) => (
+                  {selectedUsers.map((user: any) => (
                     <Badge
                       key={user.id}
                       variant="secondary"
@@ -279,7 +279,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={user.avatar_url || ''} />
                         <AvatarFallback>
-                          {user.full_name.split(' ').map(n => n[0]).join('')}
+                          {user.full_name.split(' ').map((n: any) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-xs">{user.full_name}</span>

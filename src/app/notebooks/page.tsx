@@ -391,58 +391,8 @@ export default function NotebooksPage() {
           {/* Painel de Colaboração */}
           <div className="lg:col-span-1">
             <CollaborationPanel
-              targetType="page"
-              targetId={editingNotebook?.id || 'new'}
-              comments={[
-                {
-                  id: '1',
-                  content: 'Excelente protocolo! Sugiro adicionar mais detalhes sobre a frequência dos exercícios.',
-                  author_id: 'user-1',
-                  author_name: 'Dr. Rafael Santos',
-                  target_type: 'page',
-                  target_id: editingNotebook?.id || 'new',
-                  mentions: [],
-                  created_at: new Date(Date.now() - 3600000),
-                  replies: [
-                    {
-                      id: '2',
-                      content: 'Concordo! Vou incluir uma tabela com as frequências recomendadas.',
-                      author_id: 'user-2',
-                      author_name: 'Ana Silva',
-                      target_type: 'page',
-                      target_id: editingNotebook?.id || 'new',
-                      parent_comment_id: '1',
-                      mentions: ['user-1'],
-                      created_at: new Date(Date.now() - 1800000)
-                    }
-                  ]
-                }
-              ]}
-              onAddComment={(content, parentId) => {
-                console.log('Adding comment:', content, parentId)
-                // Implementar adição de comentário
-              }}
-              onMention={(userId) => {
-                console.log('Mentioning user:', userId)
-                // Implementar menção de usuário
-              }}
-              activeUsers={[
-                {
-                  id: 'user-1',
-                  name: 'Dr. Rafael Santos',
-                  status: 'editing'
-                },
-                {
-                  id: 'user-2', 
-                  name: 'Ana Silva',
-                  status: 'viewing'
-                },
-                {
-                  id: 'user-3',
-                  name: 'João Oliveira',
-                  status: 'online'
-                }
-              ]}
+              documentId={editingNotebook?.id || 'new'}
+              documentTitle={editingNotebook?.title || 'Novo Notebook'}
             />
           </div>
         </div>

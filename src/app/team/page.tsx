@@ -268,7 +268,7 @@ export default function TeamPage() {
     try {
       const newNote: ProgressNote = {
         id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0] || '',
         content: progressForm.content,
         achievements: progressForm.achievements.filter(a => a.trim()),
         next_steps: progressForm.next_steps.filter(s => s.trim()),
@@ -306,7 +306,7 @@ export default function TeamPage() {
         id: Date.now().toString(),
         competency: competencyForm.competency,
         level: competencyForm.level,
-        evaluation_date: new Date().toISOString().split('T')[0],
+        evaluation_date: new Date().toISOString().split('T')[0] || '',
         notes: competencyForm.notes
       }
 

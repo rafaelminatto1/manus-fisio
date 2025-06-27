@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
-import { ThemeCustomizer } from '@/components/ui/theme-customizer'
+import { ThemeCustomizer, useThemeCustomizer } from '@/components/ui/theme-customizer'
 import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
 import { AIAssistant, useAIAssistant } from '@/components/ui/ai-assistant'
 import { useAuth } from '@/hooks/use-auth'
@@ -213,7 +213,7 @@ export default function AdvancedDashboard() {
         .limit(10)
 
       if (activitiesResult.data) {
-        setActivities(activitiesResult.data.map(activity => ({
+        setActivities(activitiesResult.data.map((activity: any) => ({
           ...activity,
           user: activity.users
         })))
@@ -309,7 +309,7 @@ export default function AdvancedDashboard() {
               <BarChart3 className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Analytics Avançado</h2>
             </div>
-            <AnalyticsDashboard metrics={analyticsMetrics} />
+            <AnalyticsDashboard />
           </div>
         )
       

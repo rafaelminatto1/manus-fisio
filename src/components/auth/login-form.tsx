@@ -31,6 +31,7 @@ export function LoginForm() {
       
       return () => clearTimeout(timer)
     }
+    return () => {} // Return empty cleanup function when condition is not met
   }, [user, loading, router, message])
 
   const handleSignIn = async (e: React.FormEvent) => {

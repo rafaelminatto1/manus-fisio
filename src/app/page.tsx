@@ -234,10 +234,10 @@ export default function Dashboard() {
 
       // ✅ CORREÇÃO: Consultas com tratamento de erro adequado
       const [notebooksResult, projectsResult, usersResult, tasksResult] = await Promise.all([
-        supabase.from('notebooks').select('id').then(res => ({ data: res.data || [], error: res.error })),
-        supabase.from('projects').select('id, status').then(res => ({ data: res.data || [], error: res.error })),
-        supabase.from('users').select('id, role, is_active').then(res => ({ data: res.data || [], error: res.error })),
-        supabase.from('tasks').select('id, status').then(res => ({ data: res.data || [], error: res.error }))
+        supabase.from('notebooks').select('id').then((res: any) => ({ data: res.data || [], error: res.error })),
+        supabase.from('projects').select('id, status').then((res: any) => ({ data: res.data || [], error: res.error })),
+        supabase.from('users').select('id, role, is_active').then((res: any) => ({ data: res.data || [], error: res.error })),
+        supabase.from('tasks').select('id, status').then((res: any) => ({ data: res.data || [], error: res.error }))
       ])
 
       // ✅ CORREÇÃO: Log de erros sem quebrar a aplicação
@@ -249,11 +249,11 @@ export default function Dashboard() {
       // Calculate stats com dados seguros
       const totalNotebooks = notebooksResult.data?.length || 0
       const totalProjects = projectsResult.data?.length || 0
-      const completedProjects = projectsResult.data?.filter(p => p.status === 'completed').length || 0
+      const completedProjects = projectsResult.data?.filter((p: any) => p.status === 'completed').length || 0
       const totalTasks = tasksResult.data?.length || 0
-      const completedTasks = tasksResult.data?.filter(t => t.status === 'done').length || 0
+      const completedTasks = tasksResult.data?.filter((t: any) => t.status === 'done').length || 0
       const totalTeamMembers = usersResult.data?.length || 0
-      const activeInterns = usersResult.data?.filter(u => u.role === 'intern' && u.is_active !== false).length || 0
+              const activeInterns = usersResult.data?.filter((u: any) => u.role === 'intern' && u.is_active !== false).length || 0
 
       setStats({
         totalNotebooks,
@@ -654,10 +654,8 @@ export default function Dashboard() {
           {/* Advanced Dashboard Widgets */}
           {showAdvancedDashboard && (
             <DashboardWidgets
-              stats={stats}
-              activities={activities}
-              events={events}
-              isLoading={loading}
+              isEditMode={false}
+              onToggleEditMode={() => {}}
             />
           )}
 

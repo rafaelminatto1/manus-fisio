@@ -61,6 +61,47 @@ interface AIAssistantProps {
   className?: string
   initialMode?: 'chat' | 'writing' | 'search' | 'insights'
   context?: string
+  isOpen?: boolean
+  onClose?: () => void
+  onMinimize?: () => void
+  isMinimized?: boolean
+}
+
+// Hook para gerenciar o estado do AI Assistant
+export function useAIAssistant() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
+
+  const openAssistant = () => {
+    setIsOpen(true)
+    setIsMinimized(false)
+  }
+
+  const closeAssistant = () => {
+    setIsOpen(false)
+    setIsMinimized(false)
+  }
+
+  const minimizeAssistant = () => {
+    setIsMinimized(true)
+  }
+
+  const toggleAssistant = () => {
+    if (isOpen) {
+      closeAssistant()
+    } else {
+      openAssistant()
+    }
+  }
+
+  return {
+    isOpen,
+    isMinimized,
+    openAssistant,
+    closeAssistant,
+    minimizeAssistant,
+    toggleAssistant
+  }
 }
 
 const SYSTEM_PROMPTS = {
@@ -77,7 +118,15 @@ const SYSTEM_PROMPTS = {
              Foque em KPIs relevantes para gestão clínica e performance da equipe.`,
 }
 
-export function AIAssistant({ className, initialMode = 'chat', context }: AIAssistantProps) {
+export function AIAssistant({ 
+  className, 
+  initialMode = 'chat', 
+  context,
+  isOpen = false,
+  onClose,
+  onMinimize,
+  isMinimized = false
+}: AIAssistantProps) {
   const [mode, setMode] = useState(initialMode)
   const [isExpanded, setIsExpanded] = useState(false)
   const [writingText, setWritingText] = useState('')
@@ -216,7 +265,12 @@ export function AIAssistant({ className, initialMode = 'chat', context }: AIAssi
     toast.success('Copiado para a área de transferência!')
   }
 
-  if (!isExpanded) {
+  // Use external control quando fornecido, senão use estado interno
+  const isAssistantOpen = isOpen !== undefined ? isOpen : isExpanded
+  const handleClose = onClose || (() => setIsExpanded(false))
+  const handleMinimize = onMinimize || (() => setIsExpanded(false))
+
+  if (!isAssistantOpen) {
     return (
       <motion.div
         className={cn("fixed bottom-4 right-4 z-50", className)}
@@ -256,7 +310,7 @@ export function AIAssistant({ className, initialMode = 'chat', context }: AIAssi
                 <VolumeX className="h-4 w-4" />
               </Button>
             )}
-            <Button size="sm" variant="ghost" onClick={() => setIsExpanded(false)}>
+            <Button size="sm" variant="ghost" onClick={handleClose}>
               ×
             </Button>
           </div>

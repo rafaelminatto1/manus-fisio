@@ -33,6 +33,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 
+// Hook para gerenciar o estado do Theme Customizer
+export function useThemeCustomizer() {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const openThemeCustomizer = () => {
+    setIsOpen(true)
+  }
+
+  const closeThemeCustomizer = () => {
+    setIsOpen(false)
+  }
+
+  const toggleThemeCustomizer = () => {
+    if (isOpen) {
+      closeThemeCustomizer()
+    } else {
+      openThemeCustomizer()
+    }
+  }
+
+  return {
+    isOpen,
+    openThemeCustomizer,
+    closeThemeCustomizer,
+    toggleThemeCustomizer
+  }
+}
+
 interface ThemeConfig {
   mode: 'light' | 'dark' | 'system'
   primaryColor: string
@@ -221,8 +249,17 @@ const presetThemes = [
   },
 ]
 
-export function ThemeCustomizer() {
-  const [isOpen, setIsOpen] = useState(false)
+interface ThemeCustomizerProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function ThemeCustomizer({ isOpen: externalIsOpen, onClose }: ThemeCustomizerProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  
+  // Use external control quando fornecido, senão use estado interno
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
+  const handleClose = onClose || (() => setInternalIsOpen(false))
   const [currentTheme, setCurrentTheme] = useState<ThemeConfig>(defaultTheme)
   const [previewMode, setPreviewMode] = useState(false)
   const [activeTab, setActiveTab] = useState('presets')
@@ -312,16 +349,18 @@ export function ThemeCustomizer() {
 
   return (
     <>
-      {/* Botão para abrir o customizador */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        variant="outline"
-        size="sm"
-        className="fixed bottom-4 right-4 z-50 shadow-lg"
-      >
-        <Palette className="h-4 w-4 mr-2" />
-        Personalizar
-      </Button>
+      {/* Botão para abrir o customizador - só mostra se não há controle externo */}
+      {externalIsOpen === undefined && (
+        <Button
+          onClick={() => setInternalIsOpen(true)}
+          variant="outline"
+          size="sm"
+          className="fixed bottom-4 right-4 z-50 shadow-lg"
+                >
+          <Palette className="h-4 w-4 mr-2" />
+          Personalizar
+        </Button>
+        )}
 
       {/* Modal do customizador */}
       <AnimatePresence>
@@ -331,7 +370,7 @@ export function ThemeCustomizer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -368,7 +407,7 @@ export function ThemeCustomizer() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setIsOpen(false)}
+                      onClick={handleClose}
                     >
                       ✕
                     </Button>
@@ -757,12 +796,12 @@ export function ThemeCustomizer() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" onClick={handleClose}>
                       Cancelar
                     </Button>
                     <Button onClick={() => {
                       applyThemeToDocument(currentTheme)
-                      setIsOpen(false)
+                      handleClose()
                     }}>
                       Aplicar Tema
                     </Button>
