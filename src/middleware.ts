@@ -5,23 +5,8 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   
-  // ✅ CORREÇÃO CRÍTICA: Permitir acesso completo aos arquivos PWA sem autenticação
-  const publicPaths = [
-    '/manifest.json',
-    '/offline.html',
-    '/sw.js',
-    '/favicon.ico',
-    '/favicon.svg'
-  ]
-
-  const isPublicFile = 
-    publicPaths.includes(req.nextUrl.pathname) ||
-    req.nextUrl.pathname.startsWith('/icons/') ||
-    req.nextUrl.pathname.startsWith('/_next/') ||
-    req.nextUrl.pathname.startsWith('/api/') ||
-    req.nextUrl.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/)
-
-  if (isPublicFile) {
+  // Skip middleware for auth callback route
+  if (req.nextUrl.pathname === '/auth/callback') {
     return res
   }
   
@@ -68,8 +53,16 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Simplificado: aplicar middleware apenas em rotas que não são arquivos estáticos
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - manifest.json (PWA manifest)
+     * - sw.js (service worker)
+     * - icons/ (PWA icons)
+     * - .png, .jpg, .svg, .ico files
      */
-    '/((?!_next|api|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons|.*\\.png$|.*\\.jpg$|.*\\.svg$|.*\\.ico$).*)',
   ],
 }

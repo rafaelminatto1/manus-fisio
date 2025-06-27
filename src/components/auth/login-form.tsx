@@ -23,10 +23,15 @@ export function LoginForm() {
   // Redirecionar automaticamente se o usuário já estiver logado
   useEffect(() => {
     if (user && !loading) {
-      console.log('Usuário já logado, redirecionando...', user)
-      router.push('/')
+      console.log('Usuário logado, redirecionando para dashboard...', user)
+      // Aguardar um pouco antes de redirecionar para mostrar a mensagem
+      const timer = setTimeout(() => {
+        router.replace('/')
+      }, message ? 1500 : 100)
+      
+      return () => clearTimeout(timer)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, message])
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,15 +45,9 @@ export function LoginForm() {
       console.error('Erro no login:', error)
       setError(error.message)
     } else {
-      console.log('Login bem-sucedido, redirecionando...')
+      console.log('Login bem-sucedido!')
       setMessage('Login realizado com sucesso!')
-      
-      // Aguardar um pouco para mostrar a mensagem, depois redirecionar
-      setTimeout(() => {
-        router.push('/')
-        // Forçar reload da página se necessário
-        window.location.href = '/'
-      }, 1000)
+      // O redirecionamento será feito pelo useEffect quando user for atualizado
     }
   }
 
