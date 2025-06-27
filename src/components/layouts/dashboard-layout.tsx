@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
+import { AIAssistant } from '@/components/ui/ai-assistant'
 import { useAuth } from '@/hooks/use-auth'
 import { 
   Search, 
@@ -216,6 +217,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sistemas Globais */}
       <GlobalSearch isOpen={searchOpen} onClose={closeSearch} />
       <KeyboardShortcuts isOpen={shortcutsOpen} onClose={closeShortcuts} />
+      
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   )
 } 

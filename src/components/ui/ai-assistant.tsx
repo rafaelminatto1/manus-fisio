@@ -1,382 +1,560 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+'use client'
+
+import React, { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  Bot, 
-  Send, 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  VolumeX,
-  Lightbulb,
-  FileText,
-  Users,
-  Calendar,
-  Zap,
-  Brain,
-  Heart,
-  Activity,
-  Target,
-  BookOpen,
-  X,
-  Minimize2,
-  Maximize2,
-  RotateCcw,
+  useAIChat, 
+  useWritingAssistant, 
+  useSemanticSearchQuery,
+  useAIRecommendations,
+  usePredictiveInsights,
+  useSentimentAnalysis,
+  useAIAutoComplete,
+  useAISummarization
+} from '@/hooks/use-ai'
+import {
+  Bot,
+  Send,
+  Trash2,
   Copy,
   ThumbsUp,
   ThumbsDown,
-  Star
+  Sparkles,
+  Search,
+  Brain,
+  TrendingUp,
+  Lightbulb,
+  Wand2,
+  FileText,
+  MessageSquare,
+  Zap,
+  Target,
+  RefreshCw,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Settings,
+  Download,
+  Share,
+  BookOpen,
+  PenTool,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  BarChart3
 } from 'lucide-react'
-
-interface Message {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  suggestions?: string[]
-  actions?: Array<{
-    label: string
-    action: string
-    icon?: React.ReactNode
-  }>
-}
+import { toast } from 'sonner'
+import { cn } from '@/lib/cn'
 
 interface AIAssistantProps {
-  isOpen: boolean
-  onClose: () => void
-  onMinimize: () => void
-  isMinimized: boolean
+  className?: string
+  initialMode?: 'chat' | 'writing' | 'search' | 'insights'
+  context?: string
 }
 
-export function AIAssistant({ isOpen, onClose, onMinimize, isMinimized }: AIAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: 'Olá! Sou o Manus AI, seu assistente especializado em fisioterapia. Como posso ajudá-lo hoje?',
-      timestamp: new Date(),
-      suggestions: [
-        'Criar protocolo de reabilitação',
-        'Sugerir exercícios para lombalgia',
-        'Agendar supervisão de estagiário',
-        'Revisar relatório de progresso'
-      ]
-    }
-  ])
-  const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
+const SYSTEM_PROMPTS = {
+  general: `Você é um assistente inteligente especializado em fisioterapia e gestão clínica. 
+           Ajude com notebooks, projetos, agendamentos e análises. 
+           Seja conciso, prático e sempre focado na área da saúde.`,
+  
+  writing: `Você é um assistente de escrita especializado em documentação médica e fisioterapia.
+            Ajude a melhorar textos, corrigir gramática e sugerir conteúdo relevante.
+            Mantenha terminologia médica adequada e linguagem profissional.`,
+  
+  analysis: `Você é um analista de dados especializado em métricas de clínicas de fisioterapia.
+             Interprete dados, identifique tendências e forneça insights acionáveis.
+             Foque em KPIs relevantes para gestão clínica e performance da equipe.`,
+}
+
+export function AIAssistant({ className, initialMode = 'chat', context }: AIAssistantProps) {
+  const [mode, setMode] = useState(initialMode)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [writingText, setWritingText] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isListening, setIsListening] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Predefined responses for physiotherapy context
-  const aiResponses = {
-    'protocolo': {
-      content: 'Posso ajudá-lo a criar um protocolo de reabilitação personalizado. Para qual condição específica você precisa? Por exemplo: lesão de joelho, AVC, lombalgia, ou outra condição?',
-      suggestions: ['Protocolo para joelho', 'Protocolo neurológico', 'Protocolo lombar', 'Protocolo ombro'],
-      actions: [
-        { label: 'Abrir Templates', action: 'open-templates', icon: <FileText className="h-4 w-4" /> },
-        { label: 'Ver Protocolos Existentes', action: 'view-protocols', icon: <BookOpen className="h-4 w-4" /> }
-      ]
-    },
-    'exercícios': {
-      content: 'Claro! Posso sugerir exercícios específicos baseados na condição do paciente. Qual é a área de foco? Tenho protocolos para fortalecimento, mobilidade, equilíbrio e condicionamento cardiovascular.',
-      suggestions: ['Exercícios para lombar', 'Fortalecimento de joelho', 'Mobilidade de ombro', 'Equilíbrio para idosos'],
-      actions: [
-        { label: 'Biblioteca de Exercícios', action: 'exercise-library', icon: <Activity className="h-4 w-4" /> },
-        { label: 'Criar Plano Personalizado', action: 'create-plan', icon: <Target className="h-4 w-4" /> }
-      ]
-    },
-    'agendar': {
-      content: 'Vou ajudá-lo com o agendamento. Que tipo de compromisso você precisa marcar? Posso sugerir horários disponíveis baseados na agenda atual.',
-      suggestions: ['Supervisão de estagiário', 'Avaliação de paciente', 'Reunião de equipe', 'Sessão de tratamento'],
-      actions: [
-        { label: 'Abrir Calendário', action: 'open-calendar', icon: <Calendar className="h-4 w-4" /> },
-        { label: 'Ver Disponibilidade', action: 'check-availability', icon: <Users className="h-4 w-4" /> }
-      ]
-    },
-    'relatório': {
-      content: 'Posso auxiliar na elaboração de relatórios de progresso. Que tipo de relatório você precisa? Tenho templates para evolução de pacientes, avaliação de estagiários e relatórios de supervisão.',
-      suggestions: ['Relatório de evolução', 'Avaliação de estagiário', 'Relatório de supervisão', 'Relatório LGPD'],
-      actions: [
-        { label: 'Templates de Relatório', action: 'report-templates', icon: <FileText className="h-4 w-4" /> },
-        { label: 'Gerar Relatório', action: 'generate-report', icon: <Zap className="h-4 w-4" /> }
-      ]
-    },
-    'default': {
-      content: 'Entendi! Como especialista em fisioterapia, posso ajudá-lo com protocolos de reabilitação, sugestões de exercícios, agendamentos, relatórios e muito mais. O que você gostaria de fazer?',
-      suggestions: ['Criar protocolo', 'Sugerir exercícios', 'Agendar compromisso', 'Gerar relatório'],
-      actions: [
-        { label: 'Explorar Funcionalidades', action: 'explore-features', icon: <Lightbulb className="h-4 w-4" /> }
-      ]
-    }
-  }
+  // Hooks de IA
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    isLoading: chatLoading,
+    clearChat,
+    append
+  } = useAIChat(SYSTEM_PROMPTS.general)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const { 
+    improveText, 
+    generateSuggestions, 
+    checkGrammar, 
+    isLoading: writingLoading 
+  } = useWritingAssistant()
 
+  const { search, isSearching } = useSemanticSearchQuery()
+  const { data: recommendations } = useAIRecommendations()
+  const { data: insights } = usePredictiveInsights()
+  const { analyzeSentiment, isAnalyzing } = useSentimentAnalysis()
+  const { getCompletions } = useAIAutoComplete()
+  const { summarize, isLoading: summaryLoading } = useAISummarization()
+
+  // Auto scroll para última mensagem
   useEffect(() => {
-    scrollToBottom()
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleSend = async (text?: string) => {
-    const messageText = text || input
-    if (!messageText.trim()) return
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: messageText,
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsTyping(true)
-
-    // Simulate AI processing
-    setTimeout(() => {
-      const response = generateAIResponse(messageText)
-      setMessages(prev => [...prev, response])
-      setIsTyping(false)
-    }, 1500)
-  }
-
-  const generateAIResponse = (userMessage: string): Message => {
-    const lowerMessage = userMessage.toLowerCase()
-    
-    let responseData = aiResponses.default
-    
-    if (lowerMessage.includes('protocolo') || lowerMessage.includes('reabilitação')) {
-      responseData = aiResponses.protocolo
-    } else if (lowerMessage.includes('exercício') || lowerMessage.includes('exercitar')) {
-      responseData = aiResponses.exercícios
-    } else if (lowerMessage.includes('agendar') || lowerMessage.includes('marcar') || lowerMessage.includes('horário')) {
-      responseData = aiResponses.agendar
-    } else if (lowerMessage.includes('relatório') || lowerMessage.includes('relatório') || lowerMessage.includes('progresso')) {
-      responseData = aiResponses.relatório
-    }
-
-    return {
-      id: Date.now().toString(),
-      type: 'assistant',
-      content: responseData.content,
-      timestamp: new Date(),
-      suggestions: responseData.suggestions,
-      actions: responseData.actions
+  // Síntese de voz
+  const speak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      setIsSpeaking(true)
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'pt-BR'
+      utterance.onend = () => setIsSpeaking(false)
+      speechSynthesis.speak(utterance)
     }
   }
 
-  const handleSuggestionClick = (suggestion: string) => {
-    handleSend(suggestion)
-  }
-
-  const handleActionClick = (action: string) => {
-    console.log('Action clicked:', action)
-    // Implement action handlers here
-    const actionMessage: Message = {
-      id: Date.now().toString(),
-      type: 'assistant',
-      content: `Ação "${action}" executada com sucesso! Como posso ajudá-lo mais?`,
-      timestamp: new Date()
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
+      setIsSpeaking(false)
     }
-    setMessages(prev => [...prev, actionMessage])
   }
 
-  const toggleVoice = () => {
-    setVoiceEnabled(!voiceEnabled)
-  }
+  // Reconhecimento de voz
+  const startListening = () => {
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new (window as any).webkitSpeechRecognition()
+      recognition.lang = 'pt-BR'
+      recognition.continuous = false
+      recognition.interimResults = false
 
-  const toggleListening = () => {
-    setIsListening(!isListening)
-    // Implement speech recognition here
-  }
-
-  const clearChat = () => {
-    setMessages([
-      {
-        id: '1',
-        type: 'assistant',
-        content: 'Chat limpo! Como posso ajudá-lo agora?',
-        timestamp: new Date(),
-        suggestions: [
-          'Criar protocolo de reabilitação',
-          'Sugerir exercícios',
-          'Agendar supervisão',
-          'Gerar relatório'
-        ]
+      recognition.onstart = () => setIsListening(true)
+      recognition.onend = () => setIsListening(false)
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        if (mode === 'chat') {
+          append({ role: 'user', content: transcript })
+        } else if (mode === 'writing') {
+          setWritingText(prev => prev + ' ' + transcript)
+        } else if (mode === 'search') {
+          setSearchQuery(transcript)
+        }
       }
-    ])
+
+      recognition.start()
+    } else {
+      toast.error('Reconhecimento de voz não suportado neste navegador')
+    }
   }
 
-  if (!isOpen) return null
+  // Handlers
+  const handleImproveText = async () => {
+    if (!writingText.trim()) return
+    
+    try {
+      const improved = await improveText(writingText, context)
+      setWritingText(improved)
+      toast.success('Texto melhorado com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao melhorar texto')
+    }
+  }
+
+  const handleGenerateSuggestions = async () => {
+    if (!writingText.trim()) return
+    
+    try {
+      const suggestions = await generateSuggestions(writingText, 'notebook')
+      // Mostrar sugestões em um modal ou lista
+      toast.success(`${suggestions.length} sugestões geradas!`)
+    } catch (error) {
+      toast.error('Erro ao gerar sugestões')
+    }
+  }
+
+  const handleSemanticSearch = async () => {
+    if (!searchQuery.trim()) return
+    
+    try {
+      const results = await search(searchQuery)
+      // Processar e mostrar resultados
+      toast.success(`${results.length} resultados encontrados!`)
+    } catch (error) {
+      toast.error('Erro na busca semântica')
+    }
+  }
+
+  const handleSummarize = async () => {
+    if (!writingText.trim()) return
+    
+    try {
+      const summary = await summarize(writingText, 'brief')
+      // Mostrar resumo
+      toast.success('Resumo gerado com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao gerar resumo')
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copiado para a área de transferência!')
+  }
+
+  if (!isExpanded) {
+    return (
+      <motion.div
+        className={cn("fixed bottom-4 right-4 z-50", className)}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      >
+        <Button
+          onClick={() => setIsExpanded(true)}
+          size="lg"
+          className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg"
+        >
+          <Bot className="h-6 w-6" />
+        </Button>
+      </motion.div>
+    )
+  }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Card className={`transition-all duration-300 ${isMinimized ? 'w-80 h-16' : 'w-96 h-[600px]'} shadow-2xl`}>
+    <motion.div
+      className={cn("fixed bottom-4 right-4 z-50", className)}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+    >
+      <Card className="w-96 h-[600px] flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
         {/* Header */}
-        <CardHeader className="pb-3 border-b">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="relative">
-                <Bot className="h-6 w-6 text-primary" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              </div>
-              Manus AI
-              <Badge variant="secondary" className="text-xs">Beta</Badge>
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" onClick={toggleVoice}>
-                {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onMinimize}>
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            <span className="font-semibold">AI Assistant</span>
           </div>
-        </CardHeader>
+          <div className="flex items-center gap-2">
+            {isSpeaking && (
+              <Button size="sm" variant="ghost" onClick={stopSpeaking}>
+                <VolumeX className="h-4 w-4" />
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setIsExpanded(false)}>
+              ×
+            </Button>
+          </div>
+        </div>
 
-        {!isMinimized && (
-          <>
-            {/* Messages */}
-            <CardContent className="flex-1 p-4 overflow-y-auto max-h-96">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg p-3 ${
-                      message.type === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    }`}>
+        {/* Tabs */}
+        <Tabs value={mode} onValueChange={(value) => setMode(value as any)} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 m-2">
+            <TabsTrigger value="chat" className="text-xs">
+              <MessageSquare className="h-3 w-3 mr-1" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="writing" className="text-xs">
+              <PenTool className="h-3 w-3 mr-1" />
+              Escrita
+            </TabsTrigger>
+            <TabsTrigger value="search" className="text-xs">
+              <Search className="h-3 w-3 mr-1" />
+              Busca
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="text-xs">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Insights
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="flex-1 flex flex-col p-0">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.filter(m => m.role !== 'system').map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "flex gap-3",
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  
+                  <div className={cn(
+                    "max-w-[80%] rounded-lg p-3",
+                    message.role === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-muted'
+                  )}>
+                    {message.role === 'assistant' ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          code({node, inline, className, children, ...props}) {
+                            const match = /language-(\w+)/.exec(className || '')
+                            return !inline && match ? (
+                              <SyntaxHighlighter
+                                style={oneDark}
+                                language={match[1]}
+                                PreTag="div"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            ) : (
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            )
+                          }
+                        }}
+                        className="prose prose-sm max-w-none"
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : (
                       <p className="text-sm">{message.content}</p>
-                      <div className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
+                    )}
+                    
+                    {message.role === 'assistant' && (
+                      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-muted-foreground/20">
+                        <Button size="sm" variant="ghost" onClick={() => copyToClipboard(message.content)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => speak(message.content)}>
+                          <Volume2 className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost">
+                          <ThumbsUp className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost">
+                          <ThumbsDown className="h-3 w-3" />
+                        </Button>
                       </div>
-                      
-                      {/* Suggestions */}
-                      {message.suggestions && (
-                        <div className="mt-3 space-y-2">
-                          <div className="text-xs font-medium opacity-80">Sugestões:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {message.suggestions.map((suggestion, index) => (
-                              <Button
-                                key={index}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs h-6"
-                                onClick={() => handleSuggestionClick(suggestion)}
-                              >
-                                {suggestion}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Actions */}
-                      {message.actions && (
-                        <div className="mt-3 space-y-2">
-                          <div className="text-xs font-medium opacity-80">Ações rápidas:</div>
-                          <div className="space-y-1">
-                            {message.actions.map((action, index) => (
-                              <Button
-                                key={index}
-                                variant="ghost"
-                                size="sm"
-                                className="w-full justify-start text-xs h-8"
-                                onClick={() => handleActionClick(action.action)}
-                              >
-                                {action.icon}
-                                {action.label}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    )}
+                  </div>
+                  
+                  {message.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">U</span>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+              
+              {chatLoading && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
-                ))}
-                
-                {/* Typing indicator */}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <div className="flex items-center gap-1">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground ml-2">Manus AI está digitando...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </CardContent>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
 
-            {/* Input */}
-            <div className="border-t p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Button variant="ghost" size="sm" onClick={clearChat}>
-                  <RotateCcw className="h-4 w-4" />
+            <div className="p-4 border-t">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={handleInputChange}
+                  placeholder="Digite sua mensagem..."
+                  disabled={chatLoading}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={startListening} disabled={isListening}>
+                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
-                <div className="text-xs text-muted-foreground flex-1">
-                  Especialista em fisioterapia • Sempre atualizado
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <Input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Digite sua pergunta sobre fisioterapia..."
-                    className="pr-10"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
-                    onClick={toggleListening}
-                  >
-                    {isListening ? <MicOff className="h-4 w-4 text-red-500" /> : <Mic className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Button onClick={() => handleSend()} disabled={!input.trim()}>
+                <Button type="submit" size="sm" disabled={chatLoading || !input.trim()}>
                   <Send className="h-4 w-4" />
                 </Button>
+              </form>
+              <div className="flex justify-between items-center mt-2">
+                <Button size="sm" variant="ghost" onClick={clearChat}>
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Limpar
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {messages.filter(m => m.role !== 'system').length} mensagens
+                </span>
               </div>
             </div>
-          </>
-        )}
+          </TabsContent>
+
+          {/* Writing Tab */}
+          <TabsContent value="writing" className="flex-1 flex flex-col p-4">
+            <div className="space-y-4 flex-1">
+              <Textarea
+                value={writingText}
+                onChange={(e) => setWritingText(e.target.value)}
+                placeholder="Cole ou digite seu texto aqui para melhorar, corrigir ou analisar..."
+                className="min-h-[200px] resize-none"
+              />
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={handleImproveText}
+                  disabled={writingLoading || !writingText.trim()}
+                >
+                  <Wand2 className="h-3 w-3 mr-1" />
+                  Melhorar
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleGenerateSuggestions}
+                  disabled={writingLoading || !writingText.trim()}
+                >
+                  <Lightbulb className="h-3 w-3 mr-1" />
+                  Sugestões
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => checkGrammar(writingText)}
+                  disabled={writingLoading || !writingText.trim()}
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Gramática
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handleSummarize}
+                  disabled={summaryLoading || !writingText.trim()}
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  Resumir
+                </Button>
+              </div>
+              
+              {writingLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Processando...</span>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Search Tab */}
+          <TabsContent value="search" className="flex-1 flex flex-col p-4">
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Busca semântica inteligente..."
+                  onKeyDown={(e) => e.key === 'Enter' && handleSemanticSearch()}
+                />
+                <Button 
+                  size="sm"
+                  onClick={handleSemanticSearch}
+                  disabled={isSearching || !searchQuery.trim()}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {isSearching && (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Buscando...</span>
+                </div>
+              )}
+              
+              <div className="text-sm text-muted-foreground">
+                💡 Use busca semântica para encontrar conteúdo relacionado por significado, não apenas palavras-chave.
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights" className="flex-1 flex flex-col p-4">
+            <div className="space-y-4">
+              {/* Recomendações */}
+              {recommendations && recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center">
+                    <Target className="h-4 w-4 mr-1" />
+                    Recomendações
+                  </h4>
+                  <div className="space-y-2">
+                    {recommendations.slice(0, 3).map((rec) => (
+                      <Card key={rec.id} className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{rec.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                          </div>
+                          <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'default' : 'secondary'}>
+                            {rec.confidence}%
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Insights Preditivos */}
+              {insights && insights.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    Insights Preditivos
+                  </h4>
+                  <div className="space-y-2">
+                    {insights.slice(0, 2).map((insight) => (
+                      <Card key={insight.id} className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{insight.prediction}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{insight.timeframe}</p>
+                          </div>
+                          <Badge variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'default' : 'secondary'}>
+                            {insight.confidence}%
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </Card>
-    </div>
+    </motion.div>
   )
-}
-
-// Hook para gerenciar AI Assistant
-export function useAIAssistant() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-
-  return {
-    isOpen,
-    isMinimized,
-    openAssistant: () => {
-      setIsOpen(true)
-      setIsMinimized(false)
-    },
-    closeAssistant: () => setIsOpen(false),
-    minimizeAssistant: () => setIsMinimized(true),
-    toggleAssistant: () => setIsOpen(prev => !prev)
-  }
 } 
