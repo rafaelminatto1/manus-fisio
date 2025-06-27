@@ -180,7 +180,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>(mockStats)
   const [activities, setActivities] = useState<RecentActivity[]>(mockActivities)
   const [events, setEvents] = useState<UpcomingEvent[]>(mockEvents)
-  const [loading, setLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [selectedView, setSelectedView] = useState('overview')
@@ -199,7 +199,7 @@ export default function Dashboard() {
     setStats(mockStats)
     setActivities(mockActivities)
     setEvents(mockEvents)
-    setLoading(false)
+    setDataLoading(false)
     
     // TODO: Reativar quando RLS policies estiverem configuradas corretamente
     // if (isUsingMock || !user) {
@@ -217,7 +217,7 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true)
+      setDataLoading(true)
       setError(null)
 
       // ✅ CORREÇÃO CRÍTICA: Verificar autenticação antes de consultas
@@ -228,7 +228,7 @@ export default function Dashboard() {
         setStats(mockStats)
         setActivities(mockActivities)
         setEvents(mockEvents)
-        setLoading(false)
+        setDataLoading(false)
         return
       }
 
@@ -295,7 +295,7 @@ export default function Dashboard() {
       setActivities(mockActivities)
       setEvents(mockEvents)
     } finally {
-      setLoading(false)
+      setDataLoading(false)
     }
   }
 
