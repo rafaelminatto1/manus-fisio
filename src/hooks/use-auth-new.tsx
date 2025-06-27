@@ -20,12 +20,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false) // ✅ CORREÇÃO: Iniciar como false
   
   const supabase = createClient()
   const isUsingMock = isMockMode()
 
   useEffect(() => {
+    // ✅ CORREÇÃO: Só setar loading quando realmente precisar carregar dados
+    
+    // Se não tem credenciais do Supabase ou está em modo mock, usar dados mock
     if (isUsingMock) {
       console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
       setUser(mockUser)
@@ -33,8 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // ✅ Só setar loading quando for buscar dados do Supabase
     setLoading(true)
 
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
@@ -44,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -76,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error)
+        // Em caso de erro, usar dados mock como fallback apenas em dev
         if (process.env.NODE_ENV === 'development') {
           setUser(mockUser)
         } else {
@@ -86,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
+      // Em caso de erro, usar dados mock como fallback apenas em dev
       if (process.env.NODE_ENV === 'development') {
         setUser(mockUser)
       } else {
@@ -101,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       if (isUsingMock) {
+        // Modo mock - simular login com delay reduzido
         await new Promise(resolve => setTimeout(resolve, 800))
         if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
           setUser(mockUser)
@@ -114,11 +123,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       })
       
+      // ✅ CORREÇÃO: Deixar o onAuthStateChange gerenciar o perfil do usuário
       return { error }
     } catch (error) {
       console.error('Erro no signIn:', error)
       return { error: { message: 'Erro interno do sistema' } }
     } finally {
+      // ✅ CORREÇÃO CRÍTICA: Sempre resetar loading no finally
       setLoading(false)
     }
   }
@@ -188,4 +199,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-}
+} 
