@@ -12,19 +12,15 @@ const nextConfig = {
     optimizePackageImports: ['@radix-ui/react-icons'],
   },
   
-  // Configuração de TypeScript e ESLint para produção
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hycudcwtuocmufhpsnmr.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Y3VkY3d0dW9jbXVmaHBzbm1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4ODk3NTEsImV4cCI6MjA2NjQ2NTc1MX0.PgNh5aomG9n_ABe6xHFyHiPMathWT4A94l_wOvewXzg'
-  },
+  // ✅ CORREÇÃO CRÍTICA: Credenciais removidas - usar apenas variáveis de ambiente
   typescript: {
-    // ⚠️ TEMPORÁRIO: Habilitado para completar build, será corrigido posteriormente
-    ignoreBuildErrors: true,
+    // Não ignorar erros de build - forçar qualidade
+    ignoreBuildErrors: false,
   },
   
   eslint: {
-    // ⚠️ TEMPORÁRIO: Habilitado para completar build, será corrigido posteriormente
-    ignoreDuringBuilds: true,
+    // Não ignorar durante builds - garantir qualidade
+    ignoreDuringBuilds: false,
   },
   
   // Otimização de imagens

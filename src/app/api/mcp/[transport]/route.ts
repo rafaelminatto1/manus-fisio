@@ -659,32 +659,35 @@ const tools = {
           type: analysis_type,
           period: time_period === "custom" ? custom_period : time_period,
           generated_at: new Date().toISOString(),
-          metrics: {
-            patient_outcomes: {
-              recovery_rate: "87%",
-              average_sessions: 12,
-              satisfaction_score: 4.6,
-              improvement_percentage: "+15%"
-            },
-            treatment_effectiveness: {
-              most_effective: "Terapia Manual + Exercícios",
-              success_rate: "92%",
-              average_duration: "8 semanas",
-              patient_adherence: "78%"
-            },
-            resource_utilization: {
-              room_occupancy: "85%",
-              equipment_usage: "72%",
-              therapist_efficiency: "90%",
-              peak_hours: "14h-17h"
-            },
-            revenue_analysis: {
-              monthly_revenue: "R$ 45.800",
-              growth_rate: "+12%",
-              cost_per_patient: "R$ 280",
-              profit_margin: "35%"
+          metrics: (() => {
+            const allMetrics = {
+              patient_outcomes: {
+                recovery_rate: "87%",
+                average_sessions: 12,
+                satisfaction_score: 4.6,
+                improvement_percentage: "+15%"
+              },
+              treatment_effectiveness: {
+                most_effective: "Terapia Manual + Exercícios",
+                success_rate: "92%",
+                average_duration: "8 semanas",
+                patient_adherence: "78%"
+              },
+              resource_utilization: {
+                room_occupancy: "85%",
+                equipment_usage: "72%",
+                therapist_efficiency: "90%",
+                peak_hours: "14h-17h"
+              },
+              revenue_analysis: {
+                monthly_revenue: "R$ 45.800",
+                growth_rate: "+12%",
+                cost_per_patient: "R$ 280",
+                profit_margin: "35%"
+              }
             }
-          }[analysis_type],
+            return allMetrics[analysis_type as keyof typeof allMetrics] || allMetrics.patient_outcomes
+          })(),
           predictions: include_predictions ? {
             next_month_revenue: "R$ 51.200",
             patient_growth: "+8%",
@@ -696,7 +699,7 @@ const tools = {
           .map(([key, value]) => `• ${key.replace(/_/g, ' ')}: ${value}`)
           .join('\n');
         
-        const predictionsText = include_predictions ? 
+        const predictionsText = include_predictions && analyticsResult.predictions ? 
           `\n🔮 Previsões:\n${Object.entries(analyticsResult.predictions)
             .map(([key, value]) => `• ${key.replace(/_/g, ' ')}: ${value}`)
             .join('\n')}` : '';

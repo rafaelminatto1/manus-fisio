@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       max_tokens: 1000,
     })
 
-    const responseText = completion.choices[0].message.content
+    const responseText = completion.choices?.[0]?.message?.content || 'Desculpe, não foi possível gerar uma resposta. Tente novamente.'
 
     // Simular streaming
     const encoder = new TextEncoder()

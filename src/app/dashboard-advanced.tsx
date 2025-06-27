@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
-import { ThemeCustomizer, useThemeCustomizer } from '@/components/ui/theme-customizer'
+import { ThemeCustomizer } from '@/components/ui/theme-customizer'
 import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
 import { AIAssistant, useAIAssistant } from '@/components/ui/ai-assistant'
 import { useAuth } from '@/hooks/use-auth'

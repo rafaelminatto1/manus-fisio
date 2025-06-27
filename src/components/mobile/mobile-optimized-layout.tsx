@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useIOSOptimization } from '@/hooks/use-ios-optimization'
 import { useIOSKeyboard } from '@/hooks/use-ios-keyboard'
-import { useIOSOptimization } from '@/hooks/use-ios-optimization'
-import { useIOSKeyboard } from '@/hooks/use-ios-keyboard'
 
 interface DeviceInfo {
   isIPhone: boolean
@@ -27,7 +25,7 @@ export function MobileOptimizedLayout({ children }: { children: React.ReactNode 
   
   // ✅ NOVO: Usar hooks de otimização iOS
   const { config, preloadCriticalResources, getAnimationConfig } = useIOSOptimization()
-  const { isKeyboardVisible, keyboardHeight } = useIOSKeyboard()
+  const { isKeyboardOpen, keyboardHeight } = useIOSKeyboard()
   
   useEffect(() => {
     const userAgent = navigator.userAgent
@@ -107,7 +105,7 @@ export function MobileOptimizedLayout({ children }: { children: React.ReactNode 
         deviceInfo.isIPad && 'ipad-layout',
         config.isLowPowerMode && 'reduce-motion',
         config.memoryLevel === 'low' && 'low-memory-mode',
-        isKeyboardVisible && 'keyboard-visible'
+        isKeyboardOpen && 'keyboard-visible'
       )}
       style={{
         paddingTop: deviceInfo.hasDynamicIsland 
@@ -115,7 +113,7 @@ export function MobileOptimizedLayout({ children }: { children: React.ReactNode 
           : deviceInfo.hasNotch 
           ? 'max(44px, env(safe-area-inset-top))'
           : undefined,
-        paddingBottom: isKeyboardVisible 
+        paddingBottom: isKeyboardOpen 
           ? `${keyboardHeight}px`
           : isIOS 
           ? 'max(1rem, env(safe-area-inset-bottom))' 
@@ -136,7 +134,7 @@ export function MobileOptimizedLayout({ children }: { children: React.ReactNode 
           <div>Connection: {config.connectionType}</div>
           <div>Memory: {config.memoryLevel}</div>
           <div>Low Power: {config.isLowPowerMode ? 'Yes' : 'No'}</div>
-          <div>Keyboard: {isKeyboardVisible ? `${keyboardHeight}px` : 'Hidden'}</div>
+          <div>Keyboard: {isKeyboardOpen ? `${keyboardHeight}px` : 'Hidden'}</div>
           <div>Notch: {deviceInfo.hasNotch ? 'Yes' : 'No'}</div>
           <div>Dynamic Island: {deviceInfo.hasDynamicIsland ? 'Yes' : 'No'}</div>
         </div>
