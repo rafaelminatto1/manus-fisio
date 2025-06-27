@@ -20,15 +20,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   
   const supabase = createClient()
   const isUsingMock = isMockMode()
 
   useEffect(() => {
+    console.log('AuthProvider inicializando...', { isUsingMock })
+    
     if (isUsingMock) {
       console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
-      setUser(mockUser)
+      // Em modo mock, não autenticar automaticamente na inicialização
+      setUser(null)
       setLoading(false)
       return
     }
@@ -36,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Sessão atual:', session)
       setSession(session)
       if (session?.user) {
         fetchUserProfile(session.user.id)
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session)
       setSession(session)
       
       if (session?.user) {
@@ -97,12 +102,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    console.log('Tentando login...', { email, isUsingMock })
     setLoading(true)
     
     try {
       if (isUsingMock) {
         await new Promise(resolve => setTimeout(resolve, 800))
         if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
+          console.log('Login mock bem-sucedido')
           setUser(mockUser)
           return { error: null }
         }
@@ -113,6 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       })
+      
+      if (!error) {
+        console.log('Login Supabase bem-sucedido')
+      }
       
       return { error }
     } catch (error) {

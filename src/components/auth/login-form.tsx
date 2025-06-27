@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,20 +17,38 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
 
-  const { signIn, signUp, resetPassword, loading } = useAuth()
+  const { signIn, signUp, resetPassword, loading, user } = useAuth()
   const router = useRouter()
+
+  // Redirecionar automaticamente se o usuário já estiver logado
+  useEffect(() => {
+    if (user && !loading) {
+      console.log('Usuário já logado, redirecionando...', user)
+      router.push('/')
+    }
+  }, [user, loading, router])
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setMessage(null)
 
+    console.log('Iniciando processo de login...')
     const { error } = await signIn(email, password)
 
     if (error) {
+      console.error('Erro no login:', error)
       setError(error.message)
     } else {
+      console.log('Login bem-sucedido, redirecionando...')
       setMessage('Login realizado com sucesso!')
-      router.push('/')
+      
+      // Aguardar um pouco para mostrar a mensagem, depois redirecionar
+      setTimeout(() => {
+        router.push('/')
+        // Forçar reload da página se necessário
+        window.location.href = '/'
+      }, 1000)
     }
   }
 
@@ -112,7 +130,7 @@ export function LoginForm() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="seu.email@exemplo.com"
+                  placeholder="rafael.minatto@yahoo.com.br"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -207,6 +225,9 @@ export function LoginForm() {
           <div className="text-center text-xs text-muted-foreground">
             <p>Sistema de Gestão Clínica</p>
             <p>Para fisioterapeutas e estagiários</p>
+            <p className="mt-2 text-slate-500">
+              Modo Mock: rafael.minatto@yahoo.com.br
+            </p>
           </div>
         </CardContent>
       </Card>

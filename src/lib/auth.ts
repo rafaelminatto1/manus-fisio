@@ -18,11 +18,18 @@ export type User = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+console.log('🔧 Auth Configuration:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  isDev: process.env.NODE_ENV === 'development',
+  isMockAuth: process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+})
+
 // Mock user for development (only when credentials are missing)
 export const mockUser: User = {
   id: 'mock-user-123',
-  email: 'admin@clinica.com',
-  full_name: 'Dr. Rafael Santos',
+  email: 'rafael.minatto@yahoo.com.br',
+  full_name: 'Dr. Rafael Minatto',
   avatar_url: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=face',
   role: 'admin',
   crefito: 'CREFITO-123456',
@@ -31,7 +38,7 @@ export const mockUser: User = {
 
 // Função para verificar se as credenciais estão configuradas e são válidas
 export const hasSupabaseCredentials = () => {
-  return !!(
+  const hasValidCredentials = !!(
     supabaseUrl && 
     supabaseAnonKey && 
     supabaseUrl.startsWith('https://') && 
@@ -40,46 +47,46 @@ export const hasSupabaseCredentials = () => {
     !supabaseAnonKey.includes('mock') &&
     supabaseUrl.includes('.supabase.co')
   )
+  
+  console.log('🔍 Credenciais Supabase:', { hasValidCredentials, supabaseUrl: supabaseUrl?.substring(0, 30) + '...' })
+  return hasValidCredentials
 }
 
 // Função para verificar se está em modo mock
 export const isMockMode = () => {
-  return !hasSupabaseCredentials() || process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+  const mockMode = !hasSupabaseCredentials() || process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+  console.log('🎭 Modo Mock:', mockMode)
+  return mockMode
 }
 
 // Cliente mock básico para desenvolvimento
 const createMockClient = () => {
   console.warn('🚧 Modo Mock ativo: Credenciais do Supabase não encontradas ou inválidas.')
+  console.warn('📧 Use: rafael.minatto@yahoo.com.br ou admin@clinica.com para login')
   
   return {
     auth: {
       getSession: () => Promise.resolve({ 
         data: { 
-          session: {
-            user: { id: mockUser.id, email: mockUser.email },
-            access_token: 'mock-token'
-          }
+          session: null // Começar sem sessão em modo mock
         }, 
         error: null 
       }),
       getUser: () => Promise.resolve({ 
-        data: { user: { id: mockUser.id, email: mockUser.email } }, 
+        data: { user: null }, 
         error: null 
       }),
       onAuthStateChange: (callback: any) => {
-        // Simula login automático em desenvolvimento
-        setTimeout(() => {
-          callback('SIGNED_IN', {
-            user: { id: mockUser.id, email: mockUser.email },
-            access_token: 'mock-token'
-          })
-        }, 100)
+        // Não simular login automático
         return { data: { subscription: { unsubscribe: () => {} } } }
       },
       signInWithPassword: ({ email, password }: any) => {
-        if (email && password) {
+        console.log('🔐 Mock login attempt:', email)
+        if ((email === 'rafael.minatto@yahoo.com.br' || email === 'admin@clinica.com') && password) {
+          console.log('✅ Mock login successful')
           return Promise.resolve({ data: { user: mockUser }, error: null })
         }
+        console.log('❌ Mock login failed')
         return Promise.resolve({ data: null, error: { message: 'Credenciais inválidas' } })
       },
       signUp: ({ email, password }: any) => {
@@ -112,12 +119,13 @@ export const createClient = () => {
 
   try {
     // Cliente real do Supabase
+    console.log('🚀 Criando cliente Supabase real')
     return createBrowserClient<Database>(
       supabaseUrl!,
       supabaseAnonKey!
     )
   } catch (error) {
-    console.error('Erro ao criar cliente Supabase:', error)
+    console.error('❌ Erro ao criar cliente Supabase:', error)
     return createMockClient()
   }
 }

@@ -5,43 +5,34 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   
-  // ✅ CORREÇÃO CRÍTICA: Permitir acesso público ao manifest.json (PWA)
-  if (req.nextUrl.pathname === '/manifest.json') {
-    return res
-  }
+  // ✅ CORREÇÃO CRÍTICA: Permitir acesso completo aos arquivos PWA sem autenticação
+  const publicPaths = [
+    '/manifest.json',
+    '/offline.html',
+    '/sw.js',
+    '/favicon.ico',
+    '/favicon.svg'
+  ]
 
-  // ✅ CORREÇÃO: Permitir acesso a arquivos estáticos PWA
-  if (req.nextUrl.pathname.startsWith('/icons/') || 
-      req.nextUrl.pathname === '/offline.html' ||
-      req.nextUrl.pathname === '/sw.js') {
+  const isPublicFile = 
+    publicPaths.includes(req.nextUrl.pathname) ||
+    req.nextUrl.pathname.startsWith('/icons/') ||
+    req.nextUrl.pathname.startsWith('/_next/') ||
+    req.nextUrl.pathname.startsWith('/api/') ||
+    req.nextUrl.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/)
+
+  if (isPublicFile) {
     return res
   }
   
-  // Modo desenvolvimento: permitir acesso livre para evitar erros 401
-  if (process.env.NODE_ENV === 'development' || 
-      !process.env.NEXT_PUBLIC_SUPABASE_URL || 
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      process.env.NEXT_PUBLIC_MOCK_AUTH === 'true') {
-    return res
-  }
-  
-  // Permitir acesso público aos endpoints MCP
-  if (req.nextUrl.pathname.startsWith('/api/mcp/')) {
-    return res
-  }
+  // Modo desenvolvimento ou mock: permitir acesso livre
+  const isMockMode = process.env.NODE_ENV === 'development' || 
+                     !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+                     process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
 
-  // Permitir acesso público aos endpoints de saúde
-  if (req.nextUrl.pathname.startsWith('/api/health')) {
-    return res
-  }
-
-  // Permitir acesso público aos endpoints de autenticação
-  if (req.nextUrl.pathname.startsWith('/api/auth/')) {
-    return res
-  }
-
-  // Permitir acesso público aos endpoints de AI
-  if (req.nextUrl.pathname.startsWith('/api/ai/')) {
+  if (isMockMode) {
+    console.log('Middleware em modo mock - permitindo acesso', req.nextUrl.pathname)
     return res
   }
 
@@ -55,7 +46,7 @@ export async function middleware(req: NextRequest) {
     } = await supabase.auth.getSession()
 
     // Se não há sessão e está tentando acessar uma rota protegida
-    if (!session && req.nextUrl.pathname !== '/auth/login' && !req.nextUrl.pathname.startsWith('/api/')) {
+    if (!session && req.nextUrl.pathname !== '/auth/login') {
       // Redirecionar para login
       return NextResponse.redirect(new URL('/auth/login', req.url))
     }
@@ -76,6 +67,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * Simplificado: aplicar middleware apenas em rotas que não são arquivos estáticos
+     */
+    '/((?!_next|api|favicon.ico).*)',
   ],
 }

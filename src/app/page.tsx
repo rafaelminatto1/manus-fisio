@@ -40,7 +40,8 @@ import {
   Stethoscope,
   FileText,
   Shield,
-  MessageSquare
+  MessageSquare,
+  Bell
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -174,7 +175,7 @@ const quickActions: QuickAction[] = [
 ]
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats>(mockStats)
   const [activities, setActivities] = useState<RecentActivity[]>(mockActivities)
@@ -183,6 +184,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [selectedView, setSelectedView] = useState('overview')
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   // Advanced features hooks
   const dashboardWidgets = useDashboardWidgets()
@@ -205,6 +207,12 @@ export default function Dashboard() {
     //   return
     // }
     // loadDashboardData()
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(timer)
   }, [user, isUsingMock])
 
   const loadDashboardData = async () => {
@@ -339,14 +347,17 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <AuthGuard>
-        <DashboardLayout>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-medical-500"></div>
-          </div>
-        </DashboardLayout>
-      </AuthGuard>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-medical-500"></div>
+      </div>
     )
+  }
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours()
+    if (hour < 12) return 'Bom dia'
+    if (hour < 18) return 'Boa tarde'
+    return 'Boa noite'
   }
 
   if (showAnalytics) {
@@ -375,10 +386,10 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Bem-vindo, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}! 👋
+                {getGreeting()}, {user?.full_name?.split(' ')[0] || 'Usuário'}! 👋
               </h1>
               <p className="text-muted-foreground mt-1">
-                {format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {format(currentTime, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
             </div>
             
