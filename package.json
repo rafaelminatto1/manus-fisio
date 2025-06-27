@@ -121,7 +121,6 @@
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.27.1",
     "@jest/globals": "^29.7.0",
-    "@next/swc-win32-x64-msvc": "^15.3.4",
     "@tailwindcss/typography": "^0.5.10",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
