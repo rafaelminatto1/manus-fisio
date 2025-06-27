@@ -1,554 +1,522 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import CountUp from 'react-countup'
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { createClient, isMockMode } from '@/lib/auth'
-import { useAuth } from '@/hooks/use-auth'
-import { 
-  BarChart3, 
-  TrendingUp, 
+import {
+  useSystemMetrics,
+  useTeamMetrics,
+  useProjectAnalytics,
+  useActivityData,
+  useUserActivity,
+  usePeriodComparison,
+} from '@/hooks/use-analytics'
+import {
+  TrendingUp,
   TrendingDown,
-  Users, 
+  Users,
+  FolderOpen,
+  BookOpen,
+  Calendar,
+  Bell,
+  Award,
+  Target,
+  Activity,
+  BarChart3,
+  PieChart as PieChartIcon,
   Clock,
   CheckCircle,
   AlertCircle,
-  Calendar,
-  GraduationCap,
-  Stethoscope,
-  Activity,
-  Target,
-  Award,
-  Brain,
-  Heart,
-  Timer,
-  Eye,
-  FileText,
-  Bookmark,
-  UserCheck,
-  Building
+  Pause,
+  X,
+  Download,
+  Filter,
+  RefreshCw,
 } from 'lucide-react'
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-interface AnalyticsData {
-  // Métricas gerais
-  totalPatients: number
-  totalSessions: number
-  totalProjects: number
-  totalInterns: number
-  
-  // Métricas de produtividade
-  completedTasks: number
-  completedTasksLastWeek: number
-  averageSessionDuration: number
-  supervisionHours: number
-  
-  // Métricas de qualidade
-  patientSatisfaction: number
-  internProgress: number
-  protocolAdherence: number
-  
-  // Métricas de tempo
-  averageResponseTime: number
-  appointmentPunctuality: number
-  
-  // Tendências (comparação com período anterior)
-  patientsGrowth: number
-  sessionsGrowth: number
-  productivityGrowth: number
-  satisfactionGrowth: number
+interface MetricCardProps {
+  title: string
+  value: number
+  change?: number
+  icon: React.ReactNode
+  color: string
+  format?: 'number' | 'percentage' | 'currency' | 'time'
+  suffix?: string
 }
 
-interface WeeklyActivity {
-  date: string
-  sessions: number
-  tasks: number
-  supervisions: number
-}
-
-interface SpecialtyMetrics {
-  specialty: string
-  patients: number
-  satisfaction: number
-  successRate: number
-  avgTreatmentDuration: number
-}
-
-// Mock data para desenvolvimento
-const mockAnalytics: AnalyticsData = {
-  totalPatients: 287,
-  totalSessions: 1543,
-  totalProjects: 12,
-  totalInterns: 8,
-  completedTasks: 145,
-  completedTasksLastWeek: 127,
-  averageSessionDuration: 45,
-  supervisionHours: 320,
-  patientSatisfaction: 4.8,
-  internProgress: 78,
-  protocolAdherence: 92,
-  averageResponseTime: 2.3,
-  appointmentPunctuality: 94,
-  patientsGrowth: 12.5,
-  sessionsGrowth: 8.7,
-  productivityGrowth: 15.2,
-  satisfactionGrowth: 2.1
-}
-
-const mockWeeklyActivity: WeeklyActivity[] = [
-  { date: '2024-01-15', sessions: 23, tasks: 12, supervisions: 3 },
-  { date: '2024-01-16', sessions: 28, tasks: 15, supervisions: 4 },
-  { date: '2024-01-17', sessions: 31, tasks: 18, supervisions: 5 },
-  { date: '2024-01-18', sessions: 26, tasks: 14, supervisions: 3 },
-  { date: '2024-01-19', sessions: 29, tasks: 16, supervisions: 4 },
-  { date: '2024-01-20', sessions: 15, tasks: 8, supervisions: 2 },
-  { date: '2024-01-21', sessions: 12, tasks: 6, supervisions: 1 }
-]
-
-const mockSpecialtyMetrics: SpecialtyMetrics[] = [
-  {
-    specialty: 'Fisioterapia Ortopédica',
-    patients: 98,
-    satisfaction: 4.9,
-    successRate: 94,
-    avgTreatmentDuration: 8.2
-  },
-  {
-    specialty: 'Fisioterapia Neurológica',
-    patients: 67,
-    satisfaction: 4.7,
-    successRate: 89,
-    avgTreatmentDuration: 12.1
-  },
-  {
-    specialty: 'Fisioterapia Respiratória',
-    patients: 54,
-    satisfaction: 4.8,
-    successRate: 91,
-    avgTreatmentDuration: 6.5
-  },
-  {
-    specialty: 'Fisioterapia Pediátrica',
-    patients: 43,
-    satisfaction: 4.9,
-    successRate: 95,
-    avgTreatmentDuration: 10.3
-  },
-  {
-    specialty: 'Fisioterapia Geriátrica',
-    patients: 25,
-    satisfaction: 4.6,
-    successRate: 87,
-    avgTreatmentDuration: 14.2
-  }
-]
-
-interface AnalyticsDashboardProps {
-  timeRange?: '7d' | '30d' | '90d' | '1y'
-  className?: string
-}
-
-export function AnalyticsDashboard({ 
-  timeRange = '30d', 
-  className = '' 
-}: AnalyticsDashboardProps) {
-  const { user } = useAuth()
-  const [analytics, setAnalytics] = useState<AnalyticsData>(mockAnalytics)
-  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivity[]>(mockWeeklyActivity)
-  const [specialtyMetrics, setSpecialtyMetrics] = useState<SpecialtyMetrics[]>(mockSpecialtyMetrics)
-  const [loading, setLoading] = useState(false)
-  const [selectedTab, setSelectedTab] = useState('overview')
-
-  const supabase = createClient()
-  const isUsingMock = isMockMode()
-
-  useEffect(() => {
-    if (!isUsingMock && user) {
-      loadAnalyticsData()
-    }
-  }, [user, timeRange, isUsingMock])
-
-  const loadAnalyticsData = async () => {
-    if (isUsingMock) return
-
-    try {
-      setLoading(true)
-      
-      // Carregar métricas de diferentes fontes (corrigido para schema real)
-      const [usersResult, projectsResult, notebooksResult, activityResult] = await Promise.all([
-        supabase.from('users').select('id', { count: 'exact' }).eq('role', 'intern'),
-        supabase.from('projects').select('id', { count: 'exact' }),
-        supabase.from('notebooks').select('id', { count: 'exact' }),
-        supabase.from('activity_logs').select('id,action,entity_type,user_id,created_at,users!activity_logs_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(10)
-      ])
-
-      // Processar dados (implementar lógica real de analytics)
-      // Por enquanto usando dados mock como fallback
-      
-    } catch (error) {
-      console.error('Erro ao carregar analytics:', error)
-    } finally {
-      setLoading(false)
+function MetricCard({ title, value, change, icon, color, format = 'number', suffix }: MetricCardProps) {
+  const formatValue = (val: number) => {
+    switch (format) {
+      case 'percentage':
+        return `${val.toFixed(1)}%`
+      case 'currency':
+        return `R$ ${val.toLocaleString('pt-BR')}`
+      case 'time':
+        return `${val.toFixed(1)}h`
+      default:
+        return val.toString()
     }
   }
 
-  const getGrowthIcon = (growth: number) => {
-    if (growth > 0) return <TrendingUp className="h-4 w-4 text-green-500" />
-    if (growth < 0) return <TrendingDown className="h-4 w-4 text-red-500" />
-    return <Activity className="h-4 w-4 text-gray-500" />
-  }
-
-  const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-green-600'
-    if (growth < 0) return 'text-red-600'
-    return 'text-gray-600'
-  }
-
-  const MetricCard = ({ 
-    title, 
-    value, 
-    growth, 
-    icon: Icon, 
-    description, 
-    format = 'number' 
-  }: {
-    title: string
-    value: number
-    growth?: number
-    icon: any
-    description: string
-    format?: 'number' | 'percentage' | 'duration' | 'rating'
-  }) => {
-    const formatValue = (val: number, fmt: string) => {
-      switch (fmt) {
-        case 'percentage':
-          return `${val}%`
-        case 'duration':
-          return `${val}min`
-        case 'rating':
-          return `${val.toFixed(1)}/5.0`
-        default:
-          return val.toLocaleString()
-      }
-    }
-
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatValue(value, format)}</div>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span>{description}</span>
-            {growth !== undefined && (
-              <div className={`flex items-center ml-2 ${getGrowthColor(growth)}`}>
-                {getGrowthIcon(growth)}
-                <span className="ml-1">
-                  {growth > 0 ? '+' : ''}{growth.toFixed(1)}%
-                </span>
-              </div>
-            )}
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="p-6 hover:shadow-lg transition-shadow">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-2xl font-bold">
+                <CountUp end={value} duration={1.5} />
+                {suffix}
+              </p>
+              {change !== undefined && (
+                <Badge variant={change >= 0 ? 'default' : 'destructive'} className="text-xs">
+                  {change >= 0 ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                  {Math.abs(change).toFixed(1)}%
+                </Badge>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className={`space-y-6 ${className}`}>
-        <div className="text-center py-8">
-          <Activity className="h-8 w-8 animate-spin mx-auto mb-2" />
-          <p>Carregando analytics...</p>
+          <div className={`p-3 rounded-lg ${color}`}>
+            {icon}
+          </div>
         </div>
+      </Card>
+    </motion.div>
+  )
+}
+
+interface ChartCardProps {
+  title: string
+  children: React.ReactNode
+  actions?: React.ReactNode
+}
+
+function ChartCard({ title, children, actions }: ChartCardProps) {
+  return (
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        {actions}
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00c49f']
+
+export function AnalyticsDashboard() {
+  const [period, setPeriod] = useState<'week' | 'month'>('week')
+  const [activeTab, setActiveTab] = useState('overview')
+
+  // Hooks para dados
+  const { data: systemMetrics, isLoading: systemLoading } = useSystemMetrics()
+  const { data: teamMetrics, isLoading: teamLoading } = useTeamMetrics()
+  const { data: projectAnalytics, isLoading: projectLoading } = useProjectAnalytics()
+  const { data: activityData, isLoading: activityLoading } = useActivityData(period)
+  const { data: userActivity, isLoading: userLoading } = useUserActivity()
+  const { data: periodComparison } = usePeriodComparison(period)
+
+  const isLoading = systemLoading || teamLoading || projectLoading || activityLoading
+
+  // Dados para gráficos
+  const activityChartData = activityData?.map(item => ({
+    ...item,
+    date: format(parseISO(item.date), 'dd/MM', { locale: ptBR }),
+  })) || []
+
+  const projectStatusData = projectAnalytics ? [
+    { name: 'Ativo', value: projectAnalytics.activeProjects, color: '#10b981' },
+    { name: 'Concluído', value: projectAnalytics.completedProjects, color: '#3b82f6' },
+    { name: 'Pausado', value: projectAnalytics.onHoldProjects, color: '#f59e0b' },
+    { name: 'Cancelado', value: projectAnalytics.cancelledProjects, color: '#ef4444' },
+  ] : []
+
+  const priorityData = projectAnalytics ? Object.entries(projectAnalytics.projectsByPriority).map(([key, value]) => ({
+    name: key === 'high' ? 'Alta' : key === 'medium' ? 'Média' : 'Baixa',
+    value,
+    color: key === 'high' ? '#ef4444' : key === 'medium' ? '#f59e0b' : '#10b981',
+  })) : []
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">
-            Métricas e insights da clínica de fisioterapia
+            Métricas e insights em tempo real do seu sistema
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
-            Exportar Relatório
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
           </Button>
           <Button variant="outline" size="sm">
-            Últimos {timeRange}
+            <Filter className="w-4 h-4 mr-2" />
+            Filtros
           </Button>
+          <div className="flex rounded-lg border">
+            <Button
+              variant={period === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPeriod('week')}
+              className="rounded-r-none"
+            >
+              Semana
+            </Button>
+            <Button
+              variant={period === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPeriod('month')}
+              className="rounded-l-none"
+            >
+              Mês
+            </Button>
+          </div>
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="productivity">Produtividade</TabsTrigger>
-          <TabsTrigger value="quality">Qualidade</TabsTrigger>
-          <TabsTrigger value="specialties">Especialidades</TabsTrigger>
+          <TabsTrigger value="projects">Projetos</TabsTrigger>
+          <TabsTrigger value="team">Equipe</TabsTrigger>
+          <TabsTrigger value="activity">Atividade</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Métricas principais */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Métricas Principais */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
-              title="Total de Pacientes"
-              value={analytics.totalPatients}
-              growth={analytics.patientsGrowth}
-              icon={Users}
-              description="pacientes ativos"
-            />
-            <MetricCard
-              title="Sessões Realizadas"
-              value={analytics.totalSessions}
-              growth={analytics.sessionsGrowth}
-              icon={Calendar}
-              description="este mês"
+              title="Total de Usuários"
+              value={systemMetrics?.totalUsers || 0}
+              change={periodComparison?.changes.notebooks}
+              icon={<Users className="w-5 h-5 text-white" />}
+              color="bg-blue-500"
             />
             <MetricCard
               title="Projetos Ativos"
-              value={analytics.totalProjects}
-              icon={FileText}
-              description="em desenvolvimento"
+              value={projectAnalytics?.activeProjects || 0}
+              change={periodComparison?.changes.projects}
+              icon={<FolderOpen className="w-5 h-5 text-white" />}
+              color="bg-green-500"
+            />
+            <MetricCard
+              title="Notebooks Criados"
+              value={systemMetrics?.totalNotebooks || 0}
+              icon={<BookOpen className="w-5 h-5 text-white" />}
+              color="bg-purple-500"
+            />
+            <MetricCard
+              title="Eventos Agendados"
+              value={systemMetrics?.totalEvents || 0}
+              icon={<Calendar className="w-5 h-5 text-white" />}
+              color="bg-orange-500"
+            />
+          </div>
+
+          {/* Gráficos Principais */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard title="Atividade no Tempo">
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={activityChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    stackId="1"
+                    stroke="#8884d8"
+                    fill="#8884d8"
+                    fillOpacity={0.6}
+                    name="Total"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="projects"
+                    stackId="2"
+                    stroke="#82ca9d"
+                    fill="#82ca9d"
+                    fillOpacity={0.6}
+                    name="Projetos"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="notebooks"
+                    stackId="3"
+                    stroke="#ffc658"
+                    fill="#ffc658"
+                    fillOpacity={0.6}
+                    name="Notebooks"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Status dos Projetos">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={projectStatusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {projectStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-6">
+          {/* Métricas de Projetos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MetricCard
+              title="Total de Projetos"
+              value={projectAnalytics?.totalProjects || 0}
+              icon={<FolderOpen className="w-5 h-5 text-white" />}
+              color="bg-blue-500"
+            />
+            <MetricCard
+              title="Taxa de Conclusão"
+              value={projectAnalytics ? (projectAnalytics.completedProjects / projectAnalytics.totalProjects) * 100 : 0}
+              format="percentage"
+              icon={<CheckCircle className="w-5 h-5 text-white" />}
+              color="bg-green-500"
+            />
+            <MetricCard
+              title="Tempo Médio"
+              value={projectAnalytics?.averageCompletionTime || 0}
+              format="time"
+              suffix=" dias"
+              icon={<Clock className="w-5 h-5 text-white" />}
+              color="bg-orange-500"
+            />
+            <MetricCard
+              title="Em Pausa"
+              value={projectAnalytics?.onHoldProjects || 0}
+              icon={<Pause className="w-5 h-5 text-white" />}
+              color="bg-yellow-500"
+            />
+          </div>
+
+          {/* Gráficos de Projetos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard title="Projetos por Prioridade">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={priorityData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#8884d8">
+                    {priorityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Distribuição por Status">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={projectStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {projectStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="team" className="space-y-6">
+          {/* Métricas da Equipe */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MetricCard
+              title="Total de Membros"
+              value={teamMetrics?.totalMembers || 0}
+              icon={<Users className="w-5 h-5 text-white" />}
+              color="bg-blue-500"
+            />
+            <MetricCard
+              title="Mentores"
+              value={teamMetrics?.mentors || 0}
+              icon={<Award className="w-5 h-5 text-white" />}
+              color="bg-purple-500"
             />
             <MetricCard
               title="Estagiários"
-              value={analytics.totalInterns}
-              icon={GraduationCap}
-              description="em supervisão"
-            />
-          </div>
-
-          {/* Atividade semanal */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Atividade Semanal
-              </CardTitle>
-              <CardDescription>
-                Distribuição de atividades nos últimos 7 dias
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {weeklyActivity.map((day, index) => (
-                  <div key={day.date} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span className="font-medium">
-                        {format(new Date(day.date), 'EEEE', { locale: ptBR })}
-                      </span>
-                      {isToday(new Date(day.date)) && (
-                        <Badge variant="secondary">Hoje</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{day.sessions} sessões</span>
-                      <span>{day.tasks} tarefas</span>
-                      <span>{day.supervisions} supervisões</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="productivity" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <MetricCard
-              title="Tarefas Concluídas"
-              value={analytics.completedTasks}
-              growth={analytics.productivityGrowth}
-              icon={CheckCircle}
-              description="este período"
+              value={teamMetrics?.interns || 0}
+              icon={<Target className="w-5 h-5 text-white" />}
+              color="bg-green-500"
             />
             <MetricCard
-              title="Duração Média das Sessões"
-              value={analytics.averageSessionDuration}
-              icon={Clock}
-              description="minutos por sessão"
-              format="duration"
-            />
-            <MetricCard
-              title="Horas de Supervisão"
-              value={analytics.supervisionHours}
-              icon={GraduationCap}
-              description="total acumulado"
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Produtividade da Equipe</CardTitle>
-              <CardDescription>
-                Métricas de performance e eficiência
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Taxa de Conclusão de Tarefas</span>
-                  <span className="text-sm text-muted-foreground">
-                    {Math.round((analytics.completedTasks / (analytics.completedTasks + 23)) * 100)}%
-                  </span>
-                </div>
-                <Progress value={Math.round((analytics.completedTasks / (analytics.completedTasks + 23)) * 100)} />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Pontualidade dos Atendimentos</span>
-                  <span className="text-sm text-muted-foreground">
-                    {analytics.appointmentPunctuality}%
-                  </span>
-                </div>
-                <Progress value={analytics.appointmentPunctuality} />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Progresso dos Estagiários</span>
-                  <span className="text-sm text-muted-foreground">
-                    {analytics.internProgress}%
-                  </span>
-                </div>
-                <Progress value={analytics.internProgress} />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="quality" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <MetricCard
-              title="Satisfação dos Pacientes"
-              value={analytics.patientSatisfaction}
-              growth={analytics.satisfactionGrowth}
-              icon={Heart}
-              description="avaliação média"
-              format="rating"
-            />
-            <MetricCard
-              title="Aderência aos Protocolos"
-              value={analytics.protocolAdherence}
-              icon={Target}
-              description="conformidade"
+              title="Taxa de Conclusão"
+              value={teamMetrics?.completionRate || 0}
               format="percentage"
-            />
-            <MetricCard
-              title="Tempo de Resposta"
-              value={analytics.averageResponseTime}
-              icon={Timer}
-              description="horas médias"
+              icon={<CheckCircle className="w-5 h-5 text-white" />}
+              color="bg-orange-500"
             />
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Indicadores de Qualidade</CardTitle>
-              <CardDescription>
-                Métricas de qualidade do atendimento e tratamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Satisfação por Categoria</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Atendimento</span>
-                      <span className="text-sm font-medium">4.9/5.0</span>
+          {/* Ranking de Usuários */}
+          <ChartCard title="Ranking de Atividade dos Usuários">
+            <div className="space-y-3">
+              {userActivity?.slice(0, 10).map((user, index) => (
+                <div key={user.userId} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {index + 1}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Tratamento</span>
-                      <span className="text-sm font-medium">4.7/5.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Instalações</span>
-                      <span className="text-sm font-medium">4.8/5.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Comunicação</span>
-                      <span className="text-sm font-medium">4.6/5.0</span>
+                    <div>
+                      <p className="font-medium">{user.userName}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h4 className="font-medium">Indicadores Clínicos</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Taxa de Melhora</span>
-                      <span className="text-sm font-medium">92%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Retorno ao Trabalho</span>
-                      <span className="text-sm font-medium">87%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Prevenção de Recidiva</span>
-                      <span className="text-sm font-medium">94%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Funcionalidade Restaurada</span>
-                      <span className="text-sm font-medium">89%</span>
-                    </div>
+                  <div className="text-right">
+                    <p className="font-medium">{user.activityScore} pts</p>
+                    <p className="text-sm text-muted-foreground">
+                      {user.projectsCreated} projetos • {user.notebooksCreated} notebooks
+                    </p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </ChartCard>
         </TabsContent>
 
-        <TabsContent value="specialties" className="space-y-6">
-          <div className="grid gap-4">
-            {specialtyMetrics.map((specialty, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{specialty.specialty}</CardTitle>
-                    <Badge variant="secondary">
-                      {specialty.patients} pacientes
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {specialty.satisfaction.toFixed(1)}/5.0
-                      </div>
-                      <div className="text-sm text-muted-foreground">Satisfação</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {specialty.successRate}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Taxa de Sucesso</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {specialty.avgTreatmentDuration.toFixed(1)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Semanas Médias</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <TabsContent value="activity" className="space-y-6">
+          {/* Métricas de Atividade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MetricCard
+              title="Usuários Ativos"
+              value={systemMetrics?.activeUsers || 0}
+              icon={<Activity className="w-5 h-5 text-white" />}
+              color="bg-green-500"
+            />
+            <MetricCard
+              title="Notificações"
+              value={systemMetrics?.totalNotifications || 0}
+              icon={<Bell className="w-5 h-5 text-white" />}
+              color="bg-blue-500"
+            />
+            <MetricCard
+              title="Não Lidas"
+              value={systemMetrics?.unreadNotifications || 0}
+              icon={<AlertCircle className="w-5 h-5 text-white" />}
+              color="bg-red-500"
+            />
+            <MetricCard
+              title="Mentorias Ativas"
+              value={teamMetrics?.activeMentorships || 0}
+              icon={<Users className="w-5 h-5 text-white" />}
+              color="bg-purple-500"
+            />
           </div>
+
+          {/* Gráfico de Atividade Detalhado */}
+          <ChartCard title="Atividade Detalhada por Tipo">
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={activityChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="notebooks"
+                  stroke="#8884d8"
+                  strokeWidth={2}
+                  name="Notebooks"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="projects"
+                  stroke="#82ca9d"
+                  strokeWidth={2}
+                  name="Projetos"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="events"
+                  stroke="#ffc658"
+                  strokeWidth={2}
+                  name="Eventos"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="notifications"
+                  stroke="#ff7300"
+                  strokeWidth={2}
+                  name="Notificações"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </TabsContent>
       </Tabs>
     </div>

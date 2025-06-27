@@ -15,7 +15,8 @@ import {
   Search,
   Plus,
   Heart,
-  LogOut
+  LogOut,
+  BarChart3
 } from 'lucide-react'
 
 const navigationItems = [
@@ -47,6 +48,12 @@ const navigationItems = [
     href: '/calendar',
     label: 'Calendário',
     icon: Calendar,
+    badge: null
+  },
+  {
+    href: '/analytics',
+    label: 'Analytics',
+    icon: BarChart3,
     badge: null
   }
 ]
