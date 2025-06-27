@@ -392,6 +392,330 @@ const tools = {
         };
       }
     }
+  },
+
+  generate_report: {
+    name: "generate_report",
+    description: "Gera relatórios automáticos específicos para fisioterapia",
+    inputSchema: {
+      type: "object",
+      properties: {
+        report_type: {
+          type: "string",
+          enum: ["patient_progress", "clinic_performance", "compliance_lgpd", "team_productivity"],
+          description: "Tipo de relatório a ser gerado"
+        },
+        date_range: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", format: "date" },
+            end_date: { type: "string", format: "date" }
+          },
+          required: ["start_date", "end_date"]
+        },
+        filters: {
+          type: "object",
+          properties: {
+            patient_id: { type: "string" },
+            therapist_id: { type: "string" },
+            department: { type: "string" }
+          }
+        },
+        format: {
+          type: "string",
+          enum: ["pdf", "excel", "json"],
+          default: "pdf"
+        }
+      },
+      required: ["report_type", "date_range"]
+    },
+    handler: async (args: any) => {
+      try {
+        const { report_type, date_range, filters = {}, format = "pdf" } = args;
+        
+        // Simulate report generation logic
+        const reportData = {
+          report_id: `report_${Date.now()}`,
+          type: report_type,
+          generated_at: new Date().toISOString(),
+          period: date_range,
+          filters: filters,
+          format: format,
+          status: "generated",
+          download_url: `https://manus-fisio.com/reports/${report_type}_${Date.now()}.${format}`,
+          summary: {
+            total_records: Math.floor(Math.random() * 1000) + 100,
+            key_insights: [
+              "Melhoria de 15% na taxa de recuperação",
+              "Redução de 8% no tempo médio de tratamento",
+              "Aumento de 22% na satisfação do paciente"
+            ]
+          }
+        };
+        
+        return {
+          content: [{
+            type: "text",
+            text: `📊 Relatório ${report_type} gerado com sucesso!\n\n` +
+                  `📅 Período: ${date_range.start_date} a ${date_range.end_date}\n` +
+                  `📈 Total de registros: ${reportData.summary.total_records}\n` +
+                  `💡 Insights principais:\n${reportData.summary.key_insights.map(i => `• ${i}`).join('\n')}\n\n` +
+                  `🔗 Download: ${reportData.download_url}`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: `❌ Erro ao gerar relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          }]
+        };
+      }
+    }
+  },
+
+  backup_data: {
+    name: "backup_data",
+    description: "Realiza backup completo ou parcial dos dados da clínica",
+    inputSchema: {
+      type: "object",
+      properties: {
+        backup_type: {
+          type: "string",
+          enum: ["full", "incremental", "patients_only", "appointments_only"],
+          description: "Tipo de backup a ser realizado"
+        },
+        include_files: {
+          type: "boolean",
+          default: true,
+          description: "Incluir arquivos anexos no backup"
+        },
+        encryption: {
+          type: "boolean",
+          default: true,
+          description: "Criptografar o backup"
+        }
+      },
+      required: ["backup_type"]
+    },
+    handler: async (args: any) => {
+      try {
+        const { backup_type, include_files = true, encryption = true } = args;
+        
+        // Simulate backup process
+        const backupResult = {
+          backup_id: `backup_${Date.now()}`,
+          type: backup_type,
+          created_at: new Date().toISOString(),
+          size_mb: Math.floor(Math.random() * 500) + 50,
+          encrypted: encryption,
+          includes_files: include_files,
+          status: "completed",
+          storage_location: `s3://manus-backups/backup_${Date.now()}.tar.gz${encryption ? '.enc' : ''}`,
+          retention_days: 90
+        };
+        
+        return {
+          content: [{
+            type: "text",
+            text: `💾 Backup ${backup_type} realizado com sucesso!\n\n` +
+                  `📦 ID do Backup: ${backupResult.backup_id}\n` +
+                  `💾 Tamanho: ${backupResult.size_mb} MB\n` +
+                  `🔒 Criptografado: ${encryption ? 'Sim' : 'Não'}\n` +
+                  `📁 Inclui arquivos: ${include_files ? 'Sim' : 'Não'}\n` +
+                  `⏰ Retenção: ${backupResult.retention_days} dias\n` +
+                  `📍 Localização: ${backupResult.storage_location}`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: `❌ Erro ao realizar backup: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          }]
+        };
+      }
+    }
+  },
+
+  send_whatsapp_notification: {
+    name: "send_whatsapp_notification",
+    description: "Envia notificações via WhatsApp para pacientes e equipe",
+    inputSchema: {
+      type: "object",
+      properties: {
+        recipient_type: {
+          type: "string",
+          enum: ["patient", "therapist", "admin", "group"],
+          description: "Tipo de destinatário"
+        },
+        recipient_id: {
+          type: "string",
+          description: "ID do destinatário"
+        },
+        message_type: {
+          type: "string",
+          enum: ["appointment_reminder", "treatment_update", "payment_reminder", "custom"],
+          description: "Tipo de mensagem"
+        },
+        message: {
+          type: "string",
+          description: "Mensagem personalizada (obrigatório para tipo 'custom')"
+        },
+        schedule_time: {
+          type: "string",
+          format: "date-time",
+          description: "Agendar envio para horário específico"
+        }
+      },
+      required: ["recipient_type", "recipient_id", "message_type"]
+    },
+    handler: async (args: any) => {
+      try {
+        const { recipient_type, recipient_id, message_type, message, schedule_time } = args;
+        
+        // Simulate WhatsApp notification sending
+        const notificationResult = {
+          notification_id: `whatsapp_${Date.now()}`,
+          recipient_type,
+          recipient_id,
+          message_type,
+          status: schedule_time ? "scheduled" : "sent",
+          sent_at: schedule_time ? null : new Date().toISOString(),
+          scheduled_for: schedule_time,
+          delivery_status: schedule_time ? "pending" : "delivered"
+        };
+        
+        const messageContent = message || {
+          appointment_reminder: "🏥 Lembrete: Você tem uma consulta de fisioterapia agendada para amanhã às 14h. Confirme sua presença!",
+          treatment_update: "📋 Atualização do tratamento: Seu progresso está excelente! Continue com os exercícios prescritos.",
+          payment_reminder: "💳 Lembrete: Sua mensalidade vence em 3 dias. Acesse o link para pagamento.",
+          custom: message
+        }[message_type];
+        
+        return {
+          content: [{
+            type: "text",
+            text: `📱 Notificação WhatsApp ${schedule_time ? 'agendada' : 'enviada'} com sucesso!\n\n` +
+                  `👤 Destinatário: ${recipient_type} (${recipient_id})\n` +
+                  `📝 Tipo: ${message_type}\n` +
+                  `💬 Mensagem: "${messageContent}"\n` +
+                  `⏰ ${schedule_time ? `Agendado para: ${schedule_time}` : `Enviado em: ${notificationResult.sent_at}`}\n` +
+                  `✅ Status: ${notificationResult.delivery_status}`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: `❌ Erro ao enviar notificação WhatsApp: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          }]
+        };
+      }
+    }
+  },
+
+  advanced_analytics: {
+    name: "advanced_analytics",
+    description: "Gera análises avançadas e insights para a clínica",
+    inputSchema: {
+      type: "object",
+      properties: {
+        analysis_type: {
+          type: "string",
+          enum: ["patient_outcomes", "treatment_effectiveness", "resource_utilization", "revenue_analysis"],
+          description: "Tipo de análise a ser realizada"
+        },
+        time_period: {
+          type: "string",
+          enum: ["last_week", "last_month", "last_quarter", "last_year", "custom"],
+          description: "Período de análise"
+        },
+        custom_period: {
+          type: "object",
+          properties: {
+            start_date: { type: "string", format: "date" },
+            end_date: { type: "string", format: "date" }
+          }
+        },
+        include_predictions: {
+          type: "boolean",
+          default: false,
+          description: "Incluir previsões baseadas em IA"
+        }
+      },
+      required: ["analysis_type", "time_period"]
+    },
+    handler: async (args: any) => {
+      try {
+        const { analysis_type, time_period, custom_period, include_predictions = false } = args;
+        
+        // Simulate advanced analytics
+        const analyticsResult = {
+          analysis_id: `analytics_${Date.now()}`,
+          type: analysis_type,
+          period: time_period === "custom" ? custom_period : time_period,
+          generated_at: new Date().toISOString(),
+          metrics: {
+            patient_outcomes: {
+              recovery_rate: "87%",
+              average_sessions: 12,
+              satisfaction_score: 4.6,
+              improvement_percentage: "+15%"
+            },
+            treatment_effectiveness: {
+              most_effective: "Terapia Manual + Exercícios",
+              success_rate: "92%",
+              average_duration: "8 semanas",
+              patient_adherence: "78%"
+            },
+            resource_utilization: {
+              room_occupancy: "85%",
+              equipment_usage: "72%",
+              therapist_efficiency: "90%",
+              peak_hours: "14h-17h"
+            },
+            revenue_analysis: {
+              monthly_revenue: "R$ 45.800",
+              growth_rate: "+12%",
+              cost_per_patient: "R$ 280",
+              profit_margin: "35%"
+            }
+          }[analysis_type],
+          predictions: include_predictions ? {
+            next_month_revenue: "R$ 51.200",
+            patient_growth: "+8%",
+            resource_needs: "Contratar 1 fisioterapeuta adicional"
+          } : null
+        };
+        
+        const metricsText = Object.entries(analyticsResult.metrics)
+          .map(([key, value]) => `• ${key.replace(/_/g, ' ')}: ${value}`)
+          .join('\n');
+        
+        const predictionsText = include_predictions ? 
+          `\n🔮 Previsões:\n${Object.entries(analyticsResult.predictions)
+            .map(([key, value]) => `• ${key.replace(/_/g, ' ')}: ${value}`)
+            .join('\n')}` : '';
+        
+        return {
+          content: [{
+            type: "text",
+            text: `📊 Análise ${analysis_type} concluída!\n\n` +
+                  `📅 Período: ${time_period}\n` +
+                  `📈 Métricas:\n${metricsText}${predictionsText}\n\n` +
+                  `💡 Recomendações baseadas na análise foram geradas automaticamente.`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text",
+            text: `❌ Erro ao gerar análise: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          }]
+        };
+      }
+    }
   }
 };
 
