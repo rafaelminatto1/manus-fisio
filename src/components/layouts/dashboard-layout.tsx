@@ -5,19 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { NotificationsPanel, mockNotifications } from '@/components/ui/notifications-panel'
 import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 import { useAuth } from '@/hooks/use-auth'
 import { 
   Search, 
-  Bell, 
   Settings, 
   User, 
   LogOut,
   ChevronDown,
-  Keyboard,
-  Command
+  Keyboard
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -29,15 +26,11 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications, setNotifications] = useState(mockNotifications)
   const router = useRouter()
 
   // Hooks para sistemas avançados
   const { isOpen: searchOpen, openSearch, closeSearch } = useGlobalSearch()
   const { isOpen: shortcutsOpen, openShortcuts, closeShortcuts } = useKeyboardShortcuts()
-
-  const unreadCount = notifications.filter(n => !n.read).length
 
   // Navegação por atalhos
   useEffect(() => {
@@ -92,22 +85,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [router, openShortcuts])
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    )
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
-    )
-  }
-
-  const handleDeleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
-  }
-
   const getRoleBadge = (role: string) => {
     const roleConfig = {
       admin: { label: 'Administrador', variant: 'default' as const },
@@ -160,26 +137,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Keyboard className="h-5 w-5" />
               </Button>
 
-              {/* Notifications */}
-              <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setShowNotifications(true)}
-                  className="text-slate-300 hover:text-white hover:bg-slate-800"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    >
-                      {unreadCount}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-
               {/* Settings */}
               <Button 
                 variant="ghost" 
@@ -231,21 +188,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           <Settings className="h-4 w-4 mr-2" />
                           Configurações
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={openShortcuts}
-                          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
-                        >
-                          <Keyboard className="h-4 w-4 mr-2" />
-                          Atalhos
-                        </Button>
-                        <hr className="border-slate-700" />
+                        <hr className="my-1 border-slate-700" />
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={signOut}
-                          className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-950"
                         >
                           <LogOut className="h-4 w-4 mr-2" />
                           Sair
@@ -257,49 +205,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
           </div>
-
-          {/* Quick Navigation Hint */}
-          <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-1">
-              <Command className="h-3 w-3" />
-              <span>Pressione</span>
-              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">G</kbd>
-              <span>+</span>
-              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">H</kbd>
-              <span>para Dashboard</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-xs">?</kbd>
-              <span>para ver todos os atalhos</span>
-            </div>
-          </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
 
-      {/* Advanced Panels */}
-      <NotificationsPanel
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-        notifications={notifications}
-        onMarkAsRead={handleMarkAsRead}
-        onMarkAllAsRead={handleMarkAllAsRead}
-        onDeleteNotification={handleDeleteNotification}
-      />
-
-      <GlobalSearch
-        isOpen={searchOpen}
-        onClose={closeSearch}
-      />
-
-      <KeyboardShortcuts
-        isOpen={shortcutsOpen}
-        onClose={closeShortcuts}
-      />
+      {/* Sistemas Globais */}
+      <GlobalSearch isOpen={searchOpen} onClose={closeSearch} />
+      <KeyboardShortcuts isOpen={shortcutsOpen} onClose={closeShortcuts} />
     </div>
   )
 } 

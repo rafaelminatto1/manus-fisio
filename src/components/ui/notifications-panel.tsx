@@ -1,331 +1,390 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+'use client'
+
+import React, { useState } from 'react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  X,
+  Filter,
+  Settings,
+  Trash2,
+  Eye,
+  EyeOff,
+  Calendar,
+  AlertTriangle,
+  Info,
+  CheckCircle,
+  XCircle,
+  Users,
+  Monitor,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar } from '@/components/ui/avatar'
-import { 
-  Bell, 
-  Check, 
-  X, 
-  MessageSquare, 
-  Calendar, 
-  UserPlus, 
-  FileText,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Settings
-} from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-
-interface Notification {
-  id: string
-  type: 'message' | 'appointment' | 'task' | 'system' | 'mention' | 'invitation'
-  title: string
-  message: string
-  sender?: {
-    name: string
-    avatar?: string
-  }
-  timestamp: Date
-  read: boolean
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  actionUrl?: string
-}
+import { Card } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  useNotifications,
+  useUnreadNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+  useDeleteNotification,
+  useRealtimeNotifications,
+  useNotificationStats,
+  Notification,
+} from '@/hooks/use-notifications'
+import { cn } from '@/lib/utils'
 
 interface NotificationsPanelProps {
-  isOpen: boolean
-  onClose: () => void
-  notifications: Notification[]
-  onMarkAsRead: (id: string) => void
-  onMarkAllAsRead: () => void
-  onDeleteNotification: (id: string) => void
+  className?: string
 }
 
-export function NotificationsPanel({
-  isOpen,
-  onClose,
-  notifications,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDeleteNotification
-}: NotificationsPanelProps) {
-  const [filter, setFilter] = useState<'all' | 'unread' | 'urgent'>('all')
-  
-  const unreadCount = notifications.filter(n => !n.read).length
-  const urgentCount = notifications.filter(n => n.priority === 'urgent').length
+export function NotificationsPanel({ className }: NotificationsPanelProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [typeFilter, setTypeFilter] = useState<string[]>([])
 
+  // Hooks
+  const { data: notifications = [] } = useNotifications()
+  const { data: unreadNotifications = [] } = useUnreadNotifications()
+  const { data: stats } = useNotificationStats()
+  const markAsReadMutation = useMarkNotificationAsRead()
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead()
+  const deleteNotificationMutation = useDeleteNotification()
+
+  // Ativar notificações em tempo real
+  useRealtimeNotifications()
+
+  // Filtrar notificações
   const filteredNotifications = notifications.filter(notification => {
-    switch (filter) {
-      case 'unread':
-        return !notification.read
-      case 'urgent':
-        return notification.priority === 'urgent'
-      default:
-        return true
-    }
+    // Filtro por status
+    if (filter === 'unread' && notification.read) return false
+    if (filter === 'read' && !notification.read) return false
+
+    // Filtro por tipo
+    if (typeFilter.length > 0 && !typeFilter.includes(notification.type)) return false
+
+    return true
   })
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsReadMutation.mutateAsync(notificationId)
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error)
+    }
+  }
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation.mutateAsync()
+    } catch (error) {
+      console.error('Erro ao marcar todas as notificações como lidas:', error)
+    }
+  }
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await deleteNotificationMutation.mutateAsync(notificationId)
+    } catch (error) {
+      console.error('Erro ao excluir notificação:', error)
+    }
+  }
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      handleMarkAsRead(notification.id)
+    }
+
+    if (notification.action_url) {
+      window.location.href = notification.action_url
+    }
+  }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'message':
-        return <MessageSquare className="h-4 w-4" />
-      case 'appointment':
-        return <Calendar className="h-4 w-4" />
-      case 'task':
-        return <CheckCircle className="h-4 w-4" />
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      case 'event':
+        return <Calendar className="h-4 w-4 text-blue-500" />
       case 'system':
-        return <Settings className="h-4 w-4" />
-      case 'mention':
-        return <MessageSquare className="h-4 w-4" />
-      case 'invitation':
-        return <UserPlus className="h-4 w-4" />
+        return <Monitor className="h-4 w-4 text-purple-500" />
       default:
-        return <Bell className="h-4 w-4" />
+        return <Info className="h-4 w-4 text-blue-500" />
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'text-red-500 bg-red-50 border-red-200'
-      case 'high':
-        return 'text-orange-500 bg-orange-50 border-orange-200'
-      case 'medium':
-        return 'text-blue-500 bg-blue-50 border-blue-200'
-      default:
-        return 'text-gray-500 bg-gray-50 border-gray-200'
+  const getNotificationTypeLabel = (type: string) => {
+    const labels = {
+      info: 'Informação',
+      success: 'Sucesso',
+      warning: 'Aviso',
+      error: 'Erro',
+      event: 'Evento',
+      system: 'Sistema',
     }
+    return labels[type as keyof typeof labels] || type
   }
 
-  if (!isOpen) return null
+  const unreadCount = unreadNotifications.length
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
-      <div 
-        className="fixed right-0 top-0 h-full w-96 bg-background border-l shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Card className="h-full rounded-none border-0">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificações
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </CardTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Filtros */}
-            <div className="flex gap-2 mt-4">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('all')}
-              >
-                Todas ({notifications.length})
-              </Button>
-              <Button
-                variant={filter === 'unread' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('unread')}
-              >
-                Não lidas ({unreadCount})
-              </Button>
-              <Button
-                variant={filter === 'urgent' ? 'destructive' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('urgent')}
-              >
-                Urgentes ({urgentCount})
-              </Button>
-            </div>
-
-            {/* Ações */}
+    <div className={cn('relative', className)}>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative"
+            aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ''}`}
+          >
+            <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onMarkAllAsRead}
-                className="mt-2 w-full"
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Marcar todas como lidas
-              </Button>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
             )}
-          </CardHeader>
+          </Button>
+        </PopoverTrigger>
 
-          <CardContent className="p-0 overflow-y-auto h-full">
-            {filteredNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <Bell className="h-12 w-12 mb-4 opacity-50" />
-                <p>Nenhuma notificação encontrada</p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {filteredNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 hover:bg-muted/50 transition-colors ${
-                      !notification.read ? 'bg-blue-50/50 border-l-4 border-l-blue-500' : ''
-                    }`}
+        <PopoverContent
+          className="w-96 p-0"
+          align="end"
+          sideOffset={8}
+        >
+          <div className="flex flex-col h-[600px]">
+            {/* Header */}
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  <h3 className="font-semibold">Notificações</h3>
+                  {unreadCount > 0 && (
+                    <Badge variant="secondary">
+                      {unreadCount} nova{unreadCount !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleMarkAllAsRead}
+                      disabled={markAllAsReadMutation.isPending}
+                    >
+                      <CheckCheck className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {/* TODO: Abrir configurações */}}
                   >
-                    <div className="flex items-start gap-3">
-                      {/* Avatar ou ícone */}
-                      <div className="flex-shrink-0">
-                        {notification.sender?.avatar ? (
-                          <Avatar
-                            src={notification.sender.avatar}
-                            alt={notification.sender.name}
-                            fallback={notification.sender.name.charAt(0)}
-                            className="h-8 w-8"
-                          />
-                        ) : (
-                          <div className={`p-2 rounded-full ${getPriorityColor(notification.priority)}`}>
-                            {getNotificationIcon(notification.type)}
-                          </div>
-                        )}
-                      </div>
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
-                      {/* Conteúdo */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-medium truncate">
-                            {notification.title}
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            {notification.priority === 'urgent' && (
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(notification.timestamp, {
-                                addSuffix: true,
-                                locale: ptBR
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {notification.message}
-                        </p>
+              {/* Filtros */}
+              <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="all">
+                    Todas ({notifications.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="unread">
+                    Não lidas ({unreadCount})
+                  </TabsTrigger>
+                  <TabsTrigger value="read">
+                    Lidas ({notifications.length - unreadCount})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-                        {notification.sender && (
-                          <p className="text-xs text-muted-foreground mb-2">
-                            De: {notification.sender.name}
-                          </p>
-                        )}
+            {/* Lista de notificações */}
+            <div className="flex-1 overflow-y-auto">
+              {filteredNotifications.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm">
+                    {filter === 'unread'
+                      ? 'Nenhuma notificação não lida'
+                      : filter === 'read'
+                      ? 'Nenhuma notificação lida'
+                      : 'Nenhuma notificação'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredNotifications.map((notification) => (
+                    <NotificationItem
+                      key={notification.id}
+                      notification={notification}
+                      onMarkAsRead={handleMarkAsRead}
+                      onDelete={handleDeleteNotification}
+                      onClick={handleNotificationClick}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
-                        {/* Ações */}
-                        <div className="flex items-center gap-2">
-                          {!notification.read && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onMarkAsRead(notification.id)}
-                            >
-                              <Check className="h-3 w-3 mr-1" />
-                              Marcar como lida
-                            </Button>
-                          )}
-                          
-                          {notification.actionUrl && (
-                            <Button variant="outline" size="sm">
-                              Ver detalhes
-                            </Button>
-                          )}
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDeleteNotification(notification.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {/* Footer com estatísticas */}
+            {stats && (
+              <div className="p-3 border-t bg-muted/50">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Total: {stats.total}</span>
+                  <span>Hoje: {stats.today}</span>
+                  <span>Esta semana: {stats.thisWeek}</span>
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
 
-// Mock data para demonstração
-export const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'appointment' as const,
-    title: 'Consulta agendada',
-    message: 'Nova consulta agendada para amanhã às 14h com Maria Silva',
-    sender: {
-      name: 'Dr. João Santos'
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    read: false,
-    priority: 'high' as const,
-    actionUrl: '/calendar'
-  },
-  {
-    id: '2',
-    type: 'mention' as const,
-    title: 'Você foi mencionado',
-    message: 'Ana Costa te mencionou em um comentário no protocolo de reabilitação',
-    sender: {
-      name: 'Ana Costa'
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    read: false,
-    priority: 'medium' as const,
-    actionUrl: '/notebooks'
-  },
-  {
-    id: '3',
-    type: 'task' as const,
-    title: 'Tarefa concluída',
-    message: 'Avaliação do estagiário Pedro foi marcada como concluída',
-    sender: {
-      name: 'Sistema'
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-    read: true,
-    priority: 'low' as const,
-    actionUrl: '/projects'
-  },
-  {
-    id: '4',
-    type: 'system',
-    title: 'Backup concluído',
-    message: 'Backup automático dos dados foi realizado com sucesso',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 dia atrás
-    read: true,
-    priority: 'low'
-  },
-  {
-    id: '5',
-    type: 'invitation',
-    title: 'Novo membro na equipe',
-    message: 'Carlos Oliveira foi adicionado como estagiário na equipe',
-    sender: {
-      name: 'Dr. Maria Fernanda',
-      avatar: undefined
-    },
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 dias atrás
-    read: false,
-    priority: 'urgent',
-    actionUrl: '/team'
+interface NotificationItemProps {
+  notification: Notification
+  onMarkAsRead: (id: string) => void
+  onDelete: (id: string) => void
+  onClick: (notification: Notification) => void
+}
+
+function NotificationItem({
+  notification,
+  onMarkAsRead,
+  onDelete,
+  onClick,
+}: NotificationItemProps) {
+  const [showActions, setShowActions] = useState(false)
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      case 'event':
+        return <Calendar className="h-4 w-4 text-blue-500" />
+      case 'system':
+        return <Monitor className="h-4 w-4 text-purple-500" />
+      default:
+        return <Info className="h-4 w-4 text-blue-500" />
+    }
   }
-] 
+
+  return (
+    <div
+      className={cn(
+        'p-3 hover:bg-muted/50 cursor-pointer transition-colors relative group',
+        !notification.read && 'bg-blue-50/50 border-l-2 border-l-blue-500'
+      )}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+      onClick={() => onClick(notification)}
+    >
+      <div className="flex items-start gap-3">
+        {/* Ícone */}
+        <div className="flex-shrink-0 mt-0.5">
+          {getNotificationIcon(notification.type)}
+        </div>
+
+        {/* Conteúdo */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className={cn(
+                'text-sm font-medium',
+                !notification.read && 'font-semibold'
+              )}>
+                {notification.title}
+              </p>
+              
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {notification.message}
+              </p>
+
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">
+                  {notification.type === 'info' && 'Informação'}
+                  {notification.type === 'success' && 'Sucesso'}
+                  {notification.type === 'warning' && 'Aviso'}
+                  {notification.type === 'error' && 'Erro'}
+                  {notification.type === 'event' && 'Evento'}
+                  {notification.type === 'system' && 'Sistema'}
+                </Badge>
+                
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(notification.created_at), {
+                    addSuffix: true,
+                    locale: ptBR,
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Indicador de não lida */}
+            {!notification.read && (
+              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Ações (visíveis no hover) */}
+      {showActions && (
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-background border rounded-md shadow-sm p-1">
+          {!notification.read && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                onMarkAsRead(notification.id)
+              }}
+              title="Marcar como lida"
+            >
+              <Check className="h-3 w-3" />
+            </Button>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(notification.id)
+            }}
+            title="Excluir"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+} 

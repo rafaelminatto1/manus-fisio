@@ -3,6 +3,7 @@ import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
+import { NotificationsPanel } from '@/components/ui/notifications-panel'
 import { 
   Home,
   BookOpen, 
@@ -159,9 +160,8 @@ export function Sidebar() {
                user?.role === 'intern' ? 'Estagiário' : 'Usuário'}
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Bell className="h-4 w-4" />
-          </Button>
+          {/* Painel de Notificações Inteligente */}
+          <NotificationsPanel className="h-8 w-8" />
         </div>
         <div className="space-y-1">
           <Link href="/settings">

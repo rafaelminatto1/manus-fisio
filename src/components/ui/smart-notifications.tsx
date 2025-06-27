@@ -19,10 +19,36 @@ import {
   BookOpen,
   Stethoscope,
   GraduationCap,
-  TrendingUp
+  TrendingUp,
+  Settings,
+  BellOff,
+  Mail,
+  Smartphone,
+  Shield,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
+import { useNotificationSettings, useUpdateNotificationSettings, usePushNotificationPermission } from '@/hooks/use-notifications'
+import { toast } from 'sonner'
 
 interface Notification {
   id: string
@@ -109,6 +135,10 @@ export function SmartNotifications({
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
   const [loading, setLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+  const { data: settings, isLoading } = useNotificationSettings()
+  const updateSettingsMutation = useUpdateNotificationSettings()
+  const { permission, requestPermission, isSupported } = usePushNotificationPermission()
 
   const supabase = createClient()
   const isUsingMock = isMockMode()
@@ -282,7 +312,27 @@ export function SmartNotifications({
     ? notifications 
     : notifications.slice(0, maxVisible)
 
-  if (loading) {
+  const handleSettingChange = async (key: string, value: any) => {
+    try {
+      await updateSettingsMutation.mutateAsync({ [key]: value })
+    } catch (error) {
+      console.error('Erro ao atualizar configuração:', error)
+      toast.error('Erro ao salvar configuração')
+    }
+  }
+
+  const handlePushNotificationToggle = async (enabled: boolean) => {
+    if (enabled && permission !== 'granted') {
+      const granted = await requestPermission()
+      if (!granted) {
+        return
+      }
+    }
+    
+    await handleSettingChange('push_notifications', enabled)
+  }
+
+  if (loading || isLoading || !settings) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -449,4 +499,364 @@ export function useSmartNotifications() {
     requestNotificationPermission,
     setNotifications
   }
+}
+
+export function NotificationSettings() {
+  const [isOpen, setIsOpen] = useState(false)
+  const { data: settings, isLoading } = useNotificationSettings()
+  const updateSettingsMutation = useUpdateNotificationSettings()
+  const { permission, requestPermission, isSupported } = usePushNotificationPermission()
+
+  const handleSettingChange = async (key: string, value: any) => {
+    try {
+      await updateSettingsMutation.mutateAsync({ [key]: value })
+    } catch (error) {
+      console.error('Erro ao atualizar configuração:', error)
+      toast.error('Erro ao salvar configuração')
+    }
+  }
+
+  const handlePushNotificationToggle = async (enabled: boolean) => {
+    if (enabled && permission !== 'granted') {
+      const granted = await requestPermission()
+      if (!granted) {
+        return
+      }
+    }
+    
+    await handleSettingChange('push_notifications', enabled)
+  }
+
+  if (isLoading || !settings) {
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className={className}>
+          <Settings className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Configurações de Notificações
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Configurações gerais */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Notificações Gerais
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Push Notifications */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Notificações Push
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber notificações no navegador
+                  </p>
+                  {!isSupported && (
+                    <Badge variant="destructive" className="text-xs">
+                      Não suportado neste navegador
+                    </Badge>
+                  )}
+                  {permission === 'denied' && (
+                    <Badge variant="destructive" className="text-xs">
+                      Permissão negada
+                    </Badge>
+                  )}
+                </div>
+                <Switch
+                  checked={settings.push_notifications && isSupported && permission !== 'denied'}
+                  onCheckedChange={handlePushNotificationToggle}
+                  disabled={!isSupported || permission === 'denied'}
+                />
+              </div>
+
+              {/* Email Notifications */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Notificações por Email
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber resumos por email
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.email_notifications}
+                  onCheckedChange={(checked) => handleSettingChange('email_notifications', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configurações específicas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Tipos de Notificação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Calendar Reminders */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Lembretes de Calendário
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Notificações de eventos próximos
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.calendar_reminders}
+                  onCheckedChange={(checked) => handleSettingChange('calendar_reminders', checked)}
+                />
+              </div>
+
+              {/* Project Updates */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Atualizações de Projetos
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Mudanças em projetos que você participa
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.project_updates}
+                  onCheckedChange={(checked) => handleSettingChange('project_updates', checked)}
+                />
+              </div>
+
+              {/* Team Mentions */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Menções da Equipe
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando você for mencionado
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.team_mentions}
+                  onCheckedChange={(checked) => handleSettingChange('team_mentions', checked)}
+                />
+              </div>
+
+              {/* System Alerts */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Alertas do Sistema
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Atualizações e manutenções
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.system_alerts}
+                  onCheckedChange={(checked) => handleSettingChange('system_alerts', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configurações de tempo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Configurações de Tempo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Reminder Time */}
+              <div className="space-y-3">
+                <Label>Tempo de Lembrete</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receber lembretes {settings.reminder_time} minutos antes dos eventos
+                </p>
+                <div className="px-2">
+                  <Slider
+                    value={[settings.reminder_time]}
+                    onValueChange={([value]) => handleSettingChange('reminder_time', value)}
+                    max={120}
+                    min={5}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>5 min</span>
+                    <span>2h</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quiet Hours */}
+              <div className="space-y-3">
+                <Label>Horário Silencioso</Label>
+                <p className="text-sm text-muted-foreground">
+                  Não receber notificações durante este período
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Início</Label>
+                    <Select
+                      value={settings.quiet_hours_start || '22:00'}
+                      onValueChange={(value) => handleSettingChange('quiet_hours_start', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 24 }, (_, i) => {
+                          const hour = i.toString().padStart(2, '0')
+                          return (
+                            <SelectItem key={hour} value={`${hour}:00`}>
+                              {hour}:00
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Fim</Label>
+                    <Select
+                      value={settings.quiet_hours_end || '07:00'}
+                      onValueChange={(value) => handleSettingChange('quiet_hours_end', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 24 }, (_, i) => {
+                          const hour = i.toString().padStart(2, '0')
+                          return (
+                            <SelectItem key={hour} value={`${hour}:00`}>
+                              {hour}:00
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Status das permissões */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Status das Permissões
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Suporte a Push Notifications</span>
+                <Badge variant={isSupported ? 'default' : 'destructive'}>
+                  {isSupported ? 'Suportado' : 'Não suportado'}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Permissão Push Notifications</span>
+                <Badge 
+                  variant={
+                    permission === 'granted' ? 'default' : 
+                    permission === 'denied' ? 'destructive' : 'secondary'
+                  }
+                >
+                  {permission === 'granted' && 'Concedida'}
+                  {permission === 'denied' && 'Negada'}
+                  {permission === 'default' && 'Não solicitada'}
+                </Badge>
+              </div>
+
+              {permission !== 'granted' && isSupported && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={requestPermission}
+                  className="w-full"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Solicitar Permissão
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Teste de notificação */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Volume2 className="h-4 w-4" />
+                Teste de Notificação
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  toast.success('Teste de Notificação', {
+                    description: 'Esta é uma notificação de teste para verificar suas configurações.',
+                  })
+                  
+                  if (settings.push_notifications && permission === 'granted') {
+                    new Notification('Manus Fisio - Teste', {
+                      body: 'Esta é uma notificação push de teste.',
+                      icon: '/icons/icon-192x192.png',
+                    })
+                  }
+                }}
+                className="w-full"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Enviar Notificação de Teste
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 } 
