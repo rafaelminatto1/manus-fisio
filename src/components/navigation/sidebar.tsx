@@ -16,7 +16,9 @@ import {
   Plus,
   Heart,
   LogOut,
-  BarChart3
+  BarChart3,
+  Monitor,
+  Activity
 } from 'lucide-react'
 
 const navigationItems = [
@@ -54,6 +56,12 @@ const navigationItems = [
     href: '/analytics',
     label: 'Analytics',
     icon: BarChart3,
+    badge: null
+  },
+  {
+    href: '/system-monitor',
+    label: 'Monitor Sistema',
+    icon: Monitor,
     badge: null
   }
 ]
