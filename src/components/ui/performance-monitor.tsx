@@ -56,6 +56,20 @@ interface PerformanceMetrics {
     stylesheetSize: number
     loadTime: number
   }
+  // ✅ NOVO: Métricas específicas para iOS
+  ios: {
+    isIOS: boolean
+    deviceType: 'iPhone' | 'iPad' | 'iPod' | 'unknown'
+    safariVersion: string
+    viewportHeight: number
+    visualViewportHeight: number
+    isStandalone: boolean
+    orientation: string
+    batteryLevel?: number
+    isCharging?: boolean
+    touchSupport: boolean
+    hapticSupport: boolean
+  }
   errors: Array<{
     message: string
     timestamp: number
@@ -98,6 +112,17 @@ export function PerformanceMonitor({
     network: { rtt: 0, downlink: 0, effectiveType: '4g' },
     vitals: { lcp: 0, fid: 0, cls: 0, fcp: 0, ttfb: 0 },
     resources: { totalSize: 0, imageSize: 0, scriptSize: 0, stylesheetSize: 0, loadTime: 0 },
+    ios: {
+      isIOS: false,
+      deviceType: 'unknown',
+      safariVersion: '',
+      viewportHeight: 0,
+      visualViewportHeight: 0,
+      isStandalone: false,
+      orientation: '',
+      touchSupport: false,
+      hapticSupport: false
+    },
     errors: []
   })
   
@@ -256,6 +281,70 @@ export function PerformanceMonitor({
     }))
   }, [])
 
+  // ✅ NOVO: Monitorar métricas específicas do iOS
+  const measureIOSMetrics = useCallback(() => {
+    const userAgent = navigator.userAgent
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent)
+    
+    let deviceType: 'iPhone' | 'iPad' | 'iPod' | 'unknown' = 'unknown'
+    if (userAgent.includes('iPhone')) deviceType = 'iPhone'
+    else if (userAgent.includes('iPad')) deviceType = 'iPad'
+    else if (userAgent.includes('iPod')) deviceType = 'iPod'
+    
+    // Detectar versão do Safari
+    const safariMatch = userAgent.match(/Version\/([0-9._]+)/)
+    const safariVersion = safariMatch ? safariMatch[1] : ''
+    
+    // Detectar se é PWA standalone
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                        (window.navigator as any).standalone === true
+    
+    // Detectar orientação
+    const orientation = screen.orientation?.type || 
+                       (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape')
+    
+    // Detectar suporte a touch
+    const touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    
+    // Detectar suporte a haptic feedback
+    const hapticSupport = 'vibrate' in navigator
+    
+    // Altura do viewport
+    const viewportHeight = window.innerHeight
+    const visualViewportHeight = (window as any).visualViewport?.height || window.innerHeight
+    
+    setMetrics(prev => ({
+      ...prev,
+      ios: {
+        isIOS,
+        deviceType,
+        safariVersion,
+        viewportHeight,
+        visualViewportHeight,
+        isStandalone,
+        orientation,
+        touchSupport,
+        hapticSupport
+      }
+    }))
+    
+    // Monitorar bateria se disponível
+    if ('getBattery' in navigator) {
+      (navigator as any).getBattery().then((battery: any) => {
+        setMetrics(prev => ({
+          ...prev,
+          ios: {
+            ...prev.ios,
+            batteryLevel: Math.round(battery.level * 100),
+            isCharging: battery.charging
+          }
+        }))
+      }).catch(() => {
+        // Battery API não disponível
+      })
+    }
+  }, [])
+
   // Verificar alertas
   const checkAlerts = useCallback(() => {
     const newAlerts: Array<{ id: string; message: string; type: 'warning' | 'error' }> = []
@@ -309,14 +398,17 @@ export function PerformanceMonitor({
     
     measureVitals()
     measureResources()
+    measureIOSMetrics()
     measureFPS()
     
+    // ✅ OTIMIZAÇÃO: Reduzido de 1000ms para 30000ms (30 segundos)
     const interval = setInterval(() => {
       measureMemory()
       measureNetwork()
       measureResources()
+      measureIOSMetrics()
       checkAlerts()
-    }, 1000)
+    }, 30000)
     
     return () => {
       clearInterval(interval)
@@ -327,7 +419,7 @@ export function PerformanceMonitor({
         performanceObserverRef.current.disconnect()
       }
     }
-  }, [isVisible, measureVitals, measureResources, measureFPS, measureMemory, measureNetwork, checkAlerts])
+  }, [isVisible, measureVitals, measureResources, measureIOSMetrics, measureFPS, measureMemory, measureNetwork, checkAlerts])
 
   const getStatusColor = (value: number, threshold: number, reverse = false) => {
     const isGood = reverse ? value > threshold : value < threshold
@@ -391,10 +483,16 @@ export function PerformanceMonitor({
               transition={{ duration: 0.2 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 m-2">
+                <TabsList className={cn(
+                  "grid w-full m-2",
+                  metrics.ios.isIOS ? "grid-cols-4" : "grid-cols-3"
+                )}>
                   <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
                   <TabsTrigger value="vitals" className="text-xs">Vitals</TabsTrigger>
                   <TabsTrigger value="resources" className="text-xs">Resources</TabsTrigger>
+                  {metrics.ios.isIOS && (
+                    <TabsTrigger value="ios" className="text-xs">iOS</TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="overview" className="p-3 space-y-3">
@@ -523,6 +621,108 @@ export function PerformanceMonitor({
                     </div>
                   </div>
                 </TabsContent>
+
+                {/* ✅ NOVA ABA iOS */}
+                {metrics.ios.isIOS && (
+                  <TabsContent value="ios" className="p-3 space-y-3">
+                    <div className="space-y-2">
+                      {/* Device Type */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Device</span>
+                        <span className="text-sm font-mono">{metrics.ios.deviceType}</span>
+                      </div>
+                      
+                      {/* Safari Version */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Safari</span>
+                        <span className="text-sm font-mono">{metrics.ios.safariVersion}</span>
+                      </div>
+                      
+                      {/* PWA Mode */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">PWA Mode</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-mono">
+                            {metrics.ios.isStandalone ? 'Yes' : 'No'}
+                          </span>
+                          {metrics.ios.isStandalone ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-yellow-500" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Orientation */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Orientation</span>
+                        <span className="text-sm font-mono capitalize">{metrics.ios.orientation}</span>
+                      </div>
+                      
+                      {/* Viewport */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Viewport</span>
+                        <span className="text-sm font-mono">
+                          {metrics.ios.viewportHeight}px
+                        </span>
+                      </div>
+                      
+                      {/* Visual Viewport */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Visual VP</span>
+                        <span className="text-sm font-mono">
+                          {metrics.ios.visualViewportHeight}px
+                        </span>
+                      </div>
+                      
+                      {/* Touch Support */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Touch</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-mono">
+                            {metrics.ios.touchSupport ? 'Yes' : 'No'}
+                          </span>
+                          {metrics.ios.touchSupport ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Haptic Support */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Haptic</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-mono">
+                            {metrics.ios.hapticSupport ? 'Yes' : 'No'}
+                          </span>
+                          {metrics.ios.hapticSupport ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Battery Level */}
+                      {metrics.ios.batteryLevel !== undefined && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Battery</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm font-mono">{metrics.ios.batteryLevel}%</span>
+                              {metrics.ios.isCharging && (
+                                <Zap className="h-3 w-3 text-green-500" />
+                              )}
+                            </div>
+                          </div>
+                          <Progress value={metrics.ios.batteryLevel} className="h-1" />
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                )}
               </Tabs>
 
               {/* Alerts */}

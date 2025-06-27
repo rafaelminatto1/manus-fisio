@@ -586,12 +586,15 @@ const tools = {
           delivery_status: schedule_time ? "pending" : "delivered"
         };
         
-        const messageContent = message || {
-          appointment_reminder: "🏥 Lembrete: Você tem uma consulta de fisioterapia agendada para amanhã às 14h. Confirme sua presença!",
-          treatment_update: "📋 Atualização do tratamento: Seu progresso está excelente! Continue com os exercícios prescritos.",
-          payment_reminder: "💳 Lembrete: Sua mensalidade vence em 3 dias. Acesse o link para pagamento.",
-          custom: message
-        }[message_type];
+        const messageContent = message || (() => {
+          const messageTemplates: Record<string, string> = {
+            appointment_reminder: "🏥 Lembrete: Você tem uma consulta de fisioterapia agendada para amanhã às 14h. Confirme sua presença!",
+            treatment_update: "📋 Atualização do tratamento: Seu progresso está excelente! Continue com os exercícios prescritos.",
+            payment_reminder: "💳 Lembrete: Sua mensalidade vence em 3 dias. Acesse o link para pagamento.",
+            custom: message || "Mensagem personalizada"
+          };
+          return messageTemplates[message_type] || messageTemplates.custom;
+        })();
         
         return {
           content: [{
@@ -722,84 +725,165 @@ const tools = {
 // Handler para diferentes transportes
 export async function GET(
   request: NextRequest,
-  { params }: { params: { transport: string } }
+  context: { params: Promise<{ transport: string }> }
 ) {
-  const transport = params.transport;
+  const { transport } = await context.params
+  
+  if (transport !== 'stdio' && transport !== 'sse') {
+    return NextResponse.json(
+      { error: 'Transport not supported' },
+      { status: 400 }
+    )
+  }
 
-  if (transport === 'capabilities') {
-    return NextResponse.json({
-      capabilities: {
-        tools: {}
-      },
-      serverInfo: {
-        name: 'manus-fisio-mcp',
-        version: '1.0.0'
+  // SSE transport
+  if (transport === 'sse') {
+    const encoder = new TextEncoder()
+    
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send initial connection
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'connection', status: 'connected' })}\n\n`)
+        )
+        
+        // Keep connection alive
+        const interval = setInterval(() => {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'ping', timestamp: Date.now() })}\n\n`)
+          )
+        }, 30000)
+        
+        // Cleanup on close
+        request.signal.addEventListener('abort', () => {
+          clearInterval(interval)
+          controller.close()
+        })
       }
-    });
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    })
   }
 
-  if (transport === 'tools/list') {
-    return NextResponse.json({
-      tools: Object.values(tools).map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema
-      }))
-    });
-  }
-
-  return NextResponse.json({
-    error: 'Transport not supported',
-    supportedTransports: ['capabilities', 'tools/list']
-  }, { status: 400 });
+  return NextResponse.json({ message: 'MCP Server running' })
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { transport: string } }
+  context: { params: Promise<{ transport: string }> }
 ) {
+  const { transport } = await context.params
+
+  if (transport !== 'stdio' && transport !== 'sse') {
+    return NextResponse.json(
+      { error: 'Transport not supported' },
+      { status: 400 }
+    )
+  }
+
   try {
-    const body = await request.json();
-    const transport = params.transport;
+    const body = await request.json()
+    
+    // Validate JSON-RPC format
+    if (!body.jsonrpc || !body.method) {
+      return NextResponse.json(
+        { 
+          jsonrpc: '2.0', 
+          error: { code: -32600, message: 'Invalid Request' },
+          id: body.id || null 
+        },
+        { status: 400 }
+      )
+    }
 
-    if (transport === 'tools/call') {
-      const { name, arguments: args } = body;
-      
-      if (!tools[name as keyof typeof tools]) {
+    // Handle different MCP methods
+    switch (body.method) {
+      case 'initialize':
         return NextResponse.json({
-          error: `Tool '${name}' not found`
-        }, { status: 404 });
-      }
+          jsonrpc: '2.0',
+          result: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: {}
+            },
+            serverInfo: {
+              name: 'manus-fisio-mcp',
+              version: '1.0.0'
+            }
+          },
+          id: body.id
+        })
 
-      const tool = tools[name as keyof typeof tools];
-      const result = await tool.handler(args);
+      case 'tools/list':
+        return NextResponse.json({
+          jsonrpc: '2.0',
+          result: {
+            tools: Object.values(tools).map(tool => ({
+              name: tool.name,
+              description: tool.description,
+              inputSchema: tool.inputSchema
+            }))
+          },
+          id: body.id
+        })
 
-      return NextResponse.json({
-        content: result.content
-      });
+      case 'tools/call':
+        const toolName = body.params?.name
+        const toolArgs = body.params?.arguments || {}
+        
+        if (!toolName || !tools[toolName as keyof typeof tools]) {
+          return NextResponse.json({
+            jsonrpc: '2.0',
+            error: { code: -32601, message: 'Tool not found' },
+            id: body.id
+          })
+        }
+
+        try {
+          const tool = tools[toolName as keyof typeof tools]
+          const result = await tool.handler(toolArgs)
+          
+          return NextResponse.json({
+            jsonrpc: '2.0',
+            result,
+            id: body.id
+          })
+        } catch (error) {
+          return NextResponse.json({
+            jsonrpc: '2.0',
+            error: { 
+              code: -32000, 
+              message: error instanceof Error ? error.message : 'Tool execution failed' 
+            },
+            id: body.id
+          })
+        }
+
+      default:
+        return NextResponse.json({
+          jsonrpc: '2.0',
+          error: { code: -32601, message: 'Method not found' },
+          id: body.id
+        })
     }
-
-    if (transport === 'sse') {
-      // Para compatibilidade com SSE, retornar as ferramentas disponíveis
-      return NextResponse.json({
-        tools: Object.values(tools).map(tool => ({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema
-        }))
-      });
-    }
-
-    return NextResponse.json({
-      error: 'Invalid request',
-      transport,
-      body
-    }, { status: 400 });
-
   } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Internal server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      { 
+        jsonrpc: '2.0', 
+        error: { code: -32700, message: 'Parse error' },
+        id: null 
+      },
+      { status: 400 }
+    )
   }
 }
 

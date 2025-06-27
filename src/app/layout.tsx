@@ -44,10 +44,18 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
   ],
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': 'Manus Fisio',
+    'mobile-web-app-capable': 'yes',
+    'format-detection': 'telephone=no',
+  }
 }
 
 export default function RootLayout({

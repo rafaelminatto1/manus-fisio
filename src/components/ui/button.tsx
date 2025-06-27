@@ -47,8 +47,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          "touch-optimized ios-button",
+          "active:scale-[0.97] transition-transform duration-100"
+        )}
         ref={ref}
+        style={{
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'manipulation'
+        }}
         {...props}
       />
     )

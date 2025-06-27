@@ -104,7 +104,7 @@ export function useSystemMetrics() {
       } as SystemMetrics
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 15, // ✅ OTIMIZAÇÃO: Aumentado de 5 para 15 minutos
   })
 }
 
@@ -139,7 +139,7 @@ export function useTeamMetrics() {
       } as TeamMetrics
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 10, // 10 minutos
+    staleTime: 1000 * 60 * 20, // ✅ OTIMIZAÇÃO: Aumentado de 10 para 20 minutos
   })
 }
 
@@ -191,7 +191,7 @@ export function useProjectAnalytics() {
       } as ProjectAnalytics
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 15, // ✅ OTIMIZAÇÃO: Aumentado de 5 para 15 minutos
   })
 }
 
@@ -327,7 +327,7 @@ export function useUserActivity() {
       return userActivity.sort((a, b) => b.activityScore - a.activityScore)
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 10, // 10 minutos
+    staleTime: 1000 * 60 * 20, // ✅ OTIMIZAÇÃO: Aumentado de 10 para 20 minutos
   })
 }
 
@@ -392,6 +392,6 @@ export function usePeriodComparison(period: 'week' | 'month' = 'week') {
       }
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 15, // 15 minutos
+    staleTime: 1000 * 60 * 30, // ✅ OTIMIZAÇÃO: Aumentado de 15 para 30 minutos
   })
 } 

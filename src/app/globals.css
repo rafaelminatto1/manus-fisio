@@ -54,6 +54,12 @@
     --ring: 217.2 91.2% 59.8%;
     
     --radius: 0.5rem;
+    
+    /* ✅ NOVO: Safe areas para iPhone */
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-right: env(safe-area-inset-right);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    --safe-area-inset-left: env(safe-area-inset-left);
   }
 }
 
@@ -65,6 +71,61 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* ✅ NOVO: Otimizações para iOS */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+  
+  /* ✅ NOVO: Layout principal com safe areas */
+  .ios-safe-layout {
+    padding-top: max(1rem, var(--safe-area-inset-top));
+    padding-right: max(1rem, var(--safe-area-inset-right));
+    padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+    padding-left: max(1rem, var(--safe-area-inset-left));
+  }
+  
+  /* ✅ NOVO: Otimizar touch para iOS */
+  .touch-optimized {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* ✅ NOVO: Botões otimizados para iOS */
+  .ios-button {
+    min-height: 44px; /* Recomendação Apple */
+    min-width: 44px;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    border-radius: 12px; /* iOS style */
+  }
+  
+  /* ✅ NOVO: Feedback visual para touch */
+  .ios-button:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+  
+  /* ✅ NOVO: Inputs otimizados para iOS */
+  .ios-input {
+    -webkit-appearance: none;
+    border-radius: 12px;
+    font-size: 16px; /* Previne zoom no iOS */
+  }
+  
+  /* ✅ NOVO: Scroll suave no iOS */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* ✅ NOVO: Otimizar animações para iOS */
+  .ios-animation {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
   
   /* Scrollbar personalizado */
@@ -468,3 +529,62 @@
     box-shadow: none !important;
   }
 } 
+
+/* ✅ OTIMIZAÇÕES ESPECÍFICAS PARA iOS */
+
+/* Layout principal com safe areas */
+.ios-safe-layout {
+  padding-top: max(1rem, var(--safe-area-inset-top));
+  padding-right: max(1rem, var(--safe-area-inset-right));
+  padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+  padding-left: max(1rem, var(--safe-area-inset-left));
+}
+
+/* Otimizar touch para iOS */
+.touch-optimized {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Botões otimizados para iOS */
+.ios-button {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  border-radius: 12px;
+}
+
+/* Feedback visual para touch */
+.ios-button:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Inputs otimizados para iOS */
+.ios-input {
+  -webkit-appearance: none;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+/* Media queries específicas para dispositivos iOS */
+@media only screen and (device-width: 375px) and (device-height: 812px) {
+  .sidebar { transform: translateX(-100%); }
+  .main-content { margin-left: 0; }
+}
+
+@media only screen and (device-width: 390px) and (device-height: 844px) {
+  .container { padding: 0 1rem; }
+}
+
+@media only screen and (device-width: 430px) and (device-height: 932px) {
+  .dynamic-island-space { margin-top: 54px; }
+}
+
+@media only screen and (device-width: 820px) and (device-height: 1180px) {
+  .sidebar { width: 320px; }
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}

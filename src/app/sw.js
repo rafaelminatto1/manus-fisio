@@ -1,6 +1,15 @@
-const CACHE_NAME = 'manus-fisio-v1.0.0'
-const STATIC_CACHE = 'manus-fisio-static-v1.0.0'
-const DYNAMIC_CACHE = 'manus-fisio-dynamic-v1.0.0'
+const CACHE_NAME = 'manus-fisio-v2.0.0-ios'
+const STATIC_CACHE = 'manus-fisio-static-v2.0.0-ios'
+const DYNAMIC_CACHE = 'manus-fisio-dynamic-v2.0.0-ios'
+
+// ✅ NOVO: Recursos específicos para iOS
+const IOS_ASSETS = [
+  '/icons/icon-120x120.png',
+  '/icons/icon-152x152.png',
+  '/icons/icon-167x167.png',
+  '/icons/icon-180x180.png',
+  '/apple-touch-startup-image.png'
+]
 
 // Recursos para cache estático
 const STATIC_ASSETS = [
@@ -11,7 +20,8 @@ const STATIC_ASSETS = [
   '/calendar',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  ...IOS_ASSETS
 ]
 
 // Recursos para cache dinâmico (páginas visitadas)
@@ -21,6 +31,16 @@ const DYNAMIC_ASSETS = [
   '/api/users',
   '/api/tasks'
 ]
+
+// ✅ NOVO: Detecção de Safari
+const isSafari = () => {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+}
+
+// ✅ NOVO: Detecção de iOS
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+}
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
@@ -35,6 +55,9 @@ self.addEventListener('install', (event) => {
       .then(() => {
         console.log('Service Worker: Static assets cached')
         return self.skipWaiting()
+      })
+      .catch(error => {
+        console.error('Service Worker: Error caching static assets:', error)
       })
   )
 })
@@ -62,7 +85,7 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// Interceptar requisições
+// ✅ NOVO: Interceptar requisições com otimizações para Safari
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -70,18 +93,48 @@ self.addEventListener('fetch', (event) => {
   // Ignorar requisições não-HTTP
   if (!request.url.startsWith('http')) return
 
+  // ✅ NOVO: Estratégia específica para Safari e iOS
+  if (isSafari() || isIOS()) {
+    // Safari tem problemas com cache de API, usar Network First sempre
+    if (request.url.includes('/api/')) {
+      event.respondWith(
+        fetch(request)
+          .then(response => {
+            if (response.status === 200) {
+              const responseClone = response.clone()
+              caches.open(DYNAMIC_CACHE)
+                .then(cache => cache.put(request, responseClone))
+                .catch(error => console.warn('Cache error:', error))
+            }
+            return response
+          })
+          .catch(() => caches.match(request))
+      )
+      return
+    }
+  }
+
   // Estratégia Cache First para recursos estáticos
   if (STATIC_ASSETS.includes(url.pathname)) {
     event.respondWith(
       caches.match(request)
         .then(response => {
           return response || fetch(request)
+            .then(networkResponse => {
+              // Cache a resposta para próximas requisições
+              if (networkResponse.status === 200) {
+                const responseClone = networkResponse.clone()
+                caches.open(STATIC_CACHE)
+                  .then(cache => cache.put(request, responseClone))
+              }
+              return networkResponse
+            })
         })
     )
     return
   }
 
-  // Estratégia Network First para API calls
+  // Estratégia Network First para API calls (não Safari)
   if (request.url.includes('/api/')) {
     event.respondWith(
       fetch(request)
@@ -144,68 +197,7 @@ self.addEventListener('fetch', (event) => {
               return caches.match('/')
                 .then(fallback => {
                   return fallback || new Response(
-                    `<!DOCTYPE html>
-                    <html>
-                    <head>
-                      <title>Offline - Manus Fisio</title>
-                      <meta charset="utf-8">
-                      <meta name="viewport" content="width=device-width, initial-scale=1">
-                      <style>
-                        body { 
-                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                          background: #0f172a; 
-                          color: #f8fafc; 
-                          display: flex; 
-                          align-items: center; 
-                          justify-content: center; 
-                          height: 100vh; 
-                          margin: 0;
-                          text-align: center;
-                        }
-                        .offline-container {
-                          max-width: 400px;
-                          padding: 2rem;
-                        }
-                        .offline-icon {
-                          font-size: 4rem;
-                          margin-bottom: 1rem;
-                        }
-                        .offline-title {
-                          font-size: 1.5rem;
-                          font-weight: 600;
-                          margin-bottom: 0.5rem;
-                        }
-                        .offline-message {
-                          color: #cbd5e1;
-                          margin-bottom: 1.5rem;
-                        }
-                        .retry-button {
-                          background: #3b82f6;
-                          color: white;
-                          border: none;
-                          padding: 0.75rem 1.5rem;
-                          border-radius: 0.5rem;
-                          cursor: pointer;
-                          font-size: 1rem;
-                        }
-                        .retry-button:hover {
-                          background: #2563eb;
-                        }
-                      </style>
-                    </head>
-                    <body>
-                      <div class="offline-container">
-                        <div class="offline-icon">📱</div>
-                        <h1 class="offline-title">Você está offline</h1>
-                        <p class="offline-message">
-                          Verifique sua conexão com a internet e tente novamente.
-                        </p>
-                        <button class="retry-button" onclick="window.location.reload()">
-                          Tentar Novamente
-                        </button>
-                      </div>
-                    </body>
-                    </html>`,
+                    createOfflinePage(),
                     {
                       headers: { 'Content-Type': 'text/html' }
                     }
@@ -219,6 +211,83 @@ self.addEventListener('fetch', (event) => {
       })
   )
 })
+
+// ✅ NOVO: Função para criar página offline otimizada para iOS
+function createOfflinePage() {
+  return `<!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <title>Offline - Manus Fisio</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+      <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: #0f172a; 
+          color: #f8fafc; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          height: 100vh; 
+          margin: 0;
+          text-align: center;
+          padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+        }
+        .offline-container {
+          max-width: 400px;
+          padding: 2rem;
+        }
+        .offline-icon {
+          font-size: 4rem;
+          margin-bottom: 1rem;
+        }
+        .offline-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        .offline-message {
+          color: #cbd5e1;
+          margin-bottom: 1.5rem;
+        }
+        .retry-button {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 12px;
+          cursor: pointer;
+          font-size: 1rem;
+          min-height: 44px;
+          min-width: 120px;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+        }
+        .retry-button:hover {
+          background: #2563eb;
+        }
+        .retry-button:active {
+          transform: scale(0.97);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="offline-container">
+        <div class="offline-icon">📱</div>
+        <h1 class="offline-title">Você está offline</h1>
+        <p class="offline-message">
+          Verifique sua conexão com a internet e tente novamente.
+        </p>
+        <button class="retry-button" onclick="window.location.reload()">
+          Tentar Novamente
+        </button>
+      </div>
+    </body>
+    </html>`
+}
 
 // Notificações Push
 self.addEventListener('push', (event) => {

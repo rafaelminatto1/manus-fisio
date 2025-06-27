@@ -9,7 +9,8 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["medical", "productivity", "business"],
+  "categories": ["medical", "productivity", "business", "health"],
+  "display_override": ["window-controls-overlay", "standalone"],
   "screenshots": [
     {
       "src": "/icons/screenshot-desktop.png",
@@ -72,6 +73,24 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-120x120.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-167x167.png",
+      "sizes": "167x167",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -123,5 +142,11 @@
   "handle_links": "preferred",
   "launch_handler": {
     "client_mode": "navigate-existing"
-  }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+manusfisio",
+      "url": "/?handler=%s"
+    }
+  ]
 } 

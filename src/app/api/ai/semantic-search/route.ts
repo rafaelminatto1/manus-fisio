@@ -1,114 +1,158 @@
-import { NextRequest } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: NextRequest) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+// ✅ OTIMIZAÇÃO: Tipos explícitos para evitar erros de TypeScript
+interface NotebookItem {
+  id: string
+  title: string
+  content: string
+  created_at: string
+  [key: string]: any
+}
+
+interface ProjectItem {
+  id: string
+  title: string
+  description: string
+  created_at: string
+  [key: string]: any
+}
+
+interface TaskItem {
+  id: string
+  title: string
+  description: string
+  created_at: string
+  [key: string]: any
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const { query, filters } = await req.json()
+    const { query, type, limit = 10 } = await request.json()
 
-    // Verificar autenticação
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 })
+    if (!query) {
+      return NextResponse.json(
+        { error: 'Query is required' },
+        { status: 400 }
+      )
     }
 
-    // Buscar em notebooks
-    const { data: notebooks } = await supabase
-      .from('notebooks')
-      .select('id, title, content, created_at')
-      .ilike('title', `%${query}%`)
-      .limit(5)
+    // Buscar em diferentes tabelas baseado no tipo
+    let notebooks: NotebookItem[] | null = null
+    let projects: ProjectItem[] | null = null
+    let tasks: TaskItem[] | null = null
 
-    // Buscar em projetos
-    const { data: projects } = await supabase
-      .from('projects')
-      .select('id, title, description, created_at')
-      .ilike('title', `%${query}%`)
-      .limit(5)
+    if (!type || type === 'all' || type === 'notebook') {
+      const { data } = await supabase
+        .from('notebooks')
+        .select('id, title, content, created_at')
+        .textSearch('content', query)
+        .limit(limit)
+      notebooks = data
+    }
 
-    // Buscar em eventos
-    const { data: events } = await supabase
-      .from('calendar_events')
-      .select('id, title, description, created_at')
-      .ilike('title', `%${query}%`)
-      .limit(5)
+    if (!type || type === 'all' || type === 'project') {
+      const { data } = await supabase
+        .from('projects')
+        .select('id, title, description, created_at')
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .limit(limit)
+      projects = data
+    }
 
-    // Buscar em usuários
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, full_name, role, created_at')
-      .ilike('full_name', `%${query}%`)
-      .limit(5)
+    if (!type || type === 'all' || type === 'task') {
+      const { data } = await supabase
+        .from('tasks')
+        .select('id, title, description, created_at')
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .limit(limit)
+      tasks = data
+    }
 
     // Combinar resultados e calcular relevância
     const results = [
-      ...(notebooks || []).map(item => ({
+      ...(notebooks || []).map((item: NotebookItem) => ({
         id: item.id,
         type: 'notebook',
         title: item.title,
-        content: item.content || '',
-        relevance: calculateRelevance(query, item.title + ' ' + (item.content || '')),
-        metadata: { created_at: item.created_at }
+        content: item.content?.substring(0, 200) + '...',
+        relevance: calculateRelevance(query, item.title + ' ' + item.content),
+        created_at: item.created_at
       })),
-      ...(projects || []).map(item => ({
+      ...(projects || []).map((item: ProjectItem) => ({
         id: item.id,
         type: 'project',
         title: item.title,
-        content: item.description || '',
-        relevance: calculateRelevance(query, item.title + ' ' + (item.description || '')),
-        metadata: { created_at: item.created_at }
+        content: item.description?.substring(0, 200) + '...',
+        relevance: calculateRelevance(query, item.title + ' ' + item.description),
+        created_at: item.created_at
       })),
-      ...(events || []).map(item => ({
+      ...(tasks || []).map((item: TaskItem) => ({
         id: item.id,
-        type: 'event',
+        type: 'task',
         title: item.title,
-        content: item.description || '',
-        relevance: calculateRelevance(query, item.title + ' ' + (item.description || '')),
-        metadata: { created_at: item.created_at }
-      })),
-      ...(users || []).map(item => ({
-        id: item.id,
-        type: 'user',
-        title: item.full_name,
-        content: `Função: ${item.role}`,
-        relevance: calculateRelevance(query, item.full_name),
-        metadata: { role: item.role, created_at: item.created_at }
+        content: item.description?.substring(0, 200) + '...',
+        relevance: calculateRelevance(query, item.title + ' ' + item.description),
+        created_at: item.created_at
       }))
     ]
 
     // Ordenar por relevância
     results.sort((a, b) => b.relevance - a.relevance)
 
-    return Response.json({ 
-      results: results.slice(0, filters?.limit || 10),
+    return NextResponse.json({
+      results: results.slice(0, limit),
       total: results.length,
       query
     })
 
   } catch (error) {
-    console.error('Semantic Search Error:', error)
-    return new Response('Internal Server Error', { status: 500 })
+    console.error('Semantic search error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
-function calculateRelevance(query: string, text: string): number {
-  const queryWords = query.toLowerCase().split(' ')
-  const textWords = text.toLowerCase().split(' ')
+// ✅ OTIMIZAÇÃO: Função melhorada de cálculo de relevância
+function calculateRelevance(query: string, content: string): number {
+  if (!content) return 0
   
-  let matches = 0
-  let exactMatches = 0
+  const queryLower = query.toLowerCase()
+  const contentLower = content.toLowerCase()
   
-  queryWords.forEach(queryWord => {
-    textWords.forEach(textWord => {
-      if (textWord.includes(queryWord)) {
-        matches++
-        if (textWord === queryWord) {
-          exactMatches++
-        }
-      }
-    })
+  // Pontuação base por presença da query
+  let score = 0
+  
+  // Exact match no título (peso maior)
+  if (contentLower.includes(queryLower)) {
+    score += 10
+  }
+  
+  // Palavras individuais
+  const queryWords = queryLower.split(' ').filter(word => word.length > 2)
+  queryWords.forEach(word => {
+    if (contentLower.includes(word)) {
+      score += 2
+    }
   })
   
-  // Calcular relevância (0-1)
-  const relevance = (matches * 0.5 + exactMatches * 1) / queryWords.length
-  return Math.min(relevance, 1)
+  // Proximidade das palavras (bonus se estão próximas)
+  if (queryWords.length > 1) {
+    const positions = queryWords.map(word => contentLower.indexOf(word))
+    if (positions.every(pos => pos !== -1)) {
+      const maxDistance = Math.max(...positions) - Math.min(...positions)
+      if (maxDistance < 100) {
+        score += 5 - (maxDistance / 20)
+      }
+    }
+  }
+  
+  return score
 } 
