@@ -11,39 +11,26 @@
 **Causa**: RLS policies ativas + consultas diretas sem contexto de usuário
 
 #### Consultas que estão falhando:
-- `notebooks?select=id` (400)
-- `projects?select=id` (400) 
-- `users?select=id&role=eq.intern&is_active=eq.true` (400)
-- `tasks?select=id%2Cstatus` (400)
-- `activity_logs?select=...` (400)
+- notebooks?select=id (400)
+- projects?select=id (400) 
+- users?select=id&role=eq.intern&is_active=eq.true (400)
+- tasks?select=id%2Cstatus (400)
+- activity_logs?select=... (400)
 
 ### 3. 🔗 ERROS 404: Rotas inexistentes (IDENTIFICADO)
-- `/notebooks/new?_rsc=1ld0r` (404)
-- `/projects/new?_rsc=1ld0r` (404)
-- `/calendar/new?_rsc=1ld0r` (404)
+- /notebooks/new?_rsc=1ld0r (404)
+- /projects/new?_rsc=1ld0r (404)
+- /calendar/new?_rsc=1ld0r (404)
 
 ---
 
 ## 🛠️ SOLUÇÕES IMPLEMENTADAS
 
 ### ✅ 1. Middleware Corrigido
-```typescript
-// ✅ CORREÇÃO: Permitir acesso público ao manifest.json (PWA)
-if (req.nextUrl.pathname === '/manifest.json') {
-  return res
-}
-
-// ✅ CORREÇÃO: Permitir acesso a arquivos estáticos PWA
-if (req.nextUrl.pathname.startsWith('/icons/') || 
-    req.nextUrl.pathname === '/offline.html' ||
-    req.nextUrl.pathname === '/sw.js') {
-  return res
-}
-```
+Adicionada exceção no middleware para permitir acesso ao manifest.json e arquivos PWA
 
 ### 🔄 2. Dashboard com Verificação de Autenticação
-**Problema**: `loadDashboardData()` executa mesmo sem usuário autenticado
-
+**Problema**: loadDashboardData() executa mesmo sem usuário autenticado
 **Solução**: Implementar verificação de autenticação adequada
 
 ---
@@ -56,9 +43,9 @@ if (req.nextUrl.pathname.startsWith('/icons/') ||
 - Adicionar tratamento de erro adequado
 
 ### 2. Implementar Rotas Faltantes (MÉDIO)
-- Criar `/notebooks/new`
-- Criar `/projects/new` 
-- Criar `/calendar/new`
+- Criar /notebooks/new
+- Criar /projects/new 
+- Criar /calendar/new
 
 ### 3. Otimizar RLS Policies (MÉDIO)
 - Verificar policies muito restritivas
@@ -93,4 +80,4 @@ if (req.nextUrl.pathname.startsWith('/icons/') ||
 3. **Testar autenticação** (5 min)
 4. **Verificar console limpo** (2 min)
 
-**Tempo estimado**: 22 minutos para console 100% limpo 
+**Tempo estimado**: 22 minutos para console 100% limpo
