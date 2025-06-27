@@ -18,7 +18,9 @@ import {
   LogOut,
   BarChart3,
   Monitor,
-  Activity
+  Activity,
+  HardDrive,
+  MessageSquare
 } from 'lucide-react'
 
 const navigationItems = [
@@ -62,6 +64,18 @@ const navigationItems = [
     href: '/system-monitor',
     label: 'Monitor Sistema',
     icon: Monitor,
+    badge: null
+  },
+  {
+    href: '/backup',
+    label: 'Backup',
+    icon: HardDrive,
+    badge: null
+  },
+  {
+    href: '/collaboration',
+    label: 'Colaboração',
+    icon: MessageSquare,
     badge: null
   }
 ]
