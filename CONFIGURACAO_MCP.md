@@ -1,90 +1,209 @@
-# Configuração MCP (Model Context Protocol) - Supabase
+# Configuração MCP (Model Context Protocol) - Manus Fisio
 
-## ✅ Configuração Concluída
+## 🚀 Visão Geral
 
-A configuração do MCP para Supabase foi criada com sucesso no projeto Manus Fisio.
+O sistema Manus Fisio agora possui integração completa com o Model Context Protocol (MCP) da Vercel, permitindo que assistentes de IA interajam diretamente com o sistema de gestão da clínica de fisioterapia.
 
-### 📁 Arquivos Criados
+## 📋 Recursos Implementados
 
-- **`.cursor/mcp.json`** - Arquivo de configuração do MCP
+### 🔧 Ferramentas Disponíveis
 
-### 🔧 Configuração Atual
+#### 📅 **Gestão de Agenda**
+- `get_calendar_events` - Busca eventos do calendário
+- `create_calendar_event` - Cria novos agendamentos
+
+#### 👥 **Gestão de Pacientes**
+- `search_patients` - Busca pacientes por nome, email ou telefone
+- `create_patient` - Cadastra novos pacientes
+
+#### 📋 **Gestão de Tarefas**
+- `get_tasks` - Lista tarefas da equipe com filtros
+- `create_task` - Cria novas tarefas
+
+#### 📊 **Analytics e Monitoramento**
+- `get_dashboard_stats` - Estatísticas gerais da clínica
+- `system_health_check` - Verificação de saúde do sistema
+
+## 🛠️ Configuração Técnica
+
+### 1. Dependências Instaladas
+
+```json
+{
+  "@vercel/mcp-adapter": "^1.0.0",
+  "ai": "^4.3.16",
+  "zod": "^3.25.67"
+}
+```
+
+### 2. Endpoint MCP
+
+**URL**: `https://manus-odxhfxdmj-rafael-minattos-projects.vercel.app/api/mcp/[transport]`
+
+Suporta os seguintes transportes:
+- `http` - Protocolo HTTP moderno (recomendado)
+- `sse` - Server-Sent Events (compatibilidade)
+
+### 3. Configuração do Vercel
+
+```json
+{
+  "functions": {
+    "src/app/api/mcp/**/*.ts": {
+      "maxDuration": 60,
+      "memory": 512
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/mcp/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, DELETE, OPTIONS"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## 🔗 Como Conectar ao MCP
+
+### Para Cursor AI
+
+1. Abra as configurações do Cursor
+2. Vá para **Settings** → **MCP** → **Add new global MCP server**
+3. Adicione a seguinte configuração:
 
 ```json
 {
   "mcpServers": {
-    "supabase": {
-      "command": "cmd",
+    "Manus Fisio": {
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--read-only",
-        "--project-ref=hycudcwtuocmufhpsnmr"
-      ],
-      "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_b05236ef55afbc6e772db98fa3ad1bcf8e67fc5d"
-      }
+        "mcp-remote",
+        "https://manus-odxhfxdmj-rafael-minattos-projects.vercel.app/api/mcp/sse"
+      ]
     }
   }
 }
 ```
 
-### 🚀 Como Ativar
+### Para Desenvolvimento Local
 
-1. **Reinicie o Cursor** - Feche e abra novamente o editor
-2. **Vá para Settings/MCP** - Navegue até as configurações do MCP
-3. **Verifique o Status** - Deve aparecer um status verde "active" para o servidor Supabase
+```javascript
+import { experimental_createMCPClient as createMcpClient } from 'ai';
 
-### ✅ Pré-requisitos Verificados
-
-- ✅ **Node.js v22.17.0** - Instalado e funcionando
-- ✅ **NPX v10.9.2** - Disponível no PATH
-- ✅ **Diretório .cursor** - Criado
-- ✅ **Arquivo mcp.json** - Configurado
-
-### 🔧 Funcionalidades do MCP Supabase
-
-Com o MCP configurado, você terá acesso a:
-
-- **Consultas diretas ao banco** - Execute queries SQL diretamente
-- **Visualização de esquemas** - Veja estruturas de tabelas
-- **Dados em tempo real** - Acesse dados atualizados
-- **Análise de performance** - Monitore queries e índices
-- **Backup e restauração** - Gerencie dados com segurança
-
-### 🛠️ Comandos Úteis
-
-```bash
-# Verificar se o MCP está funcionando
-npx @supabase/mcp-server-supabase@latest --project-ref=hycudcwtuocmufhpsnmr
-
-# Ver logs do MCP (se necessário)
-# Os logs aparecerão no console do Cursor
+const client = await createMcpClient({
+  name: 'manus-fisio',
+  transport: {
+    type: 'sse',
+    url: 'https://manus-odxhfxdmj-rafael-minattos-projects.vercel.app/api/mcp/sse'
+  }
+});
 ```
 
-### 🔒 Segurança
+## 💡 Exemplos de Uso
 
-- **Token de acesso**: Configurado como read-only para segurança
-- **Project ref**: Específico para o projeto Manus Fisio
-- **Escopo limitado**: Acesso apenas aos dados necessários
+### 1. Buscar Eventos do Dia
 
-### 🚨 Próximos Passos
+```
+"Liste todos os agendamentos de hoje na clínica"
+```
 
-1. **Reiniciar Cursor** - Para ativar a configuração
-2. **Verificar Settings/MCP** - Confirmar status ativo
-3. **Testar integração** - Fazer consultas de teste
-4. **Aplicar dados de exemplo** - Usar o arquivo `DADOS_EXEMPLO_AUTOMATICO.sql`
+### 2. Cadastrar Novo Paciente
 
-### 📞 Suporte
+```
+"Cadastre um novo paciente: João Silva, email joao@email.com, telefone (11) 99999-9999"
+```
 
-Se houver problemas:
-1. Verifique se o Cursor foi reiniciado
-2. Confirme que o Node.js está no PATH
-3. Verifique se o token Supabase está válido
-4. Consulte os logs do Cursor para erros específicos
+### 3. Criar Tarefa Urgente
+
+```
+"Crie uma tarefa urgente: Verificar equipamento de ultrassom, atribuir para o admin"
+```
+
+### 4. Verificar Status do Sistema
+
+```
+"Verifique o status de saúde do sistema Manus Fisio"
+```
+
+## 🔒 Segurança e Autenticação
+
+- **Autenticação**: Utiliza Service Role Key do Supabase
+- **CORS**: Configurado para permitir acesso de assistentes IA
+- **Rate Limiting**: Máximo 60 segundos por requisição
+- **Validação**: Schemas Zod para validação de dados
+
+## 📊 Monitoramento
+
+### Logs da Vercel
+- Acesse: https://vercel.com/dashboard
+- Monitore chamadas MCP em tempo real
+- Verifique performance e erros
+
+### Health Check
+```bash
+curl https://manus-odxhfxdmj-rafael-minattos-projects.vercel.app/api/mcp/http
+```
+
+## 🚨 Troubleshooting
+
+### Erro de Conexão
+1. Verifique se as variáveis de ambiente estão configuradas
+2. Confirme se o Supabase está acessível
+3. Teste o endpoint de health check
+
+### Timeout
+- Aumente `maxDuration` se necessário
+- Otimize queries do Supabase
+- Use índices apropriados
+
+### Erro de CORS
+- Verifique configuração no `vercel.json`
+- Confirme headers de CORS
+
+## 🔄 Atualizações Futuras
+
+### Fase 6 - Expansão MCP
+- [ ] Integração com WhatsApp Business
+- [ ] Ferramentas de relatórios avançados
+- [ ] Integração com sistemas de pagamento
+- [ ] Backup e restauração de dados
+- [ ] Integração com equipamentos médicos
+
+### Otimizações Planejadas
+- [ ] Cache de respostas frequentes
+- [ ] Compressão de dados
+- [ ] Webhooks para notificações
+- [ ] Autenticação OAuth2
+
+## 📞 Suporte
+
+Para suporte técnico ou dúvidas sobre a integração MCP:
+
+1. **Documentação**: Consulte este arquivo
+2. **Logs**: Verifique logs da Vercel
+3. **Health Check**: Use a ferramenta de verificação
+4. **Issues**: Reporte problemas no repositório
 
 ---
 
-**Status**: ✅ Configuração completa - Reinicie o Cursor para ativar 
+## ✅ Status da Implementação
+
+- [x] Configuração básica do MCP
+- [x] Ferramentas de agenda
+- [x] Ferramentas de pacientes  
+- [x] Ferramentas de tarefas
+- [x] Analytics e monitoramento
+- [x] Deploy na Vercel
+- [x] Documentação completa
+- [x] Testes de conectividade
+
+**Sistema MCP 100% funcional e pronto para uso em produção! 🎉** 

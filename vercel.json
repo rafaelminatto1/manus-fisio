@@ -8,6 +8,10 @@
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/mcp/**/*.ts": {
+      "maxDuration": 60,
+      "memory": 512
     }
   },
   "headers": [
@@ -37,6 +41,27 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=(), payment=()"
+        }
+      ]
+    },
+    {
+      "source": "/api/mcp/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-Requested-With"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     },
@@ -93,6 +118,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/mcp/(.*)",
+      "destination": "/api/mcp/$1"
     }
   ],
   "redirects": [
@@ -112,5 +141,9 @@
       "path": "/api/health",
       "schedule": "0 2 * * *"
     }
-  ]
+  ],
+  "env": {
+    "MCP_SERVER_NAME": "manus-fisio-mcp",
+    "MCP_SERVER_VERSION": "1.0.0"
+  }
 } 
