@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
+import { authenticateRequest } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   try {
-    // Verificar autenticação
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 })
+    const authError = await authenticateRequest(req);
+    if (authError) {
+      return authError;
     }
 
     // Simular recomendações baseadas em IA

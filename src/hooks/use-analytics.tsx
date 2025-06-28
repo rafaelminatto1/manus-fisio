@@ -84,7 +84,11 @@ export function useSystemMetrics() {
 
       // Calcular métricas
       const totalUsers = usersResult.data?.length || 0
-      const activeUsers = Math.floor(totalUsers * 0.7) // Simulação - 70% dos usuários ativos
+      const { data: activeUsersResult } = await supabase
+        .from('users')
+        .select('id')
+        .gte('last_login_at', subDays(new Date(), 30).toISOString()); // Usuários ativos nos últimos 30 dias
+      const activeUsers = activeUsersResult?.length || 0;
       const totalProjects = projectsResult.data?.length || 0
       const completedProjects = projectsResult.data?.filter(p => p.status === 'completed').length || 0
       const totalNotebooks = notebooksResult.data?.length || 0
@@ -118,16 +122,27 @@ export function useTeamMetrics() {
       if (!user) throw new Error('User not authenticated')
 
       const { data: users } = await supabase.from('users').select('id, role')
+      const { data: mentorshipsResult } = await supabase.from('mentorships').select('status, hours_completed, hours_required')
 
       const usersData = users || []
+      const mentorshipsData = mentorshipsResult || []
+
       const totalMembers = usersData.length
       const mentors = usersData.filter(u => u.role === 'mentor').length
       const interns = usersData.filter(u => u.role === 'intern').length
       
-      // Simulação de dados de mentoria
-      const activeMentorships = Math.floor(mentors * 2.5) // Cada mentor tem ~2-3 mentorias
-      const averageHoursPerMentorship = 15.5
-      const completionRate = 78.5
+      const activeMentorships = mentorshipsData.filter(m => m.status === 'active').length
+      
+      const totalHoursCompleted = mentorshipsData.reduce((sum, m) => sum + m.hours_completed, 0)
+      const totalHoursRequired = mentorshipsData.reduce((sum, m) => sum + m.hours_required, 0)
+
+      const averageHoursPerMentorship = mentorshipsData.length > 0 
+        ? parseFloat((totalHoursCompleted / mentorshipsData.length).toFixed(1))
+        : 0
+
+      const completionRate = totalHoursRequired > 0 
+        ? parseFloat(((totalHoursCompleted / totalHoursRequired) * 100).toFixed(1))
+        : 0
 
       return {
         totalMembers,
@@ -164,8 +179,16 @@ export function useProjectAnalytics() {
       const onHoldProjects = projects.filter(p => p.status === 'on_hold').length
       const cancelledProjects = projects.filter(p => p.status === 'cancelled').length
 
-      // Calcular tempo médio de conclusão (simulado)
-      const averageCompletionTime = 18.5 // dias
+      const completedProjectsData = projects.filter(p => p.status === 'completed' && p.created_at && p.updated_at);
+      const totalCompletionTime = completedProjectsData.reduce((sum, p) => {
+        const created = new Date(p.created_at).getTime();
+        const updated = new Date(p.updated_at).getTime();
+        return sum + (updated - created); // Diferença em milissegundos
+      }, 0);
+
+      const averageCompletionTime = completedProjectsData.length > 0
+        ? parseFloat((totalCompletionTime / completedProjectsData.length / (1000 * 60 * 60 * 24)).toFixed(1)) // Converter para dias
+        : 0; // dias
 
       // Agrupar por prioridade
       const projectsByPriority = projects.reduce((acc, p) => {
@@ -292,24 +315,27 @@ export function useUserActivity() {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated')
 
-      const [usersResult, notebooksResult, projectsResult, eventsResult] = await Promise.all([
+      const [usersResult, notebooksResult, projectsResult, eventsResult, tasksCompletedResult] = await Promise.all([
         supabase.from('users').select('id, full_name, role, created_at'),
         supabase.from('notebooks').select('created_by, created_at').gte('created_at', subDays(new Date(), 30).toISOString()),
         supabase.from('projects').select('created_by, created_at').gte('created_at', subDays(new Date(), 30).toISOString()),
-        supabase.from('calendar_events').select('created_by, created_at').gte('created_at', subDays(new Date(), 30).toISOString())
+        supabase.from('calendar_events').select('created_by, created_at').gte('created_at', subDays(new Date(), 30).toISOString()),
+        supabase.from('tasks').select('assigned_to, status').eq('status', 'done').gte('created_at', subDays(new Date(), 30).toISOString())
       ])
 
       const users = usersResult.data || []
       const notebooks = notebooksResult.data || []
       const projects = projectsResult.data || []
       const events = eventsResult.data || []
+      const completedTasks = tasksCompletedResult.data || []
 
       const userActivity: UserActivity[] = users.map(userData => {
         const userNotebooks = notebooks.filter(n => n.created_by === userData.id)
         const userProjects = projects.filter(p => p.created_by === userData.id)
         const userEvents = events.filter(e => e.created_by === userData.id)
+        const userCompletedTasks = completedTasks.filter(t => t.assigned_to === userData.id).length
 
-        const activityScore = userNotebooks.length * 2 + userProjects.length * 5 + userEvents.length * 1
+        const activityScore = userNotebooks.length * 2 + userProjects.length * 5 + userEvents.length * 1 + userCompletedTasks * 3
 
         return {
           userId: userData.id,
@@ -319,7 +345,7 @@ export function useUserActivity() {
           notebooksCreated: userNotebooks.length,
           projectsCreated: userProjects.length,
           eventsCreated: userEvents.length,
-          tasksCompleted: Math.floor(Math.random() * 20), // Simulado
+          tasksCompleted: userCompletedTasks,
           activityScore: Math.round(activityScore),
         }
       })

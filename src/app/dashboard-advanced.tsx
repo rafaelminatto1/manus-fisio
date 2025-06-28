@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { SetupNotice } from '@/components/ui/setup-notice'
@@ -14,7 +14,7 @@ import { ThemeCustomizer, useThemeCustomizer } from '@/components/ui/theme-custo
 import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
 import { AIAssistant, useAIAssistant } from '@/components/ui/ai-assistant'
 import { useAuth } from '@/hooks/use-auth'
-import { createClient } from '@/lib/auth'
+import { useDashboardData, DashboardStats, RecentActivity } from '@/hooks/use-dashboard-data'
 import { 
   BookOpen, 
   Users, 
@@ -40,27 +40,7 @@ import {
   Crown
 } from 'lucide-react'
 
-// Types for real data
-interface DashboardStats {
-  notebooks: number
-  projects: number
-  activeInterns: number
-  completedTasks: number
-  totalTasks: number
-  activeMentorships: number
-}
-
-interface RecentActivity {
-  id: string
-  action: string
-  resource_type: string
-  user_id: string
-  created_at: string
-  user?: {
-    full_name: string
-  }
-}
-
+// Interface for UpcomingEvent (kept here as it's not in use-dashboard-data)
 interface UpcomingEvent {
   id: string
   title: string
@@ -70,7 +50,7 @@ interface UpcomingEvent {
   participants?: string[]
 }
 
-// Mock data fallback
+// Mock data fallback (kept for mock mode)
 const mockStats: DashboardStats = {
   notebooks: 24,
   projects: 12,
@@ -134,12 +114,8 @@ const mockEvents: UpcomingEvent[] = [
 export default function AdvancedDashboard() {
   const { user } = useAuth()
   const router = useRouter()
-  const [stats, setStats] = useState<DashboardStats>(mockStats)
-  const [activities, setActivities] = useState<RecentActivity[]>(mockActivities)
-  const [events, setEvents] = useState<UpcomingEvent[]>(mockEvents)
-  const [loading, setLoading] = useState(false) // Set to false for demo
-  const [error, setError] = useState<string | null>(null)
-  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [events] = useState<UpcomingEvent[]>(mockEvents) // Keep events state, as it's not fetched by the hook
+  const [showAnalytics, setShowAnalytics] = useState(false) // Keep this state
 
   // Advanced features hooks
   const themeCustomizer = useThemeCustomizer()
@@ -147,90 +123,18 @@ export default function AdvancedDashboard() {
   const aiAssistant = useAIAssistant()
   const [dashboardMode, setDashboardMode] = useState<'classic' | 'widgets' | 'analytics'>('classic')
 
-  const supabase = createClient()
+  // Determine if in mock mode
   const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
 
-  useEffect(() => {
-    if (isMockMode || !user) {
-      setLoading(false)
-      return
-    }
+  // Fetch data using React Query
+  const { data, isLoading: loading, error: queryError } = useDashboardData({
+    enabled: !isMockMode && !!user, // Only fetch if not in mock mode and user is available
+  })
 
-    loadDashboardData()
-  }, [user, isMockMode])
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Load statistics
-      const [
-        notebooksResult,
-        projectsResult,
-        tasksResult,
-        mentorshipsResult,
-        usersResult
-      ] = await Promise.all([
-        supabase.from('notebooks').select('id', { count: 'exact' }),
-        supabase.from('projects').select('id', { count: 'exact' }),
-        supabase.from('tasks').select('id, status', { count: 'exact' }),
-        supabase.from('mentorships').select('id', { count: 'exact' }).eq('status', 'active'),
-        supabase.from('users').select('id', { count: 'exact' }).eq('role', 'intern').eq('is_active', true)
-      ])
-
-      // Calculate completed tasks
-      const completedTasksResult = await supabase
-        .from('tasks')
-        .select('id', { count: 'exact' })
-        .eq('status', 'done')
-
-      const newStats: DashboardStats = {
-        notebooks: notebooksResult.count || 0,
-        projects: projectsResult.count || 0,
-        activeInterns: usersResult.count || 0,
-        completedTasks: completedTasksResult.count || 0,
-        totalTasks: tasksResult.count || 0,
-        activeMentorships: mentorshipsResult.count || 0
-      }
-
-      setStats(newStats)
-
-      // Load recent activities
-      const activitiesResult = await supabase
-        .from('activity_logs')
-        .select(`
-          id,
-          action,
-          resource_type,
-          user_id,
-          created_at,
-          users:user_id (
-            full_name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (activitiesResult.data) {
-        setActivities(activitiesResult.data.map((activity: any) => ({
-          ...activity,
-          user: activity.users
-        })))
-      }
-
-      setEvents(mockEvents)
-
-    } catch (err) {
-      console.error('Error loading dashboard data:', err)
-      setError('Erro ao carregar dados do dashboard')
-      setStats(mockStats)
-      setActivities(mockActivities)
-      setEvents(mockEvents)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Use fetched data or mock data as fallback
+  const stats = data?.stats || mockStats
+  const activities = data?.activities || mockActivities
+  const error = queryError ? 'Erro ao carregar dados do dashboard' : null
 
   const getActivityIcon = (resourceType: string) => {
     switch (resourceType) {
@@ -611,4 +515,4 @@ export default function AdvancedDashboard() {
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}

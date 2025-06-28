@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
+import { authenticateRequest } from '@/lib/auth';
 
 // Configuração do Supabase
 const supabase = createClient<Database>(
@@ -784,6 +785,11 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ transport: string }> }
 ) {
+  const authError = await authenticateRequest(request);
+  if (authError) {
+    return authError;
+  }
+
   const { transport } = await context.params
 
   if (transport !== 'stdio' && transport !== 'sse') {

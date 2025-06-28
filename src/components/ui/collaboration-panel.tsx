@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { Button } from './button'
-import { Input } from './input'
+import { Input }n from './input'
 import { Textarea } from './textarea'
 import { Avatar } from './avatar'
 import { Badge } from './badge'
@@ -23,30 +23,15 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
-
-interface Comment {
-  id: string
-  user_id: string
-  user_name: string
-  user_avatar?: string
-  content: string
-  created_at: string
-  updated_at?: string
-  replies?: Comment[]
-  is_pinned?: boolean
-  document_id: string
-  selection_text?: string
-}
-
-interface Version {
-  id: string
-  user_id: string
-  user_name: string
-  created_at: string
-  changes_summary: string
-  content_preview: string
-  is_current: boolean
-}
+import { 
+  useCommentsQuery, 
+  useAddCommentMutation, 
+  useVersionsQuery, 
+  useRestoreVersionMutation, 
+  useActiveUsersSubscription, 
+  Comment, 
+  Version 
+} from '@/hooks/use-collaboration-data'
 
 interface CollaborationPanelProps {
   documentId: string
@@ -56,168 +41,62 @@ interface CollaborationPanelProps {
 export function CollaborationPanel({ documentId, documentTitle }: CollaborationPanelProps) {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'comments' | 'versions' | 'users'>('comments')
-  const [comments, setComments] = useState<Comment[]>([])
-  const [versions, setVersions] = useState<Version[]>([])
-  const [activeUsers, setActiveUsers] = useState<any[]>([])
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState('')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadCollaborationData()
-    simulateActiveUsers()
-  }, [documentId])
+  // React Query Hooks
+  const { data: comments, isLoading: isLoadingComments, error: commentsError } = useCommentsQuery(documentId)
+  const { data: versions, isLoading: isLoadingVersions, error: versionsError } = useVersionsQuery(documentId)
+  const { data: activeUsers, isLoading: isLoadingActiveUsers } = useActiveUsersSubscription(documentId)
 
-  const loadCollaborationData = async () => {
-    try {
-      setLoading(true)
-      
-      // Simular dados de colaboração
-      const mockComments: Comment[] = [
-        {
-          id: '1',
-          user_id: 'user1',
-          user_name: 'Dr. Maria Silva',
-          content: 'Excelente evolução do paciente! Sugiro aumentar a frequência dos exercícios de fortalecimento.',
-          created_at: '2024-01-15T14:30:00Z',
-          document_id: documentId,
-          selection_text: 'exercícios de fortalecimento do quadríceps',
-          is_pinned: true,
-          replies: [
-            {
-              id: '1-1',
-              user_id: 'user2',
-              user_name: 'Fisio João Santos',
-              content: 'Concordo! Vou ajustar o programa na próxima sessão.',
-              created_at: '2024-01-15T15:00:00Z',
-              document_id: documentId
-            }
-          ]
-        },
-        {
-          id: '2',
-          user_id: 'user2',
-          user_name: 'Fisio João Santos',
-          content: 'Paciente relatou diminuição da dor. Ótimo progresso!',
-          created_at: '2024-01-15T16:20:00Z',
-          document_id: documentId
-        }
-      ]
+  const addCommentMutation = useAddCommentMutation()
+  const restoreVersionMutation = useRestoreVersionMutation()
 
-      const mockVersions: Version[] = [
-        {
-          id: 'v3',
-          user_id: 'user1',
-          user_name: 'Dr. Maria Silva',
-          created_at: '2024-01-15T16:30:00Z',
-          changes_summary: 'Adicionou novos exercícios e ajustou intensidade',
-          content_preview: 'Programa atualizado com exercícios de propriocepção...',
-          is_current: true
-        },
-        {
-          id: 'v2',
-          user_id: 'user2',
-          user_name: 'Fisio João Santos',
-          created_at: '2024-01-15T14:15:00Z',
-          changes_summary: 'Corrigiu dados de avaliação inicial',
-          content_preview: 'Avaliação postural corrigida, amplitude de movimento...',
-          is_current: false
-        },
-        {
-          id: 'v1',
-          user_id: 'user1',
-          user_name: 'Dr. Maria Silva',
-          created_at: '2024-01-15T10:00:00Z',
-          changes_summary: 'Versão inicial do documento',
-          content_preview: 'Primeira avaliação do paciente João Silva...',
-          is_current: false
-        }
-      ]
+  const isLoading = isLoadingComments || isLoadingVersions || isLoadingActiveUsers;
+  const error = commentsError || versionsError; // Combine errors for display
 
-      setComments(mockComments)
-      setVersions(mockVersions)
-    } catch (error) {
-      console.error('Erro ao carregar dados de colaboração:', error)
-      toast.error('Erro ao carregar dados de colaboração')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const simulateActiveUsers = () => {
-    const mockUsers = [
-      { id: 'user1', name: 'Dr. Maria Silva', status: 'editing', last_seen: new Date() },
-      { id: 'user2', name: 'Fisio João Santos', status: 'viewing', last_seen: new Date(Date.now() - 5 * 60 * 1000) },
-      { id: 'user3', name: 'Recep. Ana Costa', status: 'idle', last_seen: new Date(Date.now() - 15 * 60 * 1000) }
-    ]
-    setActiveUsers(mockUsers)
-  }
-
-  const addComment = async () => {
+  const handleAddComment = async () => {
     if (!newComment.trim() || !user) return
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email || 'Usuário',
+    addCommentMutation.mutate({
+      document_id: documentId,
       content: newComment,
-      created_at: new Date().toISOString(),
-      document_id: documentId
-    }
-
-    setComments(prev => [comment, ...prev])
-    setNewComment('')
-    toast.success('Comentário adicionado!')
+      // user_id, user_name, created_at will be handled by the mutation hook
+    }, {
+      onSuccess: () => {
+        setNewComment('')
+      }
+    })
   }
 
-  const addReply = async (parentId: string) => {
+  const handleAddReply = async (parentId: string) => {
     if (!replyContent.trim() || !user) return
 
-    const reply: Comment = {
-      id: `${parentId}-${Date.now()}`,
-      user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email || 'Usuário',
+    addCommentMutation.mutate({
+      document_id: documentId,
       content: replyContent,
-      created_at: new Date().toISOString(),
-      document_id: documentId
-    }
-
-    setComments(prev => prev.map(comment => {
-      if (comment.id === parentId) {
-        return {
-          ...comment,
-          replies: [...(comment.replies || []), reply]
-        }
+      parent_id: parentId, // Assuming your comment table supports parent_id for replies
+    }, {
+      onSuccess: () => {
+        setReplyContent('')
+        setReplyingTo(null)
       }
-      return comment
-    }))
-
-    setReplyContent('')
-    setReplyingTo(null)
-    toast.success('Resposta adicionada!')
+    })
   }
 
-  const togglePin = (commentId: string) => {
-    setComments(prev => prev.map(comment => 
-      comment.id === commentId 
-        ? { ...comment, is_pinned: !comment.is_pinned }
-        : comment
-    ))
-  }
-
-  const restoreVersion = async (versionId: string) => {
+  const handleRestoreVersion = async (versionId: string) => {
     if (!confirm('Tem certeza que deseja restaurar esta versão? As alterações atuais serão perdidas.')) {
       return
     }
 
-    // Simular restauração de versão
-    setVersions(prev => prev.map(version => ({
-      ...version,
-      is_current: version.id === versionId
-    })))
+    restoreVersionMutation.mutate({ versionId, documentId })
+  }
 
-    toast.success('Versão restaurada com sucesso!')
+  // Placeholder for togglePin - needs backend implementation
+  const togglePin = (commentId: string) => {
+    toast.info('Funcionalidade de fixar comentário ainda não implementada no backend.')
+    // You would typically have a mutation here to update the comment's is_pinned status in the database
   }
 
   const formatDate = (dateString: string) => {
@@ -296,7 +175,7 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
       </CardHeader>
 
       <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
@@ -314,21 +193,21 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
                     className="min-h-[80px] resize-none"
                   />
                   <Button 
-                    onClick={addComment}
-                    disabled={!newComment.trim()}
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || addCommentMutation.isPending}
                     size="sm"
                     className="w-full"
                   >
-                    Comentar
+                    {addCommentMutation.isPending ? 'Adicionando...' : 'Comentar'}
                   </Button>
                 </div>
 
                 {/* Lista de Comentários */}
                 <div className="space-y-4">
-                  {comments.map((comment) => (
+                  {(comments || []).map((comment) => (
                     <div key={comment.id} className="space-y-3">
                       <div className={`p-3 rounded-lg border ${comment.is_pinned ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20' : 'border-border'}`}>
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
                               <div className="bg-primary text-primary-foreground text-xs flex items-center justify-center h-full w-full">
@@ -406,11 +285,11 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
                             />
                             <div className="flex gap-2">
                               <Button 
-                                onClick={() => addReply(comment.id)}
-                                disabled={!replyContent.trim()}
+                                onClick={() => handleAddReply(comment.id)}
+                                disabled={!replyContent.trim() || addCommentMutation.isPending}
                                 size="sm"
                               >
-                                Responder
+                                {addCommentMutation.isPending ? 'Adicionando...' : 'Responder'}
                               </Button>
                               <Button 
                                 variant="outline"
@@ -435,7 +314,7 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
             {/* Tab: Versões */}
             {activeTab === 'versions' && (
               <div className="space-y-3">
-                {versions.map((version) => (
+                {(versions || []).map((version) => (
                   <div 
                     key={version.id}
                     className={`p-3 rounded-lg border ${version.is_current ? 'border-primary bg-primary/5' : 'border-border'}`}
@@ -465,10 +344,11 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => restoreVersion(version.id)}
+                          onClick={() => handleRestoreVersion(version.id)}
                           className="text-xs"
+                          disabled={restoreVersionMutation.isPending}
                         >
-                          Restaurar
+                          {restoreVersionMutation.isPending ? 'Restaurando...' : 'Restaurar'}
                         </Button>
                       )}
                     </div>
@@ -485,7 +365,7 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
             {/* Tab: Usuários */}
             {activeTab === 'users' && (
               <div className="space-y-3">
-                {activeUsers.map((user) => (
+                {(activeUsers || []).map((user) => (
                   <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                     <div className="relative">
                       <Avatar className="h-8 w-8">
@@ -512,4 +392,4 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
       </CardContent>
     </Card>
   )
-} 
+}

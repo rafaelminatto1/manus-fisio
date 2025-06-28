@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +12,6 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
-import { createClient } from '@/lib/auth'
 import { 
   Users, 
   Plus, 
@@ -33,135 +32,29 @@ import {
   AlertTriangle
 } from 'lucide-react'
 
-// Interfaces expandidas
-interface TeamMember {
-  id: string
-  full_name: string
-  email: string
-  role: 'admin' | 'mentor' | 'intern' | 'guest'
-  crefito?: string
-  phone?: string
-  specialty?: string
-  university?: string
-  semester?: number
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+import { 
+  useTeamMembersQuery, 
+  useMentorshipsQuery, 
+  useAddProgressNoteMutation, 
+  useUpsertCompetencyMutation, 
+  TeamMember, 
+  Mentorship, 
+  ProgressNote, 
+  CompetencyEvaluation 
+} from '@/hooks/use-team-data'
 
-interface Mentorship {
-  id: string
-  mentor_id: string
-  intern_id: string
-  status: 'active' | 'completed' | 'paused'
-  start_date: string
-  end_date?: string
-  hours_completed: number
-  hours_required: number
-  goals: string[]
-  competencies: CompetencyEvaluation[]
-  notes: ProgressNote[]
-  created_at: string
-  mentor?: TeamMember
-  intern?: TeamMember
-}
-
-interface CompetencyEvaluation {
-  id: string
-  competency: string
-  level: 1 | 2 | 3 | 4 | 5 // 1-Iniciante, 2-Básico, 3-Intermediário, 4-Avançado, 5-Expert
-  evaluation_date: string
-  notes?: string
-}
-
-interface ProgressNote {
-  id: string
-  date: string
-  content: string
-  achievements: string[]
-  next_steps: string[]
-  feedback_type: 'positive' | 'improvement' | 'neutral'
-  created_by: string
-}
-
-// Mock data expandido
-const mockTeamMembers: TeamMember[] = [
-  {
-    id: '1',
-    full_name: 'Dr. Rafael Santos',
-    email: 'rafael.santos@clinica.com',
-    role: 'mentor',
-    crefito: 'CREFITO-3/12345-F',
-    specialty: 'Fisioterapia Ortopédica',
-    is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    full_name: 'Maria Silva',
-    email: 'maria.silva@usp.br',
-    role: 'intern',
-    university: 'USP - Universidade de São Paulo',
-    semester: 8,
-    is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  }
-]
-
-const mockMentorships: Mentorship[] = [
-  {
-    id: '1',
-    mentor_id: '1',
-    intern_id: '2',
-    status: 'active',
-    start_date: '2024-01-02',
-    hours_completed: 180,
-    hours_required: 400,
-    goals: [
-      'Dominar técnicas de avaliação ortopédica',
-      'Desenvolver habilidades de tratamento manual',
-      'Aprender protocolos de reabilitação pós-cirúrgica'
-    ],
-    competencies: [
-      {
-        id: '1',
-        competency: 'Avaliação Clínica',
-        level: 3,
-        evaluation_date: '2024-01-20',
-        notes: 'Boa evolução na anamnese e exame físico'
-      },
-      {
-        id: '2',
-        competency: 'Técnicas Manuais',
-        level: 2,
-        evaluation_date: '2024-01-20',
-        notes: 'Precisa praticar mais as mobilizações'
-      }
-    ],
-    notes: [
-      {
-        id: '1',
-        date: '2024-01-20',
-        content: 'Excelente evolução na primeira semana. Demonstra interesse e dedicação.',
-        achievements: ['Completou primeira avaliação supervisionada', 'Demonstrou boa comunicação com pacientes'],
-        next_steps: ['Praticar técnicas de mobilização', 'Estudar protocolos específicos'],
-        feedback_type: 'positive',
-        created_by: '1'
-      }
-    ],
-    created_at: '2024-01-02T00:00:00Z',
-    mentor: mockTeamMembers[0],
-    intern: mockTeamMembers[1]
-  }
-]
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Loading } from '@/components/ui/loading'
 
 export default function TeamPage() {
   const { user } = useAuth()
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers)
-  const [mentorships, setMentorships] = useState<Mentorship[]>(mockMentorships)
-  const [loading, setLoading] = useState(false)
+  const { data: teamMembers, isLoading: isLoadingTeamMembers, error: teamMembersError } = useTeamMembersQuery()
+  const { data: mentorships, isLoading: isLoadingMentorships, error: mentorshipsError } = useMentorshipsQuery()
+
+  const addProgressNoteMutation = useAddProgressNoteMutation()
+  const upsertCompetencyMutation = useUpsertCompetencyMutation()
+
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedMentorship, setSelectedMentorship] = useState<Mentorship | null>(null)
   const [showProgressForm, setShowProgressForm] = useState(false)
@@ -180,158 +73,68 @@ export default function TeamPage() {
     notes: ''
   })
 
-  const supabase = createClient()
-  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
+  const isLoading = isLoadingTeamMembers || isLoadingMentorships;
+  const error = teamMembersError || mentorshipsError;
 
-  useEffect(() => {
-    // ✅ CORREÇÃO TEMPORÁRIA: Sempre usar dados mock para evitar erros
-    console.warn('🔧 Team page usando dados mock para evitar erros de console')
-    setTeamMembers(mockTeamMembers)
-    setMentorships(mockMentorships)
-    
-    // TODO: Reativar quando RLS policies estiverem configuradas
-    // if (!isMockMode) {
-    //   loadTeamData()
-    //   loadMentorships()
-    // }
-  }, [])
-
-  const loadTeamData = async () => {
-    try {
-      setLoading(true)
-      
-      // ✅ CORREÇÃO CRÍTICA: Verificar autenticação antes de consultas
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.user) {
-        console.warn('🔒 Usuário não autenticado, usando dados mock')
-        setTeamMembers(mockTeamMembers)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .in('role', ['mentor', 'intern'])
-        .eq('is_active', true)
-
-      if (error) {
-        console.warn('Team data error:', error)
-        setTeamMembers(mockTeamMembers)
-      } else {
-        setTeamMembers(data || mockTeamMembers)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar equipe:', error)
-      setTeamMembers(mockTeamMembers)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadMentorships = async () => {
-    try {
-      // ✅ CORREÇÃO CRÍTICA: Verificar autenticação antes de consultas
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.user) {
-        console.warn('🔒 Usuário não autenticado, usando dados mock')
-        setMentorships(mockMentorships)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('mentorships')
-        .select(`
-          *,
-          mentor:mentor_id(full_name, email, specialty),
-          intern:intern_id(full_name, email, university, semester)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.warn('Mentorships data error:', error)
-        setMentorships(mockMentorships)
-      } else {
-        setMentorships(data || mockMentorships)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar mentorias:', error)
-      setMentorships(mockMentorships)
-    }
-  }
-
-  const addProgressNote = async () => {
+  const handleAddProgressNote = async () => {
     if (!selectedMentorship || !progressForm.content) return
 
-    try {
-      const newNote: ProgressNote = {
-        id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0] || '',
-        content: progressForm.content,
-        achievements: progressForm.achievements.filter(a => a.trim()),
-        next_steps: progressForm.next_steps.filter(s => s.trim()),
-        feedback_type: progressForm.feedback_type,
-        created_by: user?.id || 'mock-user'
+    addProgressNoteMutation.mutate({
+      mentorship_id: selectedMentorship.id,
+      content: progressForm.content,
+      achievements: progressForm.achievements.filter(a => a.trim()),
+      next_steps: progressForm.next_steps.filter(s => s.trim()),
+      feedback_type: progressForm.feedback_type,
+    }, {
+      onSuccess: () => {
+        setProgressForm({
+          content: '',
+          achievements: [''],
+          next_steps: [''],
+          feedback_type: 'neutral'
+        })
+        setShowProgressForm(false)
       }
-
-      if (isMockMode) {
-        setMentorships(prev => prev.map(m => 
-          m.id === selectedMentorship.id 
-            ? { ...m, notes: [...m.notes, newNote] }
-            : m
-        ))
-      } else {
-        // Implementar salvamento no banco
-      }
-
-      setProgressForm({
-        content: '',
-        achievements: [''],
-        next_steps: [''],
-        feedback_type: 'neutral'
-      })
-      setShowProgressForm(false)
-    } catch (error) {
-      console.error('Erro ao adicionar nota:', error)
-    }
+    })
   }
 
-  const updateCompetency = async () => {
+  const handleUpdateCompetency = async () => {
     if (!selectedMentorship || !competencyForm.competency) return
 
-    try {
-      const newCompetency: CompetencyEvaluation = {
-        id: Date.now().toString(),
+    // Find existing competency to update, or create new one
+    const existingCompetency = selectedMentorship.competencies.find(c => c.competency === competencyForm.competency);
+
+    if (existingCompetency) {
+      upsertCompetencyMutation.mutate({
+        mentorship_id: selectedMentorship.id,
+        competency_id: existingCompetency.id,
         competency: competencyForm.competency,
         level: competencyForm.level,
-        evaluation_date: new Date().toISOString().split('T')[0] || '',
-        notes: competencyForm.notes
-      }
-
-      if (isMockMode) {
-        setMentorships(prev => prev.map(m => 
-          m.id === selectedMentorship.id 
-            ? { 
-                ...m, 
-                competencies: m.competencies.some(c => c.competency === competencyForm.competency)
-                  ? m.competencies.map(c => c.competency === competencyForm.competency ? newCompetency : c)
-                  : [...m.competencies, newCompetency]
-              }
-            : m
-        ))
-      } else {
-        // Implementar salvamento no banco
-      }
-
-      setCompetencyForm({
-        competency: '',
-        level: 1,
-        notes: ''
+        notes: competencyForm.notes,
+      }, {
+        onSuccess: () => {
+          setCompetencyForm({
+            competency: '',
+            level: 1,
+            notes: ''
+          })
+        }
       })
-    } catch (error) {
-      console.error('Erro ao atualizar competência:', error)
+    } else {
+      upsertCompetencyMutation.mutate({
+        mentorship_id: selectedMentorship.id,
+        competency: competencyForm.competency,
+        level: competencyForm.level,
+        notes: competencyForm.notes,
+      }, {
+        onSuccess: () => {
+          setCompetencyForm({
+            competency: '',
+            level: 1,
+            notes: ''
+          })
+        }
+      })
     }
   }
 
@@ -350,8 +153,8 @@ export default function TeamPage() {
     return levels[level as keyof typeof levels] || levels[1]
   }
 
-  const getMentors = () => teamMembers.filter(m => m.role === 'mentor')
-  const getInterns = () => teamMembers.filter(m => m.role === 'intern')
+  const getMentors = () => (teamMembers || []).filter(m => m.role === 'mentor')
+  const getInterns = () => (teamMembers || []).filter(m => m.role === 'intern')
 
   const renderOverview = () => (
     <div className="space-y-4 sm:space-y-6">
@@ -386,7 +189,7 @@ export default function TeamPage() {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Mentorias Ativas</p>
-                <p className="text-lg sm:text-2xl font-bold">{mentorships.filter(m => m.status === 'active').length}</p>
+                <p className="text-lg sm:text-2xl font-bold">{(mentorships || []).filter(m => m.status === 'active').length}</p>
               </div>
               <UserCheck className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex-shrink-0" />
             </div>
@@ -399,8 +202,8 @@ export default function TeamPage() {
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Taxa Conclusão</p>
                 <p className="text-lg sm:text-2xl font-bold">
-                  {mentorships.length > 0 ? Math.round(
-                    mentorships.reduce((acc, m) => acc + getProgressPercentage(m), 0) / mentorships.length
+                  {(mentorships || []).length > 0 ? Math.round(
+                    (mentorships || []).reduce((acc, m) => acc + getProgressPercentage(m), 0) / (mentorships || []).length
                   ) : 0}%
                 </p>
               </div>
@@ -418,7 +221,7 @@ export default function TeamPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3 sm:space-y-4">
-            {mentorships.filter(m => m.status === 'active').map(mentorship => (
+            {(mentorships || []).filter(m => m.status === 'active').map(mentorship => (
               <div key={mentorship.id} className="p-3 sm:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                    onClick={() => setSelectedMentorship(mentorship)}>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -459,7 +262,7 @@ export default function TeamPage() {
               </div>
             ))}
             
-            {mentorships.filter(m => m.status === 'active').length === 0 && (
+            {(mentorships || []).filter(m => m.status === 'active').length === 0 && (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">Nenhuma mentoria ativa encontrada</p>
@@ -543,7 +346,7 @@ export default function TeamPage() {
                 ))}
                 
                 <div className="pt-2">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => { /* TODO: Open competency form */ }}>
                     <Plus className="mr-2 h-4 w-4" />
                     Avaliar Competência
                   </Button>
@@ -876,4 +679,4 @@ export default function TeamPage() {
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}

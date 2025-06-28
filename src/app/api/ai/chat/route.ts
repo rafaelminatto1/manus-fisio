@@ -1,4 +1,13 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/auth'
+import { z } from 'zod'
+
+const ChatRequestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string(),
+  })),
+});
 
 // Configuração da OpenAI (simulada - para demo)
 const fakeOpenAI = {
@@ -89,13 +98,13 @@ Como posso ajudar você hoje?`
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json()
-
-    // Verificar autenticação
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 })
+    const authError = await authenticateRequest(req);
+    if (authError) {
+      return authError;
     }
+
+    const body = await req.json();
+    const { messages } = ChatRequestSchema.parse(body);
 
     // Simular streaming de resposta
     const completion = await fakeOpenAI.chat.completions.create({

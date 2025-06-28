@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +13,6 @@ import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/use-auth'
-import { createClient } from '@/lib/auth'
 import { 
   FolderKanban, 
   Plus, 
@@ -35,199 +34,15 @@ import {
   Archive,
   Download
 } from 'lucide-react'
-import { format, differenceInDays, parseISO, isAfter, isBefore } from 'date-fns'
+import { format, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core'
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-
-// Interfaces expandidas
-interface Project {
-  id: string
-  title: string
-  description?: string
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  due_date?: string
-  progress: number
-  budget?: number
-  category: 'clinical' | 'research' | 'education' | 'administrative'
-  created_by: string
-  created_at: string
-  updated_at: string
-  owner?: TeamMember
-  collaborators?: ProjectCollaborator[]
-  tasks?: Task[]
-  tags?: string[]
-}
-
-interface Task {
-  id: string
-  project_id: string
-  title: string
-  description?: string
-  status: 'todo' | 'in_progress' | 'review' | 'done'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  assigned_to?: string
-  due_date?: string
-  estimated_hours?: number
-  actual_hours: number
-  order_index: number
-  dependencies?: string[]
-  checklist?: ChecklistItem[]
-  attachments?: Attachment[]
-  created_by: string
-  created_at: string
-  updated_at: string
-  assignee?: TeamMember
-}
-
-interface ChecklistItem {
-  id: string
-  text: string
-  completed: boolean
-}
-
-interface Attachment {
-  id: string
-  name: string
-  url: string
-  type: string
-  size: number
-}
-
-interface TeamMember {
-  id: string
-  full_name: string
-  email: string
-  role: string
-  avatar_url?: string
-}
-
-interface ProjectCollaborator {
-  project_id: string
-  user_id: string
-  permission: 'read' | 'write' | 'admin'
-  user?: TeamMember
-}
-
-interface ProjectStats {
-  total_projects: number
-  active_projects: number
-  completed_this_month: number
-  overdue_projects: number
-  team_productivity: number
-  average_completion_time: number
-}
-
-// Mock data expandido
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    title: 'Protocolo de Reabilitação Pós-COVID',
-    description: 'Desenvolvimento de protocolo específico para pacientes em recuperação de COVID-19',
-    status: 'active',
-    priority: 'high',
-    due_date: '2024-03-15',
-    progress: 65,
-    budget: 15000,
-    category: 'clinical',
-    created_by: '1',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-20T00:00:00Z',
-    tags: ['covid', 'reabilitação', 'protocolo'],
-    owner: {
-      id: '1',
-      full_name: 'Dr. Rafael Minatto',
-      email: 'rafael.minatto@yahoo.com.br',
-      role: 'admin'
-    }
-  },
-  {
-    id: '2',
-    title: 'Estudo de Caso - Fisioterapia Respiratória',
-    description: 'Análise de casos clínicos para desenvolvimento de metodologia',
-    status: 'planning',
-    priority: 'medium',
-    due_date: '2024-04-30',
-    progress: 25,
-    budget: 8000,
-    category: 'research',
-    created_by: '2',
-    created_at: '2024-01-15T00:00:00Z',
-    updated_at: '2024-01-25T00:00:00Z',
-    tags: ['pesquisa', 'respiratória'],
-    owner: {
-      id: '2',
-      full_name: 'Dra. Ana Silva',
-      email: 'ana.silva@clinica.com',
-      role: 'mentor'
-    }
-  }
-]
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    project_id: '1',
-    title: 'Revisão bibliográfica sobre COVID-19',
-    description: 'Pesquisar artigos científicos mais recentes sobre reabilitação pós-COVID',
-    status: 'done',
-    priority: 'high',
-    assigned_to: '3',
-    due_date: '2024-01-30',
-    estimated_hours: 20,
-    actual_hours: 18,
-    order_index: 0,
-    checklist: [
-      { id: '1', text: 'Buscar artigos PubMed', completed: true },
-      { id: '2', text: 'Analisar 50 artigos', completed: true },
-      { id: '3', text: 'Criar resumo executivo', completed: false }
-    ],
-    created_by: '1',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-25T00:00:00Z',
-    assignee: {
-      id: '3',
-      full_name: 'Maria Santos',
-      email: 'maria.santos@univ.edu',
-      role: 'intern'
-    }
-  },
-  {
-    id: '2',
-    project_id: '1',
-    title: 'Elaborar protocolo de exercícios',
-    description: 'Desenvolver sequência de exercícios específicos para reabilitação pulmonar',
-    status: 'in_progress',
-    priority: 'high',
-    assigned_to: '1',
-    due_date: '2024-02-15',
-    estimated_hours: 40,
-    actual_hours: 25,
-    order_index: 1,
-    dependencies: ['1'],
-    created_by: '1',
-    created_at: '2024-01-10T00:00:00Z',
-    updated_at: '2024-01-30T00:00:00Z',
-    assignee: {
-      id: '1',
-      full_name: 'Dr. Rafael Minatto',
-      email: 'rafael.minatto@yahoo.com.br',
-      role: 'admin'
-    }
-  }
-]
-
-const mockStats: ProjectStats = {
-  total_projects: 12,
-  active_projects: 6,
-  completed_this_month: 3,
-  overdue_projects: 2,
-  team_productivity: 87.5,
-  average_completion_time: 21
-}
+import { useProjectsQuery, useTasksQuery, useProjectStatsQuery, Project, Task, ProjectStats, TeamMember } from '@/hooks/use-projects-data'
+import { useCreateProjectMutation, useUpdateProjectMutation, useCreateTaskMutation, useUpdateTaskMutation } from '@/hooks/use-project-mutations'
+import { Loading } from '@/components/ui/loading'
 
 const columns = [
   { id: 'todo', title: 'A Fazer', color: 'bg-slate-100 border-slate-300' },
@@ -343,16 +158,21 @@ function SortableTask({ task, onClick }: { task: Task; onClick: (task: Task) => 
 
 export default function ProjectsPage() {
   const { user } = useAuth()
-  const [projects, setProjects] = useState<Project[]>(mockProjects)
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
-  const [stats, setStats] = useState<ProjectStats>(mockStats)
+  const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useProjectsQuery()
+  const { data: tasks, isLoading: isLoadingTasks, error: tasksError } = useTasksQuery()
+  const { data: stats, isLoading: isLoadingStats, error: statsError } = useProjectStatsQuery()
+
+  const createProjectMutation = useCreateProjectMutation()
+  const updateProjectMutation = useUpdateProjectMutation()
+  const createTaskMutation = useCreateTaskMutation()
+  const updateTaskMutation = useUpdateTaskMutation()
+
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'timeline'>('kanban')
   const [showProjectForm, setShowProjectForm] = useState(false)
   const [showTaskForm, setShowTaskForm] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
 
   // Form states
@@ -378,136 +198,36 @@ export default function ProjectsPage() {
     project_id: ''
   })
 
-  const supabase = createClient()
-  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true'
-
-  useEffect(() => {
-    if (!isMockMode) {
-      loadProjectsData()
-      loadStats()
-    }
-  }, [])
-
-  const loadProjectsData = async () => {
-    try {
-      setLoading(true)
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          owner:users!projects_created_by_fkey(full_name, role)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (projectsError) throw projectsError
-
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          assignee:assigned_to(full_name, email, role)
-        `)
-        .order('order_index', { ascending: true })
-
-      if (tasksError) throw tasksError
-
-      setProjects(projectsData || [])
-      setTasks(tasksData || [])
-    } catch (error) {
-      console.error('Erro ao carregar projetos:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadStats = async () => {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_project_stats')
-
-      if (error) throw error
-      setStats(data || mockStats)
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error)
-    }
-  }
+  const isLoading = isLoadingProjects || isLoadingTasks || isLoadingStats;
+  const error = projectsError || tasksError || statsError;
 
   const createProject = async () => {
-    try {
-      if (!projectForm.title) return
-
-      const newProject: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'progress'> = {
-        ...projectForm,
-        created_by: user?.id || 'mock-user'
+    if (!projectForm.title) return
+    createProjectMutation.mutate(projectForm, {
+      onSuccess: () => {
+        setShowProjectForm(false)
+        resetProjectForm()
       }
-
-      if (isMockMode) {
-        const mockProject: Project = {
-          ...newProject,
-          id: Date.now().toString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          progress: 0
-        }
-        setProjects(prev => [mockProject, ...prev])
-      } else {
-        const { data, error } = await supabase
-          .from('projects')
-          .insert([newProject])
-          .select()
-          .single()
-
-        if (error) throw error
-        setProjects(prev => [data, ...prev])
-      }
-
-      setShowProjectForm(false)
-      resetProjectForm()
-      if (!isMockMode) loadStats()
-    } catch (error) {
-      console.error('Erro ao criar projeto:', error)
-    }
+    })
   }
 
   const createTask = async () => {
-    try {
-      if (!taskForm.title || !taskForm.project_id) return
-
-      const newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
-        ...taskForm,
-        actual_hours: 0,
-        order_index: tasks.filter(t => t.status === taskForm.status).length,
-        created_by: user?.id || 'mock-user'
+    if (!taskForm.title || !taskForm.project_id) return
+    createTaskMutation.mutate({
+      ...taskForm,
+      actual_hours: 0,
+      order_index: (tasks || []).filter(t => t.status === taskForm.status).length,
+      created_by: user?.id || 'mock-user' // Fallback for mock mode
+    }, {
+      onSuccess: () => {
+        setShowTaskForm(false)
+        resetTaskForm()
       }
-
-      if (isMockMode) {
-        const mockTask: Task = {
-          ...newTask,
-          id: Date.now().toString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        setTasks(prev => [...prev, mockTask])
-      } else {
-        const { data, error } = await supabase
-          .from('tasks')
-          .insert([newTask])
-          .select()
-          .single()
-
-        if (error) throw error
-        setTasks(prev => [...prev, data])
-      }
-
-      setShowTaskForm(false)
-      resetTaskForm()
-    } catch (error) {
-      console.error('Erro ao criar tarefa:', error)
-    }
+    })
   }
 
   const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find(t => t.id === event.active.id)
+    const task = (tasks || []).find(t => t.id === event.active.id)
     setDraggedTask(task || null)
   }
 
@@ -519,20 +239,11 @@ export default function ProjectsPage() {
     const newStatus = over.id as Task['status']
     
     if (draggedTask.status !== newStatus) {
-      setTasks(prev => prev.map(task => 
-        task.id === active.id 
-          ? { ...task, status: newStatus, updated_at: new Date().toISOString() }
-          : task
-      ))
-
-      // Update in database if not mock mode
-      if (!isMockMode) {
-        supabase
-          .from('tasks')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', active.id)
-          .then(() => loadStats())
-      }
+      updateTaskMutation.mutate({
+        id: draggedTask.id,
+        status: newStatus,
+        updated_at: new Date().toISOString() // Update timestamp
+      })
     }
 
     setDraggedTask(null)
@@ -565,7 +276,7 @@ export default function ProjectsPage() {
   }
 
   const getProjectProgress = (projectId: string) => {
-    const projectTasks = tasks.filter(t => t.project_id === projectId)
+    const projectTasks = (tasks || []).filter(t => t.project_id === projectId)
     if (projectTasks.length === 0) return 0
     const completedTasks = projectTasks.filter(t => t.status === 'done').length
     return Math.round((completedTasks / projectTasks.length) * 100)
@@ -614,7 +325,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Projetos</p>
-              <p className="text-2xl font-bold">{stats.total_projects}</p>
+              <p className="text-2xl font-bold">{stats?.total_projects}</p>
             </div>
             <FolderKanban className="h-8 w-8 text-blue-500" />
           </div>
@@ -626,7 +337,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Projetos Ativos</p>
-              <p className="text-2xl font-bold">{stats.active_projects}</p>
+              <p className="text-2xl font-bold">{stats?.active_projects}</p>
             </div>
             <Play className="h-8 w-8 text-green-500" />
           </div>
@@ -638,7 +349,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Concluídos/Mês</p>
-              <p className="text-2xl font-bold">{stats.completed_this_month}</p>
+              <p className="text-2xl font-bold">{stats?.completed_this_month}</p>
             </div>
             <CheckCircle className="h-8 w-8 text-emerald-500" />
           </div>
@@ -650,7 +361,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Em Atraso</p>
-              <p className="text-2xl font-bold">{stats.overdue_projects}</p>
+              <p className="text-2xl font-bold">{stats?.overdue_projects}</p>
             </div>
             <AlertCircle className="h-8 w-8 text-red-500" />
           </div>
@@ -662,7 +373,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Produtividade</p>
-              <p className="text-2xl font-bold">{stats.team_productivity}%</p>
+              <p className="text-2xl font-bold">{stats?.team_productivity}%</p>
             </div>
             <TrendingUp className="h-8 w-8 text-purple-500" />
           </div>
@@ -674,7 +385,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Tempo Médio</p>
-              <p className="text-2xl font-bold">{stats.average_completion_time}d</p>
+              <p className="text-2xl font-bold">{stats?.average_completion_time}d</p>
             </div>
             <Clock className="h-8 w-8 text-orange-500" />
           </div>
@@ -691,7 +402,7 @@ export default function ProjectsPage() {
     >
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {columns.map(column => {
-          const columnTasks = tasks.filter(task => task.status === column.id)
+          const columnTasks = (tasks || []).filter(task => task.status === column.id)
           
           return (
             <div key={column.id} className={`rounded-lg border-2 border-dashed p-4 ${column.color}`}>
@@ -764,7 +475,7 @@ export default function ProjectsPage() {
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span>{tasks.filter(t => t.project_id === project.id).length} tarefas</span>
+            <span>{(tasks || []).filter(t => t.project_id === project.id).length} tarefas</span>
           </div>
           {project.due_date && (
             <div className={`flex items-center gap-1 ${isProjectOverdue(project) ? 'text-red-600' : 'text-muted-foreground'}`}>
@@ -867,7 +578,7 @@ export default function ProjectsPage() {
 
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map(renderProjectCard)}
+                {(projects || []).map(renderProjectCard)}
               </div>
             </TabsContent>
 
@@ -892,7 +603,7 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {projects
+                    {(projects || [])
                       .filter(p => p.due_date)
                       .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
                       .map(project => (
@@ -901,7 +612,7 @@ export default function ProjectsPage() {
                           <div className="flex-1">
                             <h4 className="font-medium">{project.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Prazo: {format(new Date(project.due_date!), 'PPP', { locale: ptBR })}
+                              Prazo: {format(new Date(project.due_date), 'PPP', { locale: ptBR })}
                             </p>
                           </div>
                           <div className="text-right">
@@ -928,8 +639,8 @@ export default function ProjectsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {['planning', 'active', 'on_hold', 'completed', 'cancelled'].map(status => {
-                        const count = projects.filter(p => p.status === status).length
-                        const percentage = projects.length > 0 ? (count / projects.length) * 100 : 0
+                        const count = (projects || []).filter(p => p.status === status).length
+                        const percentage = (projects || []).length > 0 ? (count / (projects || []).length) * 100 : 0
                         return (
                           <div key={status} className="space-y-1">
                             <div className="flex justify-between text-sm">
@@ -951,8 +662,8 @@ export default function ProjectsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {['clinical', 'research', 'education', 'administrative'].map(category => {
-                        const count = projects.filter(p => p.category === category).length
-                        const percentage = projects.length > 0 ? (count / projects.length) * 100 : 0
+                        const count = (projects || []).filter(p => p.category === category).length
+                        const percentage = (projects || []).length > 0 ? (count / (projects || []).length) * 100 : 0
                         return (
                           <div key={category} className="space-y-1">
                             <div className="flex justify-between text-sm">
@@ -973,4 +684,4 @@ export default function ProjectsPage() {
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}

@@ -1,14 +1,22 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/auth'
+import { z } from 'zod'
+
+const WritingAssistantRequestSchema = z.object({
+  text: z.string(),
+  context: z.string().optional(),
+  action: z.enum(['improve', 'suggest', 'grammar']),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, context, action } = await req.json()
-
-    // Verificar autenticação
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 })
+    const authError = await authenticateRequest(req);
+    if (authError) {
+      return authError;
     }
+
+    const body = await req.json();
+    const { text, context, action } = WritingAssistantRequestSchema.parse(body);
 
     let result: any = {}
 

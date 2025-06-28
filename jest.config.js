@@ -1,9 +1,9 @@
-const nextJest = require('next/jest')
+import nextJest from 'next/jest.js';
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
   dir: './',
-})
+});
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
@@ -59,7 +59,7 @@ const customJestConfig = {
   },
   coverageReporters: ['text', 'lcov', 'html'],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+    '^.+\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   testTimeout: 10000,
@@ -68,7 +68,7 @@ const customJestConfig = {
   cache: true,
   clearMocks: true,
   restoreMocks: true,
-}
+};
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig) 
+export default createJestConfig(customJestConfig);
