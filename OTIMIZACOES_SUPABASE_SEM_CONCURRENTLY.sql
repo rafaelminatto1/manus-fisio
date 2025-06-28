@@ -56,7 +56,7 @@ DROP POLICY IF EXISTS "Users can create events" ON public.calendar_events;
 CREATE POLICY "Users can create events" ON public.calendar_events
 FOR INSERT WITH CHECK (created_by = (SELECT auth.uid()));
 
--- 📊 PARTE 3: Função de verificação
+-- 📊 PARTE 3: Função de verificação (CORRIGIDA)
 CREATE OR REPLACE FUNCTION public.verify_optimizations()
 RETURNS TABLE(
   optimization TEXT,
@@ -64,19 +64,19 @@ RETURNS TABLE(
   impact TEXT
 ) 
 LANGUAGE plpgsql
-AS $$
+AS $function$
 BEGIN
   RETURN QUERY
   SELECT 
-    'Index comments.author_id'::TEXT,
+    'Index comments.author_id'::TEXT as optimization,
     CASE 
       WHEN EXISTS (
         SELECT 1 FROM pg_indexes 
         WHERE indexname = 'idx_comments_author_id'
       ) THEN '✅ APLICADO'::TEXT
       ELSE '❌ PENDENTE'::TEXT
-    END,
-    'Resolve 90% degradação em queries'::TEXT
+    END as status,
+    'Resolve 90% degradação em queries'::TEXT as impact
   
   UNION ALL
   
@@ -104,4 +104,4 @@ BEGIN
     END,
     'Sistema completo e otimizado'::TEXT;
 END;
-$$; 
+$function$; 

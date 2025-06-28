@@ -136,7 +136,7 @@ CREATE POLICY "Users can view events they created or are attending" ON public.ca
 FOR SELECT USING (created_by = (SELECT auth.uid()));
 ```
 
-### **3. Função de Verificação**
+### **3. Função de Verificação (CORRIGIDA)**
 ```sql
 CREATE OR REPLACE FUNCTION public.verify_optimizations()
 RETURNS TABLE(
@@ -145,19 +145,19 @@ RETURNS TABLE(
   impact TEXT
 ) 
 LANGUAGE plpgsql
-AS $$
+AS $function$
 BEGIN
   RETURN QUERY
   SELECT 
-    'Index comments.author_id'::TEXT,
+    'Index comments.author_id'::TEXT as optimization,
     CASE 
       WHEN EXISTS (
         SELECT 1 FROM pg_indexes 
         WHERE indexname = 'idx_comments_author_id'
       ) THEN '✅ APLICADO'::TEXT
       ELSE '❌ PENDENTE'::TEXT
-    END,
-    'Resolve 90% degradação em queries'::TEXT
+    END as status,
+    'Resolve 90% degradação em queries'::TEXT as impact
   
   UNION ALL
   
@@ -185,7 +185,7 @@ BEGIN
     END,
     'Sistema completo e otimizado'::TEXT;
 END;
-$$;
+$function$;
 ```
 
 ### **4. Verificar Aplicação**
