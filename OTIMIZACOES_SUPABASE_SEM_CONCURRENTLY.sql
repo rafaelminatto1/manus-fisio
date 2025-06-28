@@ -56,7 +56,7 @@ DROP POLICY IF EXISTS "Users can create events" ON public.calendar_events;
 CREATE POLICY "Users can create events" ON public.calendar_events
 FOR INSERT WITH CHECK (created_by = (SELECT auth.uid()));
 
--- 📊 PARTE 3: Função de verificação (CORRIGIDA)
+-- 📊 PARTE 3: Função de verificação (FINAL - COLUNAS CORRETAS)
 CREATE OR REPLACE FUNCTION public.verify_optimizations()
 RETURNS TABLE(
   optimization TEXT,
@@ -86,7 +86,7 @@ BEGIN
       WHEN EXISTS (
         SELECT 1 FROM pg_policies 
         WHERE policyname LIKE '%view own%' 
-        AND definition LIKE '%(SELECT auth.uid())%'
+        AND (qual LIKE '%(SELECT auth.uid())%' OR with_check LIKE '%(SELECT auth.uid())%')
       ) THEN '✅ APLICADO'::TEXT
       ELSE '❌ PENDENTE'::TEXT
     END,
@@ -98,7 +98,10 @@ BEGIN
     'Sistema otimizado'::TEXT,
     CASE 
       WHEN EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_comments_author_id')
-      AND EXISTS (SELECT 1 FROM pg_policies WHERE definition LIKE '%(SELECT auth.uid())%')
+      AND EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE (qual LIKE '%(SELECT auth.uid())%' OR with_check LIKE '%(SELECT auth.uid())%')
+      )
       THEN '🎉 SCORE 100/100'::TEXT
       ELSE '⏳ EM PROGRESSO'::TEXT
     END,
