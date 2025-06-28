@@ -57,6 +57,9 @@ import {
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/cn'
+import { useAuth } from '@/contexts/AuthContext'
+import { useQuery } from 'react-query'
+import { supabase } from '@/lib/supabase'
 
 interface MetricCardProps {
   title: string
@@ -506,4 +509,139 @@ export const AnalyticsDashboard = React.memo(() => {
   )
 })
 
-AnalyticsDashboard.displayName = 'AnalyticsDashboard' 
+AnalyticsDashboard.displayName = 'AnalyticsDashboard'
+
+// Hook para métricas real-time do sistema
+export function useSystemMetrics() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: ['system-metrics', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error('User not authenticated')
+
+      // Buscar métricas de diferentes tabelas
+      const [
+        { data: projects, error: projectsError },
+        { data: notebooks, error: notebooksError },
+        { data: tasks, error: tasksError },
+        { data: events, error: eventsError },
+        { data: notifications, error: notificationsError }
+      ] = await Promise.all([
+        supabase.from('projects').select('id, status, created_at, updated_at').eq('created_by', user.id),
+        supabase.from('notebooks').select('id, status, created_at, updated_at').eq('created_by', user.id),
+        supabase.from('tasks').select('id, status, created_at, completed_at').eq('created_by', user.id),
+        supabase.from('calendar_events').select('id, event_type, start_time').eq('created_by', user.id),
+        supabase.from('notifications').select('id, type, read, created_at').eq('user_id', user.id)
+      ])
+
+      if (projectsError) throw projectsError
+      if (notebooksError) throw notebooksError
+      if (tasksError) throw tasksError
+      if (eventsError) throw eventsError
+      if (notificationsError) throw notificationsError
+
+      // Calcular métricas avançadas
+      const today = new Date()
+      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+      const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+      const projectsThisMonth = projects?.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length || 0
+      const tasksCompletedThisWeek = tasks?.filter(t => 
+        t.completed_at && new Date(t.completed_at) >= sevenDaysAgo
+      ).length || 0
+      
+      const completionRate = tasks?.length ? 
+        ((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100).toFixed(1) : '0'
+
+      const eventsThisWeek = events?.filter(e => 
+        new Date(e.start_time) >= sevenDaysAgo
+      ).length || 0
+
+      return {
+        totalProjects: projects?.length || 0,
+        totalNotebooks: notebooks?.length || 0,
+        totalTasks: tasks?.length || 0,
+        totalEvents: events?.length || 0,
+        completedTasks: tasks?.filter(t => t.status === 'completed').length || 0,
+        projectsThisMonth,
+        tasksCompletedThisWeek,
+        eventsThisWeek,
+        completionRate: parseFloat(completionRate),
+        unreadNotifications: notifications?.filter(n => !n.read).length || 0,
+        productivity: {
+          tasksPerDay: tasksCompletedThisWeek / 7,
+          projectsPerMonth: projectsThisMonth,
+          eventsPerWeek: eventsThisWeek
+        }
+      }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    refetchInterval: 1000 * 60 * 5 // Auto-refresh a cada 5 minutos
+  })
+}
+
+// Hook para dados de charts
+export function useAnalyticsChartData() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: ['analytics-chart-data', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error('User not authenticated')
+
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('id, status, created_at, completed_at')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+
+      // Agrupar dados por semana para o gráfico
+      const weeklyData = []
+      const weeks = 12 // Últimas 12 semanas
+
+      for (let i = weeks; i >= 0; i--) {
+        const weekStart = new Date()
+        weekStart.setDate(weekStart.getDate() - (i * 7))
+        weekStart.setHours(0, 0, 0, 0)
+        
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekEnd.getDate() + 6)
+        weekEnd.setHours(23, 59, 59, 999)
+
+        const weekTasks = tasks?.filter(task => {
+          const taskDate = new Date(task.created_at)
+          return taskDate >= weekStart && taskDate <= weekEnd
+        }) || []
+
+        const completedTasks = tasks?.filter(task => {
+          if (!task.completed_at) return false
+          const completedDate = new Date(task.completed_at)
+          return completedDate >= weekStart && completedDate <= weekEnd
+        }) || []
+
+        weeklyData.push({
+          week: `Sem ${i === 0 ? 'atual' : i}`,
+          created: weekTasks.length,
+          completed: completedTasks.length,
+          date: weekStart.toISOString().split('T')[0]
+        })
+      }
+
+      return {
+        weeklyTasks: weeklyData,
+        statusDistribution: [
+          { name: 'Pendentes', value: tasks?.filter(t => t.status === 'todo').length || 0 },
+          { name: 'Em Progresso', value: tasks?.filter(t => t.status === 'in_progress').length || 0 },
+          { name: 'Concluídas', value: tasks?.filter(t => t.status === 'completed').length || 0 },
+          { name: 'Canceladas', value: tasks?.filter(t => t.status === 'cancelled').length || 0 }
+        ]
+      }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 10 // 10 minutos
+  })
+} 

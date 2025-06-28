@@ -195,7 +195,7 @@ export function NotificationsPanel({ className }: NotificationsPanelProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {/* TODO: Abrir configurações */}}
+                    onClick={() => setIsOpen(false)}
                   >
                     <Settings className="h-4 w-4" />
                   </Button>

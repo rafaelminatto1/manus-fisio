@@ -190,7 +190,23 @@ export function CalendarView({ className }: CalendarViewProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {/* TODO: Implementar exportação */}}
+            onClick={() => {
+              const events = filteredEvents.map(event => ({
+                title: event.title,
+                start: event.start_time,
+                end: event.end_time,
+                type: event.type,
+                attendees: event.attendees,
+                location: event.location
+              }))
+              const blob = new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `calendario-${format(new Date(), 'yyyy-MM-dd')}.json`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
           >
             <Download className="h-4 w-4 mr-2" />
             Exportar

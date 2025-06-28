@@ -58,6 +58,8 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedMentorship, setSelectedMentorship] = useState<Mentorship | null>(null)
   const [showProgressForm, setShowProgressForm] = useState(false)
+  const [showCompetencyModal, setShowCompetencyModal] = useState(false)
+  const [selectedIntern, setSelectedIntern] = useState<TeamMember | null>(null)
 
   // Form states
   const [progressForm, setProgressForm] = useState({
@@ -346,7 +348,10 @@ export default function TeamPage() {
                 ))}
                 
                 <div className="pt-2">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => { /* TODO: Open competency form */ }}>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                    setSelectedIntern(selectedMentorship?.intern)
+                    setShowCompetencyModal(true)
+                  }}>
                     <Plus className="mr-2 h-4 w-4" />
                     Avaliar Competência
                   </Button>

@@ -35,6 +35,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useCreateProjectMutation } from '@/hooks/use-project-mutations'
+import { supabase } from '@/lib/supabase'
 
 // Templates específicos para projetos de fisioterapia
 const PROJECT_TEMPLATES = [
@@ -157,45 +158,105 @@ export default function NewProjectPage() {
   
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof PROJECT_TEMPLATES[0] | null>(null)
   const [status, setStatus] = useState<'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'>('planning')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium')
   const [category, setCategory] = useState<'clinical' | 'research' | 'education' | 'administrative'>('clinical')
   const [dueDate, setDueDate] = useState<Date>()
   const [budget, setBudget] = useState('')
   const [tags, setTags] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleCreateProject = async () => {
-    if (!title.trim()) {
-      toast.error('Título é obrigatório')
+    if (!title.trim() || !selectedTemplate) {
+      toast.error('Título e template são obrigatórios')
       return
     }
 
-    const template = PROJECT_TEMPLATES.find(t => t.id === selectedTemplate)
-    
-    try {
-      const project = await createProjectMutation.mutateAsync({
-        title: title.trim(),
-        description: description.trim() || null,
-        status,
-        priority,
-        category,
-        due_date: dueDate?.toISOString(),
-        budget: budget ? parseFloat(budget) : null,
-        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean)
-      })
+    setIsLoading(true)
 
-      // Se tem template selecionado, criar tarefas automaticamente
-      if (template && template.tasks.length > 0) {
-        // TODO: Criar tarefas automáticas baseadas no template
-        // Isso será implementado quando o hook de criação de tarefas estiver disponível
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Usuário não autenticado')
+        return
       }
 
+      // Criar projeto
+      const projectData = {
+        title: title.trim(),
+        description: description.trim() || null,
+        template_type: selectedTemplate.id,
+        estimated_hours: selectedTemplate.estimated_hours,
+        deadline: dueDate?.toISOString(),
+        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
+        status: 'planning',
+        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        created_by: user.id,
+        metadata: {
+          template_name: selectedTemplate.name,
+          category: selectedTemplate.category,
+          created_from: 'projects_new_page'
+        }
+      }
+
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert(projectData)
+        .select()
+        .single()
+
+      if (projectError) throw projectError
+
+      // Criar tarefas automáticas baseadas no template
+      if (selectedTemplate.tasks) {
+        const tasks = selectedTemplate.tasks.map((taskName: string, index: number) => ({
+          title: taskName,
+          description: `Tarefa automática criada a partir do template ${selectedTemplate.name}`,
+          project_id: project.id,
+          status: 'todo',
+          priority: 'medium',
+          created_by: user.id,
+          due_date: dueDate ? new Date(dueDate) : null,
+          metadata: {
+            auto_generated: true,
+            template_task: true,
+            task_order: index + 1
+          }
+        }))
+
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasks)
+
+        if (tasksError) {
+          console.warn('Erro ao criar tarefas automáticas:', tasksError)
+        }
+      }
+
+      // Criar notificação de sucesso
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: '🎯 Projeto criado com sucesso',
+          message: `"${title}" foi criado usando template ${selectedTemplate.name}`,
+          type: 'success',
+          metadata: {
+            project_id: project.id,
+            template_used: selectedTemplate.name
+          }
+        })
+
       toast.success('Projeto criado com sucesso!')
-      router.push(`/projects/${project.id}`)
+      router.push(`/projects?highlight=${project.id}`)
+      
     } catch (error) {
-      toast.error('Erro ao criar projeto')
-      console.error('Error creating project:', error)
+      console.error('Erro ao criar projeto:', error)
+      toast.error('Erro ao criar projeto. Tente novamente.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -408,18 +469,13 @@ export default function NewProjectPage() {
                       return (
                         <div
                           key={template.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                            selectedTemplate === template.id 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => {
-                            setSelectedTemplate(template.id)
-                            // Auto-fill some fields based on template
-                            if (!title) setTitle(template.name)
-                            setPriority(template.priority as any)
-                            setCategory(template.category as any)
-                          }}
+                          className={cn(
+                            'p-4 border rounded-lg cursor-pointer transition-all',
+                            selectedTemplate?.id === template.id 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/50'
+                          )}
+                          onClick={() => setSelectedTemplate(template)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="p-2 bg-blue-100 rounded-lg">
@@ -450,12 +506,13 @@ export default function NewProjectPage() {
                     
                     {/* Opção em branco */}
                     <div
-                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                        selectedTemplate === '' 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedTemplate('')}
+                      className={cn(
+                        'p-4 border rounded-lg cursor-pointer transition-all',
+                        selectedTemplate === null 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-primary/50'
+                      )}
+                      onClick={() => setSelectedTemplate(null)}
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-gray-100 rounded-lg">
@@ -477,11 +534,11 @@ export default function NewProjectPage() {
               <div className="flex gap-3">
                 <Button 
                   onClick={handleCreateProject}
-                  disabled={!title.trim() || createProjectMutation.isPending}
+                  disabled={!title.trim() || createProjectMutation.isPending || isLoading}
                   className="flex items-center gap-2"
                 >
                   <Save className="h-4 w-4" />
-                  {createProjectMutation.isPending ? 'Criando...' : 'Criar Projeto'}
+                  {isLoading ? 'Criando...' : createProjectMutation.isPending ? 'Criando...' : 'Criar Projeto'}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -502,7 +559,7 @@ export default function NewProjectPage() {
                   {selectedTemplate ? (
                     <div className="space-y-4">
                       {(() => {
-                        const template = PROJECT_TEMPLATES.find(t => t.id === selectedTemplate)
+                        const template = PROJECT_TEMPLATES.find(t => t.id === selectedTemplate.id)
                         if (!template) return null
                         const Icon = template.icon
                         return (

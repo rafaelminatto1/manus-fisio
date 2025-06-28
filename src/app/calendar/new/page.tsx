@@ -28,6 +28,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 export default function NewEventPage() {
   const router = useRouter()
@@ -41,31 +42,71 @@ export default function NewEventPage() {
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [attendees, setAttendees] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleCreateEvent = async () => {
-    if (!title.trim() || !date) {
-      toast.error('Título e data são obrigatórios')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!title || !date || !new Date(`${format(date, 'yyyy-MM-dd')} ${startTime}`).toISOString() || !new Date(`${format(date, 'yyyy-MM-dd')} ${endTime}`).toISOString()) {
+      toast.error('Preencha todos os campos obrigatórios')
       return
     }
 
+    setIsLoading(true)
+
     try {
-      // TODO: Implementar criação de evento via API
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Usuário não autenticado')
+        return
+      }
+
       const eventData = {
         title: title.trim(),
         description: description.trim() || null,
-        event_type: eventType,
-        location: location.trim() || null,
         start_time: new Date(`${format(date, 'yyyy-MM-dd')} ${startTime}`).toISOString(),
         end_time: new Date(`${format(date, 'yyyy-MM-dd')} ${endTime}`).toISOString(),
-        attendees: attendees.split(',').map(email => email.trim()).filter(Boolean)
+        event_type: eventType,
+        location: location.trim() || null,
+        attendees: attendees.split(',').map(email => email.trim()).filter(Boolean),
+        created_by: user.id,
+        metadata: {
+          template_used: selectedTemplate?.name,
+          created_from: 'calendar_new_page'
+        }
       }
 
-      console.log('Creating event:', eventData)
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .insert(eventData)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Criar notificação de sucesso
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: '📅 Evento criado com sucesso',
+          message: `"${title}" foi agendado para ${format(new Date(new Date(eventData.start_time).toISOString()), 'PPp', { locale: ptBR })}`,
+          type: 'success',
+          metadata: {
+            event_id: data.id,
+            event_type: eventType
+          }
+        })
+
       toast.success('Evento criado com sucesso!')
-      router.push('/calendar')
+      router.push(`/calendar?highlight=${data.id}`)
+      
     } catch (error) {
-      toast.error('Erro ao criar evento')
-      console.error('Error creating event:', error)
+      console.error('Erro ao criar evento:', error)
+      toast.error('Erro ao criar evento. Tente novamente.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -265,8 +306,8 @@ export default function NewEventPage() {
                 {/* Actions */}
                 <div className="flex gap-3 pt-4">
                   <Button 
-                    onClick={handleCreateEvent}
-                    disabled={!title.trim() || !date}
+                    onClick={handleSubmit}
+                    disabled={!title.trim() || !date || !new Date(`${format(date, 'yyyy-MM-dd')} ${startTime}`).toISOString() || !new Date(`${format(date, 'yyyy-MM-dd')} ${endTime}`).toISOString()}
                     className="flex items-center gap-2"
                   >
                     <Save className="h-4 w-4" />

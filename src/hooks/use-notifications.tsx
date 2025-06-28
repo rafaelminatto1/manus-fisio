@@ -278,7 +278,7 @@ export function useRealtimeNotifications() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: { eventType: string; new: Notification; old?: Notification }) => {
           console.log('Notification change:', payload)
           
           // Invalidar queries para atualizar a UI
@@ -434,25 +434,168 @@ export function useNotificationStats() {
 
       if (error) throw error
 
-      const now = new Date()
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const thisWeek = new Date(today)
-      thisWeek.setDate(today.getDate() - today.getDay())
+      const total = data.length
+      const unread = data.filter((n: Notification) => !n.read).length
+      const today = data.filter((n: Notification) => 
+        new Date(n.created_at).toDateString() === new Date().toDateString()
+      ).length
+      const thisWeek = data.filter((n: Notification) => {
+        const notificationDate = new Date(n.created_at)
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        return notificationDate >= weekAgo
+      }).length
 
-      const stats = {
-        total: data.length,
-        unread: data.filter(n => !n.read).length,
-        today: data.filter(n => new Date(n.created_at) >= today).length,
-        thisWeek: data.filter(n => new Date(n.created_at) >= thisWeek).length,
-        byType: data.reduce((acc, notification) => {
-          acc[notification.type] = (acc[notification.type] || 0) + 1
-          return acc
-        }, {} as Record<string, number>),
+      const byType = data.reduce((acc: Record<string, number>, notification: Notification) => {
+        acc[notification.type] = (acc[notification.type] || 0) + 1
+        return acc
+      }, {})
+
+      return {
+        total,
+        unread,
+        today,
+        thisWeek,
+        byType
       }
-
-      return stats
     },
     enabled: !!user,
-    staleTime: 1000 * 60, // 1 minuto
+    staleTime: 1000 * 60 * 2, // 2 minutos
+  })
+}
+
+// Função para configurar push notifications service worker
+export function setupPushNotifications() {
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('SW registered: ', registration)
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError)
+      })
+  }
+}
+
+// Hook para notificações inteligentes baseadas em contexto
+export function useSmartNotifications() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  const createSmartNotification = async (context: {
+    type: 'appointment_reminder' | 'task_deadline' | 'supervision_due' | 'achievement'
+    data: any
+  }) => {
+    if (!user) return
+
+    let title = ''
+    let message = ''
+    let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium'
+
+    switch (context.type) {
+      case 'appointment_reminder':
+        title = '🏥 Consulta em 15 minutos'
+        message = `${context.data.patient_name} - ${context.data.time}`
+        priority = 'high'
+        break
+      case 'task_deadline':
+        title = '⏰ Tarefa com prazo hoje'
+        message = `${context.data.task_name} precisa ser concluída`
+        priority = 'urgent'
+        break
+      case 'supervision_due':
+        title = '👩‍🎓 Supervisão necessária'
+        message = `${context.data.intern_name} completou ${context.data.hours}h`
+        priority = 'high'
+        break
+      case 'achievement':
+        title = '🎉 Marco alcançado!'
+        message = `${context.data.achievement} - Parabéns!`
+        priority = 'medium'
+        break
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        title,
+        message,
+        type: context.type,
+        priority,
+        metadata: context.data
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Mostrar push notification se permitido
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body: message,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: `${context.type}-${Date.now()}`,
+        requireInteraction: priority === 'urgent'
+      })
+    }
+
+    return data
+  }
+
+  return {
+    createSmartNotification
+  }
+}
+
+// Hook para configurações avançadas de notificação
+export function useAdvancedNotificationSettings() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: ['advanced-notification-settings', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error('User not authenticated')
+
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') throw error
+
+      // Se não existe, criar configuração padrão
+      if (error?.code === 'PGRST116') {
+        const defaultSettings = {
+          user_id: user.id,
+          email_notifications: true,
+          push_notifications: true,
+          calendar_reminders: true,
+          project_updates: true,
+          team_mentions: true,
+          system_alerts: true,
+          reminder_time: 15,
+          quiet_hours_start: '22:00',
+          quiet_hours_end: '07:00',
+          ai_suggestions: true,
+          smart_scheduling: true,
+          priority_filter: 'medium'
+        }
+
+        const { data: newData, error: createError } = await supabase
+          .from('notification_settings')
+          .insert(defaultSettings)
+          .select()
+          .single()
+
+        if (createError) throw createError
+        return newData
+      }
+
+      return data
+    },
+    enabled: !!user,
   })
 } 

@@ -27,6 +27,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCreateNotebookMutation } from '@/hooks/use-notebook-mutations'
+import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 // Templates específicos para fisioterapia
 const FISIO_TEMPLATES = [
@@ -304,31 +306,94 @@ export default function NewNotebookPage() {
   
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
-  const [isPublic, setIsPublic] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof FISIO_TEMPLATES[0] | null>(null)
+  const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private')
+  const [tags, setTags] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleCreateNotebook = async () => {
-    if (!title.trim()) {
-      toast.error('Título é obrigatório')
+    if (!title.trim() || !selectedTemplate) {
+      toast.error('Título e template são obrigatórios')
       return
     }
 
-    const template = FISIO_TEMPLATES.find(t => t.id === selectedTemplate)
-    
+    setIsLoading(true)
+
     try {
-      const notebook = await createNotebookMutation.mutateAsync({
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Usuário não autenticado')
+        return
+      }
+
+      // Criar notebook
+      const notebookData = {
         title: title.trim(),
-        description: description.trim() || null,
-        content: template?.content || '',
-        template_type: selectedTemplate || null,
-        is_public: isPublic
-      })
+        content: selectedTemplate.content,
+        template_type: selectedTemplate.id,
+        status: 'draft',
+        visibility: visibility as 'private' | 'team' | 'public',
+        tags: tags.split(',').map((tag: string) => tag.trim()).filter(Boolean),
+        created_by: user.id,
+        metadata: {
+          template_name: selectedTemplate.name,
+          category: selectedTemplate.category,
+          created_from: 'notebooks_new_page'
+        }
+      }
+
+      const { data: notebook, error: notebookError } = await supabase
+        .from('notebooks')
+        .insert(notebookData)
+        .select()
+        .single()
+
+      if (notebookError) throw notebookError
+
+      // Criar página inicial do notebook
+      const pageData = {
+        title: 'Página Principal',
+        content: selectedTemplate.content,
+        notebook_id: notebook.id,
+        order_index: 0,
+        created_by: user.id,
+        metadata: {
+          auto_generated: true,
+          template_page: true
+        }
+      }
+
+      const { error: pageError } = await supabase
+        .from('pages')
+        .insert(pageData)
+
+      if (pageError) {
+        console.warn('Erro ao criar página inicial:', pageError)
+      }
+
+      // Criar notificação de sucesso
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: '📝 Notebook criado com sucesso',
+          message: `"${title}" foi criado usando template ${selectedTemplate.name}`,
+          type: 'success',
+          metadata: {
+            notebook_id: notebook.id,
+            template_used: selectedTemplate.name
+          }
+        })
 
       toast.success('Notebook criado com sucesso!')
-      router.push(`/notebooks/${notebook.id}`)
+      router.push(`/notebooks?highlight=${notebook.id}`)
+      
     } catch (error) {
-      toast.error('Erro ao criar notebook')
-      console.error('Error creating notebook:', error)
+      console.error('Erro ao criar notebook:', error)
+      toast.error('Erro ao criar notebook. Tente novamente.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -407,12 +472,13 @@ export default function NewNotebookPage() {
 
                   <div className="flex items-center gap-3">
                     <label className="text-sm font-medium">Visibilidade:</label>
-                    <Select value={isPublic ? 'public' : 'private'} onValueChange={(v) => setIsPublic(v === 'public')}>
+                    <Select value={visibility} onValueChange={(v) => setVisibility(v as 'private' | 'team' | 'public')}>
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="private">Privado</SelectItem>
+                        <SelectItem value="team">Equipe</SelectItem>
                         <SelectItem value="public">Público</SelectItem>
                       </SelectContent>
                     </Select>
@@ -437,12 +503,13 @@ export default function NewNotebookPage() {
                       return (
                         <div
                           key={template.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                            selectedTemplate === template.id 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setSelectedTemplate(template.id)}
+                          className={cn(
+                            'p-4 border rounded-lg cursor-pointer transition-all',
+                            selectedTemplate?.id === template.id 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/50'
+                          )}
+                          onClick={() => setSelectedTemplate(template)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="p-2 bg-blue-100 rounded-lg">
@@ -466,12 +533,13 @@ export default function NewNotebookPage() {
                     
                     {/* Opção em branco */}
                     <div
-                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                        selectedTemplate === '' 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedTemplate('')}
+                      className={cn(
+                        'p-4 border rounded-lg cursor-pointer transition-all',
+                        selectedTemplate === null 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-primary/50'
+                      )}
+                      onClick={() => setSelectedTemplate(null)}
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-gray-100 rounded-lg">
@@ -519,7 +587,7 @@ export default function NewNotebookPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         {(() => {
-                          const template = FISIO_TEMPLATES.find(t => t.id === selectedTemplate)
+                          const template = FISIO_TEMPLATES.find(t => t.id === selectedTemplate.id)
                           if (!template) return null
                           const Icon = template.icon
                           return (
@@ -532,8 +600,8 @@ export default function NewNotebookPage() {
                       </div>
                       <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-md max-h-64 overflow-y-auto">
                         <pre className="whitespace-pre-wrap text-xs">
-                          {FISIO_TEMPLATES.find(t => t.id === selectedTemplate)?.content.slice(0, 500)}
-                          {(FISIO_TEMPLATES.find(t => t.id === selectedTemplate)?.content.length || 0) > 500 && '...'}
+                          {selectedTemplate.content.slice(0, 500)}
+                          {(selectedTemplate.content.length || 0) > 500 && '...'}
                         </pre>
                       </div>
                     </div>
