@@ -36,7 +36,67 @@ import { TemplatesSelector, Template } from '@/components/editor/templates'
 import { CollaborationPanel } from '@/components/ui/collaboration-panel'
 import { useNotebooksQuery } from '@/hooks/use-notebooks-query'
 import { useCreateNotebookMutation, useUpdateNotebookMutation } from '@/hooks/use-notebook-mutations'
-import { Notebook } from '@/hooks/use-notebooks-query' // Import Notebook interface
+// Interface Notebook será tipada pelo próprio hook
+
+export default function NotebooksPage() {
+  const [showEditor, setShowEditor] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [editingNotebook, setEditingNotebook] = useState<any>(null)
+  const [notebookTitle, setNotebookTitle] = useState('')
+  const [notebookDescription, setNotebookDescription] = useState('')
+  const [editorContent, setEditorContent] = useState('')
+  
+  const { data: notebooks = [], isLoading, error } = useNotebooksQuery()
+  const createNotebookMutation = useCreateNotebookMutation()
+  const updateNotebookMutation = useUpdateNotebookMutation()
+
+  const filteredNotebooks = notebooks.filter(notebook =>
+    notebook.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    notebook.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleCreateNotebook = () => {
+    setEditingNotebook(null)
+    setNotebookTitle('')
+    setNotebookDescription('')
+    setEditorContent('')
+    setShowEditor(true)
+  }
+
+  const handleEditNotebook = (notebook: any) => {
+    setEditingNotebook(notebook)
+    setNotebookTitle(notebook.title)
+    setNotebookDescription(notebook.description || '')
+    setEditorContent(notebook.content || '')
+    setShowEditor(true)
+  }
+
+  const handleSelectTemplate = (template: any) => {
+    setNotebookTitle(template.name || template.title || '')
+    setNotebookDescription(template.description || '')
+    setEditorContent(template.content || '')
+    setShowTemplates(false)
+    setShowEditor(true)
+  }
+
+  const handleSaveNotebook = () => {
+    if (!notebookTitle.trim()) return
+
+    const notebookData = {
+      title: notebookTitle,
+      description: notebookDescription,
+      content: editorContent,
+    }
+
+    if (editingNotebook) {
+      updateNotebookMutation.mutate({ id: editingNotebook.id, ...notebookData })
+    } else {
+      createNotebookMutation.mutate(notebookData)
+    }
+    
+    setShowEditor(false)
+  }
 
   // Modo Editor
   if (showEditor) {

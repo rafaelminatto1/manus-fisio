@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { Button } from './button'
-import { Input }n from './input'
+import { Input } from './input'
 import { Textarea } from './textarea'
 import { Avatar } from './avatar'
 import { Badge } from './badge'
