@@ -28,10 +28,8 @@ import {
 // 🎯 Hook para animações de entrada
 export function useScrollAnimation() {
   const controls = useAnimation()
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, amount: 0.1 })
 
   useEffect(() => {
     if (inView) {
@@ -532,7 +530,6 @@ export function AnimatedReveal({
 }
 
 export {
-  useScrollAnimation,
   AnimatedSparkle,
   LikeButton,
   AnimatedRating,
