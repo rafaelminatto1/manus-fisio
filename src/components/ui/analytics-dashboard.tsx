@@ -306,13 +306,6 @@ export const AnalyticsDashboard = React.memo(() => {
       {/* Métricas principais */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Total de Usuários"
-          value={systemMetrics?.totalUsers ?? 0}
-          change={periodComparison?.changes.notebooks}
-          icon={<Users className="w-6 h-6 text-white" />}
-          color="bg-blue-500"
-        />
-        <MetricCard
           title="Projetos Ativos"
           value={projectAnalytics?.activeProjects || 0}
           change={periodComparison?.changes.projects}
