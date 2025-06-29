@@ -46,6 +46,7 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SmartNotifications } from '@/components/ui/smart-notifications'
+import { useDashboardQuery } from '@/hooks/use-dashboard-data'
 
 // Types for real data
 interface DashboardStats {
@@ -173,8 +174,6 @@ const quickActions: QuickAction[] = [
     color: 'bg-purple-500'
   }
 ]
-
-import { useDashboardQuery } from '@/hooks/use-dashboard-query'
 
 export default function Dashboard() {
   const { user, loading } = useAuth()

@@ -107,4 +107,48 @@ BEGIN
     END,
     'Sistema completo e otimizado'::TEXT;
 END;
-$function$; 
+$function$;
+
+-- OTIMIZAÇÕES DE PERFORMANCE: ÍNDICES FALTANTES (Versão para SQL Editor)
+-- Data: 29 de junho de 2025
+--
+-- INSTRUÇÕES:
+-- O comando "CREATE INDEX CONCURRENTLY" não é compatível com o Editor de SQL do Supabase.
+-- Esta versão usa o comando "CREATE INDEX" padrão. Ele irá travar brevemente cada tabela
+-- durante a criação do índice, mas funcionará no editor.
+--
+-- Execute este script no SQL Editor do seu projeto Supabase.
+--
+-- =================================================================================================
+
+-- Índices para a tabela 'calendar_events'
+CREATE INDEX IF NOT EXISTS idx_calendar_events_created_by ON public.calendar_events(created_by);
+
+-- Índices para a tabela 'comments'
+CREATE INDEX IF NOT EXISTS idx_comments_page_id ON public.comments(page_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON public.comments(parent_id);
+CREATE INDEX IF NOT EXISTS idx_comments_project_id ON public.comments(project_id);
+CREATE INDEX IF NOT EXISTS idx_comments_task_id ON public.comments(task_id);
+
+-- Índices para a tabela 'notebook_collaborators'
+CREATE INDEX IF NOT EXISTS idx_notebook_collaborators_user_id ON public.notebook_collaborators(user_id);
+
+-- Índices para a tabela 'notifications'
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+
+-- Índices para a tabela 'pages'
+CREATE INDEX IF NOT EXISTS idx_pages_created_by ON public.pages(created_by);
+CREATE INDEX IF NOT EXISTS idx_pages_parent_id ON public.pages(parent_id);
+
+-- Índices para a tabela 'patient_records'
+CREATE INDEX IF NOT EXISTS idx_patient_records_created_by ON public.patient_records(created_by);
+
+-- Índices para a tabela 'patients'
+CREATE INDEX IF NOT EXISTS idx_patients_created_by ON public.patients(created_by);
+
+-- Índices para a tabela 'project_collaborators'
+CREATE INDEX IF NOT EXISTS idx_project_collaborators_user_id ON public.project_collaborators(user_id);
+
+-- Índices para a tabela 'tasks'
+CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON public.tasks(created_by);
+CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON public.tasks(project_id); 

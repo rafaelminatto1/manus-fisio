@@ -1,104 +1,109 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { Database } from '@/types/database.types';
+import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { z } from 'zod'
+import type { Database } from '@/types/database.types'
 
+const patientUpdateSchema = z.object({
+  full_name: z.string().min(3, 'Nome completo é obrigatório').optional(),
+  birth_date: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Data de nascimento inválida',
+  }).optional(),
+  gender: z.string().optional(),
+  cpf: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email('Email inválido').optional(),
+  address: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+  initial_medical_history: z.string().optional(),
+})
+
+
+// GET a single patient by ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
-  const { id } = params;
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const supabase = createRouteHandlerClient<Database>({ cookies })
+  const { id } = params
 
   try {
-    const { data, error } = await supabase
+    const { data: patient, error } = await supabase
       .from('patients')
       .select('*')
       .eq('id', id)
-      .single();
+      .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
-      }
-      console.error('Error fetching patient:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error || !patient) {
+      return NextResponse.json({ error: 'Paciente não encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(patient)
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Erro interno do servidor.' },
+      { status: 500 }
+    )
   }
 }
 
+// UPDATE a patient by ID
 export async function PUT(
-    request: Request,
-    { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: { id: string } }
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    const { id } = params;
-    const updatedData = await request.json();
-
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const { id } = params
 
     try {
-        const { data, error } = await supabase
-            .from('patients')
-            .update(updatedData)
-            .eq('id', id)
-            .select()
-            .single();
+        const body = await request.json()
+        const validation = patientUpdateSchema.safeParse(body)
 
-        if (error) {
-            console.error('Error updating patient:', error);
-            return NextResponse.json({ error: error.message }, { status: 400 });
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.error.format() }, { status: 400 })
         }
 
-        return NextResponse.json(data);
+        const { data: updatedPatient, error } = await supabase
+            .from('patients')
+            .update(validation.data)
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) {
+            return NextResponse.json({ error: 'Erro ao atualizar paciente.' }, { status: 500 })
+        }
+
+        return NextResponse.json(updatedPatient)
+
     } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 })
     }
 }
 
+
+// DELETE a patient by ID
 export async function DELETE(
-    request: Request,
-    { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: { id: string } }
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    const { id } = params;
-
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const { id } = params
 
     try {
-        const { error } = await supabase.from('patients').delete().eq('id', id);
+        const { error } = await supabase
+            .from('patients')
+            .delete()
+            .eq('id', id)
 
         if (error) {
-            console.error('Error deleting patient:', error);
-            return NextResponse.json({ error: error.message }, { status: 400 });
+            return NextResponse.json({ error: 'Erro ao deletar paciente.' }, { status: 500 })
         }
 
-        return new Response(null, { status: 204 });
+        return NextResponse.json({ message: 'Paciente deletado com sucesso' }, { status: 200 })
+
     } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 })
     }
 } 

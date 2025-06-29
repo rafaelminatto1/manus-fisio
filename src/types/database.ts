@@ -349,6 +349,85 @@ export interface Database {
           created_at?: string;
         };
       };
+      patients: {
+        Row: {
+          id: string;
+          full_name: string;
+          birth_date: string;
+          gender?: string;
+          cpf?: string;
+          phone?: string;
+          email?: string;
+          address?: string;
+          emergency_contact_name?: string;
+          emergency_contact_phone?: string;
+          initial_medical_history?: string;
+          created_at: string;
+          updated_at?: string;
+          created_by?: string;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          birth_date: string;
+          gender?: string;
+          cpf?: string;
+          phone?: string;
+          email?: string;
+          address?: string;
+          emergency_contact_name?: string;
+          emergency_contact_phone?: string;
+          initial_medical_history?: string;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          birth_date?: string;
+          gender?: string;
+          cpf?: string;
+          phone?: string;
+          email?: string;
+          address?: string;
+          emergency_contact_name?: string;
+          emergency_contact_phone?: string;
+          initial_medical_history?: string;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string;
+        };
+      };
+      patient_records: {
+        Row: {
+          id: string;
+          patient_id: string;
+          session_date: string;
+          content: any;
+          created_by: string;
+          created_at: string;
+          updated_at?: string;
+        };
+        Insert: {
+          id?: string;
+          patient_id: string;
+          session_date?: string;
+          content: any;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          patient_id?: string;
+          session_date?: string;
+          content?: any;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -460,6 +539,9 @@ export type Task = Database['public']['Tables']['tasks']['Row'];
 export type Comment = Database['public']['Tables']['comments']['Row'];
 export type Mentorship = Database['public']['Tables']['mentorships']['Row'];
 export type ActivityLog = Database['public']['Tables']['activity_logs']['Row'];
+export type UserProfile = Database['public']['Tables']['users']['Row'];
+export type Patient = Database['public']['Tables']['patients']['Row'];
+export type PatientRecord = Database['public']['Tables']['patient_records']['Row'];
 
 // Tipos para inserção
 export type UserInsert = Database['public']['Tables']['users']['Insert'];
@@ -479,4 +561,8 @@ export type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
 export type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 export type CommentUpdate = Database['public']['Tables']['comments']['Update'];
 export type MentorshipUpdate = Database['public']['Tables']['mentorships']['Update'];
-export type ActivityLogUpdate = Database['public']['Tables']['activity_logs']['Update']; 
+export type ActivityLogUpdate = Database['public']['Tables']['activity_logs']['Update'];
+
+export interface PageWithNotebook extends Page {
+  notebooks: Notebook;
+} 

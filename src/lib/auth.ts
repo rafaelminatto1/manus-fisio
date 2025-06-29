@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as supabaseCreateClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types'; // Assumindo que você tem este tipo
 
 // Configuração do Supabase para o lado do servidor
-const supabase = createClient<Database>(
+const supabase = supabaseCreateClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY! // Usar a service role key para validação de token no backend
 );
+
+// Exportação compatível para frontend e hooks
+export const createClient = supabaseCreateClient;
+export const isMockMode = () => process.env.NEXT_PUBLIC_MOCK_MODE === 'true';
+export const mockUser = {
+  id: 'mock-user',
+  email: 'mock@mock.com',
+  full_name: 'Usuário Mock',
+  role: 'admin',
+};
 
 export async function authenticateRequest(req: NextRequest): Promise<NextResponse | null> {
   const authHeader = req.headers.get('authorization');

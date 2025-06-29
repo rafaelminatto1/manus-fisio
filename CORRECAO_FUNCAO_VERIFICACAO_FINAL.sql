@@ -78,4 +78,65 @@ SELECT
     THEN '🎉 OTIMIZADO'
     ELSE '⏳ PENDENTE'
   END as status,
-  'Performance geral melhorada' as impact; 
+  'Performance geral melhorada' as impact;
+
+-- CORREÇÃO FINAL: REMOÇÃO DE FUNÇÕES DUPLICADAS E APLICAÇÃO DE POLÍTICAS
+-- Data: 29 de junho de 2025
+--
+-- INSTRUÇÕES:
+-- Este script irá:
+-- 1. Remover as versões ambíguas e duplicadas das funções "is_admin(uuid)" e "is_mentor(uuid)".
+-- 2. Recriar TODAS as políticas de segurança para o módulo de pacientes.
+--
+-- Execute este script no SQL Editor do seu projeto Supabase. Esta deve ser a correção definitiva.
+--
+-- =================================================================================================
+
+-- PASSO 1: Remover as funções duplicadas que causam os conflitos.
+DROP FUNCTION IF EXISTS public.is_admin(uuid) CASCADE;
+DROP FUNCTION IF EXISTS public.is_mentor(uuid) CASCADE;
+
+-- PASSO 2: Recriar as políticas de segurança agora que as ambiguidades foram resolvidas.
+-- Usamos "DROP POLICY IF EXISTS" para garantir que o script possa ser executado múltiplas vezes sem erros.
+
+-- Políticas para a tabela 'patients'
+DROP POLICY IF EXISTS "Admins podem gerenciar todos os pacientes" ON public.patients;
+CREATE POLICY "Admins podem gerenciar todos os pacientes" ON public.patients
+    FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Fisioterapeutas podem ver pacientes de seus projetos" ON public.patients;
+CREATE POLICY "Fisioterapeutas podem ver pacientes de seus projetos" ON public.patients
+    FOR SELECT USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        JOIN project_patients pp ON pc.project_id = pp.project_id
+        WHERE pp.patient_id = public.patients.id AND pc.user_id = auth.uid()
+    ));
+
+DROP POLICY IF EXISTS "Fisioterapeutas podem criar pacientes" ON public.patients;
+CREATE POLICY "Fisioterapeutas podem criar pacientes" ON public.patients
+    FOR INSERT WITH CHECK (public.is_mentor()); -- Especificando public.is_mentor() para clareza
+
+-- Políticas para a tabela 'patient_records'
+DROP POLICY IF EXISTS "Admins podem gerenciar todos os prontuários" ON public.patient_records;
+CREATE POLICY "Admins podem gerenciar todos os prontuários" ON public.patient_records
+    FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Fisioterapeutas podem gerenciar prontuários de seus pacientes" ON public.patient_records;
+CREATE POLICY "Fisioterapeutas podem gerenciar prontuários de seus pacientes" ON public.patient_records
+    FOR ALL USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        JOIN project_patients pp ON pc.project_id = pp.project_id
+        WHERE pp.patient_id = public.patient_records.patient_id AND pc.user_id = auth.uid()
+    ));
+
+-- Políticas para a tabela 'project_patients'
+DROP POLICY IF EXISTS "Membros do projeto podem ver as associações" ON public.project_patients;
+CREATE POLICY "Membros do projeto podem ver as associações" ON public.project_patients
+    FOR SELECT USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        WHERE pc.project_id = public.project_patients.project_id AND pc.user_id = auth.uid()
+    ));
+
+DROP POLICY IF EXISTS "Admins e criadores de projetos podem gerenciar associações" ON public.project_patients;
+CREATE POLICY "Admins e criadores de projetos podem gerenciar associações" ON public.project_patients
+    FOR ALL USING (public.is_admin() OR has_project_permission(project_id, 'admin')); 

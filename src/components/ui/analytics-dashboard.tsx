@@ -57,8 +57,8 @@ import {
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/cn'
-import { useAuth } from '@/contexts/AuthContext'
-import { useQuery } from 'react-query'
+import { useAuth } from '@/hooks/use-auth'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
 interface MetricCardProps {

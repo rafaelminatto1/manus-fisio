@@ -1,79 +1,91 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { Database } from '@/types/database.types';
+import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { z } from 'zod'
+import type { Database } from '@/types/database.types'
 
-export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const search = searchParams.get('search') || '';
+const patientSchema = z.object({
+  full_name: z.string().min(3, 'Nome completo é obrigatório'),
+  birth_date: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Data de nascimento inválida',
+  }),
+  gender: z.string().optional(),
+  cpf: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email('Email inválido').optional(),
+  address: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+  initial_medical_history: z.string().optional(),
+})
+
+export async function GET() {
+  const supabase = createRouteHandlerClient<Database>({ cookies })
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const offset = (page - 1) * limit;
-
   try {
-    let query = supabase
+    const { data: patients, error } = await supabase
       .from('patients')
-      .select('*', { count: 'exact' })
-      .range(offset, offset + limit - 1)
-      .order('full_name', { ascending: true });
-
-    if (search) {
-      query = query.ilike('full_name', `%${search}%`);
-    }
-
-    const { data, error, count } = await query;
+      .select('*')
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching patients:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Erro ao buscar pacientes:', error)
+      throw error
     }
 
-    return NextResponse.json({
-      data,
-      totalPages: Math.ceil((count || 0) / limit),
-      currentPage: page,
-    });
+    return NextResponse.json(patients)
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Erro interno do servidor ao buscar pacientes.' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: Request) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-  
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = createRouteHandlerClient<Database>({ cookies })
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json()
+    const validation = patientSchema.safeParse(body)
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 })
     }
 
-    const newPatient = await request.json();
+    const { data: newPatient, error } = await supabase
+      .from('patients')
+      .insert({ ...validation.data, created_by: user.id })
+      .select()
+      .single()
 
-    try {
-        const { data, error } = await supabase
-        .from('patients')
-        .insert({ ...newPatient, created_by: session.user.id })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating patient:', error);
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-  
-      return NextResponse.json(data, { status: 201 });
-    } catch (error) {
-      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    if (error) {
+      console.error('Erro ao criar paciente:', error)
+      // TODO: Adicionar verificação de erro mais específica, ex: CPF duplicado
+      throw error
     }
+
+    return NextResponse.json(newPatient, { status: 201 })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Erro interno do servidor ao criar paciente.' },
+      { status: 500 }
+    )
+  }
 } 

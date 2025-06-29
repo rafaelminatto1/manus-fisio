@@ -10,6 +10,7 @@ import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Save } from 'lucid
 interface RichEditorProps {
   content?: string
   onChange?: (content: string) => void
+  onSave?: (content: any) => Promise<boolean>
   placeholder?: string
   className?: string
 }
@@ -17,6 +18,7 @@ interface RichEditorProps {
 const RichEditor = ({
   content = '',
   onChange,
+  onSave,
   placeholder = 'Comece a escrever seu protocolo...',
   className = ''
 }: RichEditorProps) => {
@@ -37,6 +39,15 @@ const RichEditor = ({
       }
     },
   })
+
+  const handleSave = async () => {
+    if (onSave && editor) {
+        const success = await onSave(editor.getJSON());
+        if (success) {
+            editor.commands.clearContent();
+        }
+    }
+  }
 
   if (!editor) {
     return <div className="p-4">Carregando editor...</div>
@@ -101,7 +112,7 @@ const RichEditor = ({
         <div>
           {editor.storage.characterCount.characters()}/10000 caracteres
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={handleSave}>
           <Save className="h-4 w-4 mr-1" />
           Salvar
         </Button>

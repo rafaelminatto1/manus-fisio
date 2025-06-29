@@ -1,0 +1,5 @@
+[33mab00717[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: padroniza rotas dinâmicas, corrige PostCSS, adiciona guias de migração e credenciais Supabase
+[33m90e5435[m 🔧 CORREÇÃO FINAL: Coluna 'definition' pg_policies
+[33m4eba523[m 🔧 CORREÇÃO: Erro Dollar-quoted String na Função SQL
+[33m32749a1[m 🔧 SOLUÇÃO: Erro CREATE INDEX CONCURRENTLY Resolvido
+[33m64668c1[m 🚀 FASE 2: Funcionalidades Avançadas Implementadas

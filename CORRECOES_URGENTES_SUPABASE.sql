@@ -61,4 +61,52 @@ IMPACTO ESPERADO:
 ✅ Sistema pronto para produção
 
 TEMPO TOTAL: 5-10 minutos
-*/ 
+*/
+
+-- CORREÇÃO URGENTE DE POLÍTICAS DE SEGURANÇA (RLS)
+-- Data: 29 de junho de 2025
+--
+-- INSTRUÇÕES:
+-- O script anterior falhou porque as tabelas já existiam.
+-- Este script contém APENAS a criação das políticas de segurança (RLS) que estão faltando.
+--
+-- 1. Copie TODO o conteúdo deste arquivo.
+-- 2. Cole no SQL Editor do seu projeto Supabase.
+-- 3. Clique em "RUN".
+--
+-- =================================================================================================
+
+-- Política para a tabela 'patients'
+CREATE POLICY "Admins podem gerenciar todos os pacientes" ON public.patients
+    FOR ALL USING (is_admin());
+
+CREATE POLICY "Fisioterapeutas podem ver pacientes de seus projetos" ON public.patients
+    FOR SELECT USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        JOIN project_patients pp ON pc.project_id = pp.project_id
+        WHERE pp.patient_id = public.patients.id AND pc.user_id = auth.uid()
+    ));
+
+CREATE POLICY "Fisioterapeutas podem criar pacientes" ON public.patients
+    FOR INSERT WITH CHECK (is_mentor()); -- Reutilizando a função is_mentor() para 'fisioterapeuta'
+
+-- Política para a tabela 'patient_records'
+CREATE POLICY "Admins podem gerenciar todos os prontuários" ON public.patient_records
+    FOR ALL USING (is_admin());
+
+CREATE POLICY "Fisioterapeutas podem gerenciar prontuários de seus pacientes" ON public.patient_records
+    FOR ALL USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        JOIN project_patients pp ON pc.project_id = pp.project_id
+        WHERE pp.patient_id = public.patient_records.patient_id AND pc.user_id = auth.uid()
+    ));
+
+-- Política para a tabela 'project_patients'
+CREATE POLICY "Membros do projeto podem ver as associações" ON public.project_patients
+    FOR SELECT USING (EXISTS (
+        SELECT 1 FROM project_collaborators pc
+        WHERE pc.project_id = public.project_patients.project_id AND pc.user_id = auth.uid()
+    ));
+
+CREATE POLICY "Admins e criadores de projetos podem gerenciar associações" ON public.project_patients
+    FOR ALL USING (is_admin() OR has_project_permission(project_id, 'admin')); 
