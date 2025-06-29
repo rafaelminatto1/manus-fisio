@@ -530,9 +530,7 @@ export default function TeamPage() {
                   <Button variant="outline" onClick={() => setShowProgressForm(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={addProgressNote}>
-                    Salvar Nota
-                  </Button>
+                  <Button onClick={handleAddProgressNote}>Salvar Nota</Button>
                 </div>
               </div>
             </CardContent>
