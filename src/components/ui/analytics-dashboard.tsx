@@ -213,7 +213,6 @@ export const AnalyticsDashboard = React.memo(() => {
 
     return {
       overview: [
-        { name: 'Usuários', value: systemMetrics?.totalUsers ?? 0, color: '#8884d8' },
         { name: 'Projetos', value: systemMetrics.totalProjects, color: '#82ca9d' },
         { name: 'Notebooks', value: systemMetrics.totalNotebooks, color: '#ffc658' },
         { name: 'Eventos', value: systemMetrics.totalEvents, color: '#ff7c7c' }
