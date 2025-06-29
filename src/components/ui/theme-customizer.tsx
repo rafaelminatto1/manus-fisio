@@ -575,7 +575,7 @@ export function ThemeCustomizer({ isOpen: externalIsOpen, onClose }: ThemeCustom
                                     onValueChange={([value]) => handleThemeChange({
                                       typography: {
                                         ...currentTheme.typography,
-                                        fontSize: value
+                                        fontSize: value ?? 16
                                       }
                                     })}
                                     min={12}
@@ -595,7 +595,7 @@ export function ThemeCustomizer({ isOpen: externalIsOpen, onClose }: ThemeCustom
                                     onValueChange={([value]) => handleThemeChange({
                                       typography: {
                                         ...currentTheme.typography,
-                                        lineHeight: value
+                                        lineHeight: value ?? 1.5
                                       }
                                     })}
                                     min={1.2}
