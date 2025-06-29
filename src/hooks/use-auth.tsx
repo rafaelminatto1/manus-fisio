@@ -1,8 +1,9 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient, mockUser, isMockMode, hasSupabaseCredentials } from '@/lib/auth'
-import type { User } from '@/lib/auth'
+import { createClient, isMockMode } from '@/lib/auth'
+import type { Tables } from '@/types/database.types'
+type User = Tables<'users'>
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -22,8 +23,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   
-  const supabase = createClient()
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const isUsingMock = isMockMode()
+
+  // Mock completo para o tipo User
+  const fullMockUser: User = {
+    id: 'mock-user',
+    email: 'mock@mock.com',
+    full_name: 'Usuário Mock',
+    role: 'admin',
+    avatar_url: null,
+    created_at: '',
+    crefito: null,
+    is_active: true,
+    semester: null,
+    specialty: null,
+    university: null,
+    updated_at: '',
+  }
 
   useEffect(() => {
     console.log('AuthProvider inicializando...', { isUsingMock })
@@ -67,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     if (isUsingMock) {
-      setUser(mockUser)
+      setUser(fullMockUser)
       setLoading(false)
       return
     }
@@ -82,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Error fetching user profile:', error)
         if (process.env.NODE_ENV === 'development') {
-          setUser(mockUser)
+          setUser(fullMockUser)
         } else {
           setUser(null)
         }
@@ -92,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error fetching user profile:', error)
       if (process.env.NODE_ENV === 'development') {
-        setUser(mockUser)
+        setUser(fullMockUser)
       } else {
         setUser(null)
       }
@@ -110,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 800))
         if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
           console.log('Login mock bem-sucedido')
-          setUser(mockUser)
+          setUser(fullMockUser)
           return { error: null }
         }
         return { error: { message: 'Email ou senha inválidos' } }
