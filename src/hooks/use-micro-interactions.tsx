@@ -115,12 +115,10 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
     }
     
     // Animação de escala
-    scale.start(0.95, {
-      config: { tension: 300, friction: 10 },
-      onResolve: () => {
+    scale.start(0.95, { config: { tension: 300, friction: 10 } })
+      .then(() => {
         scale.start(1, { config: { tension: 300, friction: 10 } })
-      }
-    })
+      })
     
     setTimeout(() => setIsActive(false), duration)
   }, [visual, duration, scale, triggerHaptic, triggerSound, addRipple])
@@ -153,12 +151,10 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
     triggerSound(800, 100)
     
     // Animação de "bounce" para sucesso
-    scale.start(1.1, {
-      config: { tension: 400, friction: 8 },
-      onResolve: () => {
+    scale.start(1.1, { config: { tension: 400, friction: 8 } })
+      .then(() => {
         scale.start(1, { config: { tension: 400, friction: 8 } })
-      }
-    })
+      })
   }, [scale, triggerHaptic, triggerSound])
 
   // Micro-interação de erro
@@ -172,13 +168,11 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
     
     const shake = () => {
       if (index < shakeSequence.length) {
-        y.start(shakeSequence[index], {
-          config: { tension: 800, friction: 10 },
-          onResolve: () => {
+        y.start(shakeSequence[index], { config: { tension: 800, friction: 10 } })
+          .then(() => {
             index++
             shake()
-          }
-        })
+          })
       }
     }
     
@@ -188,15 +182,11 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
   // Micro-interação de loading
   const triggerLoading = useCallback(() => {
     const pulse = () => {
-      scale.start(1.05, {
-        config: { tension: 200, friction: 15 },
-        onResolve: () => {
-          scale.start(0.95, {
-            config: { tension: 200, friction: 15 },
-            onResolve: pulse
-          })
-        }
-      })
+      scale.start(1.05, { config: { tension: 200, friction: 15 } })
+        .then(() => {
+          scale.start(0.95, { config: { tension: 200, friction: 15 } })
+            .then(pulse)
+        })
     }
     
     pulse()
@@ -228,12 +218,10 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
     triggerSound(soundFrequencies[type], 120)
     
     // Animação de slide-in
-    y.start(-10, {
-      config: { tension: 400, friction: 20 },
-      onResolve: () => {
+    y.start(-10, { config: { tension: 400, friction: 20 } })
+      .then(() => {
         y.start(0, { config: { tension: 400, friction: 20 } })
-      }
-    })
+      })
   }, [y, triggerHaptic, triggerSound])
 
   // Props para aplicar aos elementos
