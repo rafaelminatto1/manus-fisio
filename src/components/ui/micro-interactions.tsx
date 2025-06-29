@@ -239,7 +239,7 @@ export function AnimatedCounter({
   const springProps = useSpring({
     number: isVisible ? value : 0,
     config: config.slow,
-    onFrame: (props) => {
+    onFrame: (props: { number: number }) => {
       setDisplayValue(Math.floor(props.number))
     },
   })
