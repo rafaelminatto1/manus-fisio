@@ -66,7 +66,7 @@ export function useAddCommentMutation() {
       const commentToInsert = {
         ...newCommentData,
         user_id: user.id,
-        user_name: user.user_metadata?.full_name || user.email || 'Usuário',
+        user_name: user.full_name || user.email || 'Usuário',
         created_at: new Date().toISOString(),
       };
 
@@ -195,7 +195,7 @@ export function useActiveUsersSubscription(documentId: string) {
       )
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({ user: { id: user.id, name: user.user_metadata?.full_name || user.email } });
+          await channel.track({ user: { id: user.id, name: user.full_name || user.email } });
         }
       });
 
