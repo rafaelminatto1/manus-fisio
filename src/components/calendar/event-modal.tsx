@@ -279,7 +279,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={user.avatar_url || ''} />
                         <AvatarFallback>
-                          {user.full_name.split(' ').map((n: any) => n[0]).join('')}
+                          {user.full_name.split(' ').map((n: string) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-xs">{user.full_name}</span>
@@ -312,7 +312,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
                       <Avatar className="h-6 w-6">
                         <AvatarImage src={user.avatar_url || ''} />
                         <AvatarFallback>
-                          {user.full_name.split(' ').map(n => n[0]).join('')}
+                          {user.full_name.split(' ').map((n: string) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
