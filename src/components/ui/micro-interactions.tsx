@@ -510,7 +510,6 @@ export function AnimatedReveal({
       transition: {
         duration,
         delay,
-        ease: [0.17, 0.67, 0.83, 0.67],
       },
     },
   }
