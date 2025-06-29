@@ -318,7 +318,7 @@ export function PerformanceMonitor({
       ios: {
         isIOS,
         deviceType,
-        safariVersion,
+        safariVersion: safariVersion || '',
         viewportHeight,
         visualViewportHeight,
         isStandalone,
