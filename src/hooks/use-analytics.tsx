@@ -169,7 +169,7 @@ export function useProjectAnalytics() {
 
       const { data: projects } = await supabase
         .from('projects')
-        .select('id, status, priority, created_at, due_date, progress')
+        .select('id, status, priority, created_at, due_date, progress, updated_at')
 
       if (!projects) throw new Error('Failed to fetch projects')
 
@@ -179,10 +179,10 @@ export function useProjectAnalytics() {
       const onHoldProjects = projects.filter(p => p.status === 'on_hold').length
       const cancelledProjects = projects.filter(p => p.status === 'cancelled').length
 
-      const completedProjectsData = projects.filter(p => p.status === 'completed' && p.created_at && p.updated_at);
+      const completedProjectsData = projects.filter(p => p.status === 'completed' && p.created_at);
       const totalCompletionTime = completedProjectsData.reduce((sum, p) => {
         const created = new Date(p.created_at).getTime();
-        const updated = new Date(p.updated_at).getTime();
+        const updated = p.updated_at ? new Date(p.updated_at).getTime() : created;
         return sum + (updated - created); // Diferença em milissegundos
       }, 0);
 
