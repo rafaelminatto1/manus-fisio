@@ -374,7 +374,6 @@ export function AIAssistant({
                                 style={atomOneDark}
                                 language={match[1]}
                                 PreTag="div"
-                                {...props}
                               >
                                 {String(children).replace(/\n$/, '')}
                               </SyntaxHighlighter>
