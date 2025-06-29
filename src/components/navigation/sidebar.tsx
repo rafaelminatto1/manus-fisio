@@ -43,6 +43,12 @@ const navigationItems = [
     badge: '12'
   },
   {
+    href: '/patients',
+    label: 'Pacientes',
+    icon: Users,
+    badge: null
+  },
+  {
     href: '/team',
     label: 'Equipe',
     icon: Users,
