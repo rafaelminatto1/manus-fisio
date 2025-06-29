@@ -234,7 +234,7 @@ export function AnimatedCounter({
   const [displayValue, setDisplayValue] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, threshold: 0.5 });
+  const inView = useInView(ref, { once: true });
 
   const springProps = useSpring({
     number: isVisible ? value : 0,
@@ -509,7 +509,7 @@ export function AnimatedReveal({
       transition: {
         duration,
         delay,
-        ease: 'easeOut',
+        ease: [0.17, 0.67, 0.83, 0.67],
       },
     },
   }
