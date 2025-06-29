@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useAnimation, useInView, AnimatePresence } from 'framer-motion'
 import { useSpring, animated, config } from '@react-spring/web'
-import { useIntersectionObserver } from 'react-intersection-observer'
 import { cn } from '@/lib/cn'
 import {
   Heart,
@@ -29,7 +28,7 @@ import {
 // 🎯 Hook para animações de entrada
 export function useScrollAnimation() {
   const controls = useAnimation()
-  const [ref, inView] = useIntersectionObserver({
+  const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   })
@@ -236,7 +235,7 @@ export function AnimatedCounter({
 }) {
   const [displayValue, setDisplayValue] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
-  const { ref, inView } = useIntersectionObserver({
+  const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.5,
   })
