@@ -52,7 +52,7 @@ export function IOSShare({
     }
   }, [url])
 
-  const supportsNativeShare = navigator.share && isIOS
+  const supportsNativeShare = typeof navigator.share === 'function' && isIOS
 
   if (!isIOS) return null
 
