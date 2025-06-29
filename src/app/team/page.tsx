@@ -605,7 +605,7 @@ export default function TeamPage() {
             <TabsContent value="interns" className="mt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {getInterns().map(intern => {
-                  const mentorship = mentorships.find(m => m.intern_id === intern.id && m.status === 'active')
+                  const mentorship = (mentorships ?? []).find(m => m.intern_id === intern.id && m.status === 'active')
                   return (
                     <Card key={intern.id}>
                       <CardHeader className="pb-3">
