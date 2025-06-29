@@ -119,8 +119,8 @@ export function BackupSystem() {
         setBackupProgress({
           total: tables.length,
           completed: i,
-          current_table: tables[i],
-          status: `Fazendo backup da tabela: ${tables[i]}`
+          current_table: tables[i] ?? '',
+          status: `Fazendo backup da tabela: ${tables[i] ?? ''}`
         })
         
         // Simular tempo de processamento
