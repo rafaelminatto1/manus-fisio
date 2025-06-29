@@ -547,6 +547,188 @@ export type Database = {
           },
         ]
       }
+      exercises: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: string | null
+          difficulty: string | null
+          video_url: string | null
+          muscle_group: string | null
+          duration_minutes: number | null
+          repetitions: number | null
+          sets: number | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category?: string | null
+          difficulty?: string | null
+          video_url?: string | null
+          muscle_group?: string | null
+          duration_minutes?: number | null
+          repetitions?: number | null
+          sets?: number | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: string | null
+          difficulty?: string | null
+          video_url?: string | null
+          muscle_group?: string | null
+          duration_minutes?: number | null
+          repetitions?: number | null
+          sets?: number | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_prescriptions: {
+        Row: {
+          id: string
+          patient_id: string
+          exercise_id: string
+          prescribed_by: string
+          prescription_date: string | null
+          observations: string | null
+          status: string | null
+          prescribed_sets: number | null
+          prescribed_repetitions: number | null
+          prescribed_duration_minutes: number | null
+          frequency_per_week: number | null
+          start_date: string | null
+          end_date: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          patient_id: string
+          exercise_id: string
+          prescribed_by: string
+          prescription_date?: string | null
+          observations?: string | null
+          status?: string | null
+          prescribed_sets?: number | null
+          prescribed_repetitions?: number | null
+          prescribed_duration_minutes?: number | null
+          frequency_per_week?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          patient_id?: string
+          exercise_id?: string
+          prescribed_by?: string
+          prescription_date?: string | null
+          observations?: string | null
+          status?: string | null
+          prescribed_sets?: number | null
+          prescribed_repetitions?: number | null
+          prescribed_duration_minutes?: number | null
+          frequency_per_week?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_prescriptions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_prescriptions_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_prescriptions_prescribed_by_fkey"
+            columns: ["prescribed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_executions: {
+        Row: {
+          id: string
+          prescription_id: string
+          execution_date: string | null
+          completed_sets: number | null
+          completed_repetitions: number | null
+          completed_duration_minutes: number | null
+          pain_level: number | null
+          difficulty_level: number | null
+          patient_feedback: string | null
+          notes: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          prescription_id: string
+          execution_date?: string | null
+          completed_sets?: number | null
+          completed_repetitions?: number | null
+          completed_duration_minutes?: number | null
+          pain_level?: number | null
+          difficulty_level?: number | null
+          patient_feedback?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          prescription_id?: string
+          execution_date?: string | null
+          completed_sets?: number | null
+          completed_repetitions?: number | null
+          completed_duration_minutes?: number | null
+          pain_level?: number | null
+          difficulty_level?: number | null
+          patient_feedback?: string | null
+          notes?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_executions_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_records: {
         Row: {
           id: string

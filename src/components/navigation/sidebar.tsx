@@ -49,6 +49,12 @@ const navigationItems = [
     badge: null
   },
   {
+    href: '/exercises',
+    label: 'Exercícios',
+    icon: Activity,
+    badge: null
+  },
+  {
     href: '/team',
     label: 'Equipe',
     icon: Users,
