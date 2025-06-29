@@ -44,7 +44,10 @@ interface UpdateNotebookInput {
 
 export function useCreateNotebookMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   return useMutation<Notebook, Error, CreateNotebookInput>({
     mutationFn: async (newNotebookData) => {
@@ -96,7 +99,10 @@ export function useCreateNotebookMutation() {
 
 export function useUpdateNotebookMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   return useMutation<Notebook, Error, UpdateNotebookInput>({
     mutationFn: async (updatedNotebookData) => {

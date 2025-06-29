@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNotifications } from '@/hooks/use-notifications';
+import { toast } from 'sonner';
 import { createPatient } from '@/lib/api';
 
 const patientFormSchema = z.object({
@@ -26,7 +26,6 @@ type PatientFormValues = z.infer<typeof patientFormSchema>;
 export default function NewPatientPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
 
   const {
     register,
@@ -40,19 +39,11 @@ export default function NewPatientPage() {
     mutationFn: createPatient,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
-      addNotification({
-        title: 'Sucesso!',
-        message: 'Paciente criado com sucesso.',
-        type: 'success',
-      });
+      toast.success('Paciente criado com sucesso.');
       router.push('/patients');
     },
     onError: (error) => {
-      addNotification({
-        title: 'Erro!',
-        message: 'Não foi possível criar o paciente. ' + error.message,
-        type: 'error',
-      });
+      toast.error('Não foi possível criar o paciente. ' + error.message);
     },
   });
 

@@ -349,7 +349,7 @@ export default function TeamPage() {
                 
                 <div className="pt-2">
                   <Button variant="outline" size="sm" className="w-full" onClick={() => {
-                    setSelectedIntern(selectedMentorship?.intern)
+                    setSelectedIntern(selectedMentorship?.intern ?? null)
                     setShowCompetencyModal(true)
                   }}>
                     <Plus className="mr-2 h-4 w-4" />

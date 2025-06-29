@@ -215,9 +215,6 @@ export default function ProjectsPage() {
     if (!taskForm.title || !taskForm.project_id) return
     createTaskMutation.mutate({
       ...taskForm,
-      actual_hours: 0,
-      order_index: (tasks || []).filter(t => t.status === taskForm.status).length,
-      created_by: user?.id || 'mock-user' // Fallback for mock mode
     }, {
       onSuccess: () => {
         setShowTaskForm(false)
@@ -242,7 +239,6 @@ export default function ProjectsPage() {
       updateTaskMutation.mutate({
         id: draggedTask.id,
         status: newStatus,
-        updated_at: new Date().toISOString() // Update timestamp
       })
     }
 
@@ -480,7 +476,7 @@ export default function ProjectsPage() {
           {project.due_date && (
             <div className={`flex items-center gap-1 ${isProjectOverdue(project) ? 'text-red-600' : 'text-muted-foreground'}`}>
               <Calendar className="h-4 w-4" />
-              {format(new Date(project.due_date), 'dd/MM/yyyy')}
+              {project.due_date ? format(new Date(project.due_date), 'dd/MM/yyyy') : 'N/A'}
             </div>
           )}
         </div>
@@ -612,7 +608,7 @@ export default function ProjectsPage() {
                           <div className="flex-1">
                             <h4 className="font-medium">{project.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Prazo: {format(new Date(project.due_date), 'PPP', { locale: ptBR })}
+                              Prazo: {project.due_date ? format(new Date(project.due_date), 'PPP', { locale: ptBR }) : 'N/A'}
                             </p>
                           </div>
                           <div className="text-right">

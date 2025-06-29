@@ -72,7 +72,6 @@ export default function NewEventPage() {
         attendees: attendees.split(',').map(email => email.trim()).filter(Boolean),
         created_by: user.id,
         metadata: {
-          template_used: selectedTemplate?.name,
           created_from: 'calendar_new_page'
         }
       }

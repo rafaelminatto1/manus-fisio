@@ -3,7 +3,7 @@ import { createClient } from '@/lib/auth';
 import { toast } from 'sonner';
 
 // Interfaces expandidas (duplicadas para evitar dependência circular, idealmente em um types/projects.ts)
-interface Project {
+export interface Project {
   id: string;
   title: string;
   description?: string;
@@ -22,7 +22,7 @@ interface Project {
   tags?: string[];
 }
 
-interface Task {
+export interface Task {
   id: string;
   project_id: string;
   title: string;
@@ -57,7 +57,7 @@ interface Attachment {
   size: number;
 }
 
-interface TeamMember {
+export interface TeamMember {
   id: string;
   full_name: string;
   email: string;
@@ -72,7 +72,7 @@ interface ProjectCollaborator {
   user?: TeamMember;
 }
 
-interface ProjectStats {
+export interface ProjectStats {
   total_projects: number;
   active_projects: number;
   completed_this_month: number;
@@ -200,7 +200,10 @@ export function useProjectsQuery() {
         console.warn('Fetching mock projects data.');
         return mockProjects;
       }
-      const supabase = createClient();
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -230,7 +233,10 @@ export function useTasksQuery() {
         console.warn('Fetching mock tasks data.');
         return mockTasks;
       }
-      const supabase = createClient();
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error } = await supabase
         .from('tasks')
         .select(`
@@ -260,7 +266,10 @@ export function useProjectStatsQuery() {
         console.warn('Fetching mock project stats data.');
         return mockStats;
       }
-      const supabase = createClient();
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error } = await supabase
         .rpc('get_project_stats'); // Assumindo que esta RPC existe e retorna ProjectStats
 

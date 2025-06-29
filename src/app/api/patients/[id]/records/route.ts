@@ -11,11 +11,17 @@ const recordSchema = z.object({
 
 // GET all records for a specific patient
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   const supabase = createRouteHandlerClient<Database>({ cookies })
-  const patientId = params.id
+  const url = new URL(request.url)
+  // O ID do paciente é o penúltimo segmento da URL: /api/patients/{id}/records
+  const pathSegments = url.pathname.split('/')
+  const patientId = pathSegments[pathSegments.length - 2]
+
+  if (!patientId) {
+    return NextResponse.json({ error: 'ID do paciente não encontrado na URL.' }, { status: 400 })
+  }
 
   try {
     const { data: records, error } = await supabase
@@ -39,11 +45,16 @@ export async function GET(
 
 // POST a new record for a specific patient
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   const supabase = createRouteHandlerClient<Database>({ cookies })
-  const patientId = params.id
+  const url = new URL(request.url)
+  const pathSegments = url.pathname.split('/')
+  const patientId = pathSegments[pathSegments.length - 2]
+
+  if (!patientId) {
+    return NextResponse.json({ error: 'ID do paciente não encontrado na URL.' }, { status: 400 })
+  }
 
   const {
     data: { user },

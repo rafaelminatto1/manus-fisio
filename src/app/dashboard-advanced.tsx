@@ -52,12 +52,15 @@ interface UpcomingEvent {
 
 // Mock data fallback (kept for mock mode)
 const mockStats: DashboardStats = {
-  notebooks: 24,
-  projects: 12,
+  totalNotebooks: 24,
+  totalProjects: 12,
   activeInterns: 15,
   completedTasks: 156,
   totalTasks: 189,
-  activeMentorships: 18
+  totalTeamMembers: 10,
+  upcomingEvents: 3,
+  activeMentorships: 18,
+  completionRate: 82
 }
 
 const mockActivities: RecentActivity[] = [
@@ -127,9 +130,7 @@ export default function AdvancedDashboard() {
   const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
 
   // Fetch data using React Query
-  const { data, isLoading: loading, error: queryError } = useDashboardData({
-    enabled: !isMockMode && !!user, // Only fetch if not in mock mode and user is available
-  })
+  const { data, isLoading: loading, error: queryError } = useDashboardData()
 
   // Use fetched data or mock data as fallback
   const stats = data?.stats || mockStats
@@ -170,7 +171,7 @@ export default function AdvancedDashboard() {
 
   // Prepare analytics data
   const analyticsMetrics = {
-    projects_active: stats.projects,
+    projects_active: stats.totalProjects,
     tasks_pending: stats.totalTasks - stats.completedTasks,
     team_productivity: Math.round((stats.completedTasks / Math.max(stats.totalTasks, 1)) * 100),
     compliance_score: 98,
@@ -228,7 +229,7 @@ export default function AdvancedDashboard() {
                   <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{loading ? '...' : stats.notebooks}</div>
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{loading ? '...' : stats.totalNotebooks}</div>
                   <p className="text-xs text-blue-600 dark:text-blue-400">
                     Protocolos e documentos
                   </p>
@@ -241,7 +242,7 @@ export default function AdvancedDashboard() {
                   <FolderKanban className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">{loading ? '...' : stats.projects}</div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">{loading ? '...' : stats.totalProjects}</div>
                   <p className="text-xs text-green-600 dark:text-green-400">
                     Estudos e pesquisas
                   </p>

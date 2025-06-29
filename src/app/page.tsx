@@ -187,7 +187,10 @@ export default function Dashboard() {
   const dashboardWidgets = useDashboardWidgets()
   const [showAdvancedDashboard, setShowAdvancedDashboard] = useState(false)
 
-  const supabase = createClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
   const isUsingMock = isMockMode()
 
   
@@ -312,16 +315,13 @@ export default function Dashboard() {
           {/* Setup Notice */}
           {isUsingMock && <SetupNotice />}
 
-          <EnhancedFeaturesSection />
-          <SystemStatusSection />
-
           {/* Error Message */}
           {error && (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-red-700">{error}</span>
+                  <span className="text-red-700">{error?.toString()}</span>
                 </div>
               </CardContent>
             </Card>

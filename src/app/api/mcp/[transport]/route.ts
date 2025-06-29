@@ -82,8 +82,8 @@ const tools = {
               data?.map(event => 
                 `• ${event.title} (${event.event_type})\n` +
                 `  Data: ${new Date(event.start_time).toLocaleString('pt-BR')}\n` +
-                `  Paciente: ${event.patients?.name || 'N/A'}\n` +
-                `  Fisioterapeuta: ${event.users?.name || 'N/A'}\n`
+                `  Paciente: ${typeof event.patients === 'object' && event.patients && 'full_name' in event.patients ? (event.patients as { full_name: string }).full_name : 'N/A'}\n` +
+                `  Fisioterapeuta: ${typeof event.users === 'object' && event.users && 'full_name' in event.users ? (event.users as { full_name: string }).full_name : 'N/A'}\n`
               ).join('\n') || 'Nenhum evento encontrado.'
             }`
           }]
@@ -161,7 +161,7 @@ const tools = {
             type: 'text',
             text: `👥 Encontrados ${data?.length || 0} pacientes:\n\n${
               data?.map(patient => 
-                `• ${patient.name}\n` +
+                `• ${patient.full_name}\n` +
                 `  📧 ${patient.email || 'N/A'}\n` +
                 `  📱 ${patient.phone || 'N/A'}\n` +
                 `  🆔 ${patient.id}\n`
@@ -198,7 +198,7 @@ const tools = {
           content: [{
             type: 'text',
             text: `✅ Paciente cadastrado com sucesso!\n\n` +
-                  `👤 ${data.name}\n` +
+                  `👤 ${data.full_name}\n` +
                   `📧 ${data.email || 'N/A'}\n` +
                   `📱 ${data.phone || 'N/A'}\n` +
                   `🆔 ID: ${data.id}`
@@ -260,7 +260,7 @@ const tools = {
                 `• ${task.title}\n` +
                 `  📊 Status: ${task.status}\n` +
                 `  🔥 Prioridade: ${task.priority}\n` +
-                `  👤 Responsável: ${task.users?.name || 'Não atribuído'}\n` +
+                `  👤 Responsável: ${typeof task.users === 'object' && task.users && 'full_name' in task.users ? (task.users as { full_name: string }).full_name : 'Não atribuído'}\n` +
                 `  📅 Vencimento: ${task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : 'N/A'}\n` +
                 `  🆔 ${task.id}\n`
               ).join('\n') || 'Nenhuma tarefa encontrada.'
@@ -302,7 +302,7 @@ const tools = {
                   `📋 ${data.title}\n` +
                   `📊 Status: ${data.status}\n` +
                   `🔥 Prioridade: ${data.priority}\n` +
-                  `👤 Responsável: ${data.users?.name || 'Não atribuído'}\n` +
+                  `👤 Responsável: ${typeof data.users === 'object' && data.users && 'full_name' in data.users ? (data.users as { full_name: string }).full_name : 'Não atribuído'}\n` +
                   `🆔 ID: ${data.id}`
           }]
         };
@@ -331,7 +331,7 @@ const tools = {
         ] = await Promise.all([
           supabase.from('patients').select('*', { count: 'exact', head: true }),
           supabase.from('calendar_events').select('*', { count: 'exact', head: true }),
-          supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pendente'),
+          supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'todo'),
           supabase.from('calendar_events')
             .select('*', { count: 'exact', head: true })
             .gte('start_time', new Date().toISOString().split('T')[0])

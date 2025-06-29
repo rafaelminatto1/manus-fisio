@@ -86,7 +86,10 @@ export default function ProjectsPageNew() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
   const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
 
   useEffect(() => {
@@ -127,7 +130,12 @@ export default function ProjectsPageNew() {
         throw projectsError
       }
 
-      setProjects(projectsData || [])
+      setProjects(
+        (projectsData || []).map((project: any) => ({
+          ...project,
+          owner: Array.isArray(project.owner) ? project.owner[0] : project.owner
+        }))
+      )
 
     } catch (err) {
       console.error('Error loading projects:', err)

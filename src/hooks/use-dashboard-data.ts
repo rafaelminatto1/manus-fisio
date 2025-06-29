@@ -34,7 +34,10 @@ export interface UpcomingEvent {
   participants?: string[]
 }
 
-const supabase = createClient();
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const fetchDashboardData = async () => {
   const { data: { session } } = await supabase.auth.getSession()

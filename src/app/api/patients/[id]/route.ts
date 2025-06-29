@@ -22,11 +22,15 @@ const patientUpdateSchema = z.object({
 
 // GET a single patient by ID
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
-  const supabase = createRouteHandlerClient<Database>({ cookies })
-  const { id } = params
+  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const url = new URL(request.url);
+  const id = url.pathname.split('/').pop();
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID do paciente não encontrado na URL.' }, { status: 400 });
+  }
 
   try {
     const { data: patient, error } = await supabase
@@ -50,11 +54,15 @@ export async function GET(
 
 // UPDATE a patient by ID
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    const { id } = params
+    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID do paciente não encontrado na URL.' }, { status: 400 });
+    }
 
     try {
         const body = await request.json()
@@ -85,11 +93,15 @@ export async function PUT(
 
 // DELETE a patient by ID
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    const { id } = params
+    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID do paciente não encontrado na URL.' }, { status: 400 });
+    }
 
     try {
         const { error } = await supabase

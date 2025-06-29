@@ -137,7 +137,10 @@ export function useTeamMembersQuery() {
         console.warn('Fetching mock team members data.');
         return mockTeamMembers;
       }
-      const supabase = createClient();
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error } = await supabase
         .from('users')
         .select('id, full_name, email, role, crefito, phone, specialty, university, semester, is_active, created_at, updated_at')
@@ -165,7 +168,10 @@ export function useMentorshipsQuery() {
         console.warn('Fetching mock mentorships data.');
         return mockMentorships;
       }
-      const supabase = createClient();
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error } = await supabase
         .from('mentorships')
         .select(`
@@ -198,7 +204,10 @@ interface AddProgressNoteInput {
 
 export function useAddProgressNoteMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   return useMutation<ProgressNote, Error, AddProgressNoteInput>({
     mutationFn: async (newNoteData) => {
@@ -261,7 +270,10 @@ interface CreateCompetencyInput {
 
 export function useUpsertCompetencyMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   return useMutation<CompetencyEvaluation, Error, UpdateCompetencyInput | CreateCompetencyInput>({
     mutationFn: async (data) => {

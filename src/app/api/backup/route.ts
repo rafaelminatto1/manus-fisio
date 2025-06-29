@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/auth'; // Usar o cliente de autenticação para verificar o usuário
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import type { Database } from '@/types/database.types';
 import { createClient as createServiceRoleClient } from '@supabase/supabase-js'; // Cliente com service_role_key
 
 // Configuração do Supabase com service_role_key (apenas para uso no servidor!)
@@ -9,8 +11,10 @@ const supabaseAdmin = createServiceRoleClient(
 );
 
 export async function POST(req: NextRequest) {
-  const authError = await createClient().auth.getUser(req.headers.get('authorization')?.split(' ')[1] || '');
-  if (authError.error || !authError.data.user) {
+  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
