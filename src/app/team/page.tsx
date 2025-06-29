@@ -652,7 +652,7 @@ export default function TeamPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mentorships.map(mentorship => (
+                    {(mentorships ?? []).map(mentorship => (
                       <div key={mentorship.id} className="p-3 sm:p-4 border rounded-lg">
                         <h4 className="font-semibold mb-3 text-sm sm:text-base">{mentorship.intern?.full_name}</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
