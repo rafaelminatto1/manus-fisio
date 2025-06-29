@@ -191,7 +191,7 @@ export default function TeamPage() {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Mentorias Ativas</p>
-                <p className="text-lg sm:text-2xl font-bold">{(mentorships || []).filter(m => m.status === 'active').length}</p>
+                <p className="text-lg sm:text-2xl font-bold">{(mentorships ?? []).filter(m => m.status === 'active').length}</p>
               </div>
               <UserCheck className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex-shrink-0" />
             </div>
@@ -204,8 +204,8 @@ export default function TeamPage() {
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Taxa Conclusão</p>
                 <p className="text-lg sm:text-2xl font-bold">
-                  {(mentorships || []).length > 0 ? Math.round(
-                    (mentorships || []).reduce((acc, m) => acc + getProgressPercentage(m), 0) / (mentorships || []).length
+                  {(mentorships ?? []).length > 0 ? Math.round(
+                    (mentorships ?? []).reduce((acc, m) => acc + getProgressPercentage(m), 0) / (mentorships ?? []).length
                   ) : 0}%
                 </p>
               </div>
@@ -223,7 +223,7 @@ export default function TeamPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3 sm:space-y-4">
-            {(mentorships || []).filter(m => m.status === 'active').map(mentorship => (
+            {(mentorships ?? []).filter(m => m.status === 'active').map(mentorship => (
               <div key={mentorship.id} className="p-3 sm:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                    onClick={() => setSelectedMentorship(mentorship)}>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -264,7 +264,7 @@ export default function TeamPage() {
               </div>
             ))}
             
-            {(mentorships || []).filter(m => m.status === 'active').length === 0 && (
+            {(mentorships ?? []).filter(m => m.status === 'active').length === 0 && (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">Nenhuma mentoria ativa encontrada</p>
@@ -592,7 +592,7 @@ export default function TeamPage() {
                         <p className="text-xs sm:text-sm"><strong>Email:</strong> <span className="break-all">{mentor.email}</span></p>
                         <div className="pt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {mentorships.filter(m => m.mentor_id === mentor.id && m.status === 'active').length} estagiários ativos
+                            {(mentorships ?? []).filter(m => m.mentor_id === mentor.id && m.status === 'active').length} estagiários ativos
                           </Badge>
                         </div>
                       </div>
