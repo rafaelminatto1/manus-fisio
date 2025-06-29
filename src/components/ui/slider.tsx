@@ -25,7 +25,9 @@ export function Slider({
     onValueChange([newValue])
   }
 
-  const percentage = ((value[0] - min) / (max - min)) * 100
+  const percentage = (Array.isArray(value) && typeof value[0] === 'number')
+    ? ((value[0] - min) / (max - min)) * 100
+    : 0
 
   return (
     <div className={cn("relative w-full", className)}>
