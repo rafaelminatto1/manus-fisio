@@ -211,7 +211,8 @@ export function useAddProgressNoteMutation() {
 
   return useMutation<ProgressNote, Error, AddProgressNoteInput>({
     mutationFn: async (newNoteData) => {
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -220,8 +221,8 @@ export function useAddProgressNoteMutation() {
       if (isMockMode) {
         const mockNote: ProgressNote = {
           id: Date.now().toString(),
-          date: new Date().toISOString().split('T')[0],
-          created_by: user.id,
+          date: new Date().toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'),
+          created_by: user.id || 'unknown',
           ...newNoteData,
         };
         // Invalidate mentorships query to simulate update
@@ -229,18 +230,18 @@ export function useAddProgressNoteMutation() {
         return mockNote;
       }
 
-      const { data, error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('progress_notes') // Assumindo uma tabela 'progress_notes'
         .insert({
           ...newNoteData,
-          created_by: user.id,
-          date: new Date().toISOString().split('T')[0],
+          created_by: user.id || 'unknown',
+          date: new Date().toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'),
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data as ProgressNote;
+      return insertData as ProgressNote;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentorships'] });
@@ -277,7 +278,8 @@ export function useUpsertCompetencyMutation() {
 
   return useMutation<CompetencyEvaluation, Error, UpdateCompetencyInput | CreateCompetencyInput>({
     mutationFn: async (data) => {
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -287,7 +289,7 @@ export function useUpsertCompetencyMutation() {
           id: (data as UpdateCompetencyInput).competency_id || Date.now().toString(),
           competency: data.competency,
           level: data.level,
-          evaluation_date: new Date().toISOString().split('T')[0],
+          evaluation_date: new Date().toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'),
           notes: data.notes,
         };
         queryClient.invalidateQueries({ queryKey: ['mentorships'] });
@@ -314,7 +316,7 @@ export function useUpsertCompetencyMutation() {
           .insert({
             ...createData,
             mentorship_id: mentorship_id, // Associar à mentoria
-            evaluation_date: new Date().toISOString().split('T')[0],
+            evaluation_date: new Date().toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'),
           })
           .select()
           .single();

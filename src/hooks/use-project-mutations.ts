@@ -24,6 +24,7 @@ interface UpdateProjectInput {
   budget?: number;
   category?: Project['category'];
   tags?: string[];
+  progress?: number;
 }
 
 export function useCreateProjectMutation() {
@@ -35,7 +36,8 @@ export function useCreateProjectMutation() {
 
   return useMutation<Project, Error, CreateProjectInput>({
     mutationFn: async (newProjectData) => {
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -54,7 +56,7 @@ export function useCreateProjectMutation() {
         return mockProject;
       }
 
-      const { data, error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('projects')
         .insert({
           ...newProjectData,
@@ -64,7 +66,7 @@ export function useCreateProjectMutation() {
         .single();
 
       if (error) throw error;
-      return data as Project;
+      return insertData as Project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -87,7 +89,8 @@ export function useUpdateProjectMutation() {
   return useMutation<Project, Error, UpdateProjectInput>({
     mutationFn: async (updatedProjectData) => {
       const { id, ...dataToUpdate } = updatedProjectData;
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -97,7 +100,7 @@ export function useUpdateProjectMutation() {
         const mockProject: Project = {
           id: id,
           title: dataToUpdate.title || 'Mock Project',
-          description: dataToUpdate.description || null,
+          description: dataToUpdate.description || undefined,
           status: dataToUpdate.status || 'active',
           priority: dataToUpdate.priority || 'medium',
           due_date: dataToUpdate.due_date || undefined,
@@ -112,7 +115,7 @@ export function useUpdateProjectMutation() {
         return mockProject;
       }
 
-      const { data, error } = await supabase
+      const { data: updateData, error } = await supabase
         .from('projects')
         .update(dataToUpdate)
         .eq('id', id)
@@ -120,7 +123,7 @@ export function useUpdateProjectMutation() {
         .single();
 
       if (error) throw error;
-      return data as Project;
+      return updateData as Project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -171,7 +174,8 @@ export function useCreateTaskMutation() {
 
   return useMutation<Task, Error, CreateTaskInput>({
     mutationFn: async (newTaskData) => {
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -190,7 +194,7 @@ export function useCreateTaskMutation() {
         return mockTask;
       }
 
-      const { data, error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('tasks')
         .insert({
           ...newTaskData,
@@ -200,7 +204,7 @@ export function useCreateTaskMutation() {
         .single();
 
       if (error) throw error;
-      return data as Task;
+      return insertData as Task;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -224,7 +228,8 @@ export function useUpdateTaskMutation() {
   return useMutation<Task, Error, UpdateTaskInput>({
     mutationFn: async (updatedTaskData) => {
       const { id, ...dataToUpdate } = updatedTaskData;
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -234,7 +239,7 @@ export function useUpdateTaskMutation() {
         const mockTask: Task = {
           id: id,
           title: dataToUpdate.title || 'Mock Task',
-          description: dataToUpdate.description || null,
+          description: dataToUpdate.description || undefined,
           status: dataToUpdate.status || 'todo',
           priority: dataToUpdate.priority || 'medium',
           assigned_to: dataToUpdate.assigned_to || undefined,
@@ -250,7 +255,7 @@ export function useUpdateTaskMutation() {
         return mockTask;
       }
 
-      const { data, error } = await supabase
+      const { data: updateData, error } = await supabase
         .from('tasks')
         .update({
           ...dataToUpdate,
@@ -261,7 +266,7 @@ export function useUpdateTaskMutation() {
         .single();
 
       if (error) throw error;
-      return data as Task;
+      return updateData as Task;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

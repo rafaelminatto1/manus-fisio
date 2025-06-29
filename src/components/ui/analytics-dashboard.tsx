@@ -537,15 +537,15 @@ export function useSystemMetrics() {
       const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
       const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-      const projectsThisMonth = projects?.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length || 0
-      const tasksCompletedThisWeek = tasks?.filter(t => 
+            const projectsThisMonth = projects?.filter((p: any) => new Date(p.created_at) >= thirtyDaysAgo).length || 0
+      const tasksCompletedThisWeek = tasks?.filter((t: any) =>
         t.completed_at && new Date(t.completed_at) >= sevenDaysAgo
       ).length || 0
       
       const completionRate = tasks?.length ? 
-        ((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100).toFixed(1) : '0'
+        ((tasks.filter((t: any) => t.status === 'completed').length / tasks.length) * 100).toFixed(1) : '0'
 
-      const eventsThisWeek = events?.filter(e => 
+      const eventsThisWeek = events?.filter((e: any) => 
         new Date(e.start_time) >= sevenDaysAgo
       ).length || 0
 
@@ -554,12 +554,12 @@ export function useSystemMetrics() {
         totalNotebooks: notebooks?.length || 0,
         totalTasks: tasks?.length || 0,
         totalEvents: events?.length || 0,
-        completedTasks: tasks?.filter(t => t.status === 'completed').length || 0,
+        completedTasks: tasks?.filter((t: any) => t.status === 'completed').length || 0,
         projectsThisMonth,
         tasksCompletedThisWeek,
         eventsThisWeek,
         completionRate: parseFloat(completionRate),
-        unreadNotifications: notifications?.filter(n => !n.read).length || 0,
+        unreadNotifications: notifications?.filter((n: any) => !n.read).length || 0,
         productivity: {
           tasksPerDay: tasksCompletedThisWeek / 7,
           projectsPerMonth: projectsThisMonth,
@@ -603,12 +603,12 @@ export function useAnalyticsChartData() {
         weekEnd.setDate(weekEnd.getDate() + 6)
         weekEnd.setHours(23, 59, 59, 999)
 
-        const weekTasks = tasks?.filter(task => {
+        const weekTasks = tasks?.filter((task: any) => {
           const taskDate = new Date(task.created_at)
           return taskDate >= weekStart && taskDate <= weekEnd
         }) || []
 
-        const completedTasks = tasks?.filter(task => {
+        const completedTasks = tasks?.filter((task: any) => {
           if (!task.completed_at) return false
           const completedDate = new Date(task.completed_at)
           return completedDate >= weekStart && completedDate <= weekEnd
@@ -625,10 +625,10 @@ export function useAnalyticsChartData() {
       return {
         weeklyTasks: weeklyData,
         statusDistribution: [
-          { name: 'Pendentes', value: tasks?.filter(t => t.status === 'todo').length || 0 },
-          { name: 'Em Progresso', value: tasks?.filter(t => t.status === 'in_progress').length || 0 },
-          { name: 'Concluídas', value: tasks?.filter(t => t.status === 'completed').length || 0 },
-          { name: 'Canceladas', value: tasks?.filter(t => t.status === 'cancelled').length || 0 }
+          { name: 'Pendentes', value: tasks?.filter((t: any) => t.status === 'todo').length || 0 },
+          { name: 'Em Progresso', value: tasks?.filter((t: any) => t.status === 'in_progress').length || 0 },
+          { name: 'Concluídas', value: tasks?.filter((t: any) => t.status === 'completed').length || 0 },
+          { name: 'Canceladas', value: tasks?.filter((t: any) => t.status === 'cancelled').length || 0 }
         ]
       }
     },

@@ -262,8 +262,8 @@ export function useUpdateNotificationSettings() {
 
 // Hook para notificações em tempo real
 export function useRealtimeNotifications() {
-  const queryClient = useQueryClient()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
   React.useEffect(() => {
     if (!user) return
@@ -271,7 +271,7 @@ export function useRealtimeNotifications() {
     const channel = supabase
       .channel('notifications_changes')
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',
@@ -435,18 +435,18 @@ export function useNotificationStats() {
       if (error) throw error
 
       const total = data.length
-      const unread = data.filter((n: Notification) => !n.read).length
-      const today = data.filter((n: Notification) => 
+      const unread = data.filter((n: { read: boolean }) => !n.read).length
+      const today = data.filter((n: { created_at: string }) => 
         new Date(n.created_at).toDateString() === new Date().toDateString()
       ).length
-      const thisWeek = data.filter((n: Notification) => {
+      const thisWeek = data.filter((n: { created_at: string }) => {
         const notificationDate = new Date(n.created_at)
         const weekAgo = new Date()
         weekAgo.setDate(weekAgo.getDate() - 7)
         return notificationDate >= weekAgo
       }).length
 
-      const byType = data.reduce((acc: Record<string, number>, notification: Notification) => {
+      const byType = data.reduce((acc: Record<string, number>, notification: { type: string }) => {
         acc[notification.type] = (acc[notification.type] || 0) + 1
         return acc
       }, {})

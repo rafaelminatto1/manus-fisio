@@ -40,7 +40,8 @@ export function useCommentsQuery(documentId: string) {
 
       const { data, error } = await supabase
         .from('comments')
-        .select(`
+        .select(`siga
+          
           *,
           user:users(full_name, avatar_url)
         `)
@@ -177,24 +178,24 @@ export function useActiveUsersSubscription(documentId: string) {
       .on(
         'presence',
         { event: 'join' },
-        ({ newPresences }) => {
+        ({ newPresences }: { newPresences: any[] }) => {
           const newState = channel.presenceState();
           const activeUsers = Object.values(newState).flatMap((users: any) => users.map((u: any) => u.user));
           queryClient.setQueryData(['active-users', documentId], activeUsers);
-          newPresences.forEach(p => toast.info(`${p.user.name} entrou na colaboração.`));
+          newPresences.forEach((p: any) => toast.info(`${p.user.name} entrou na colaboração.`));
         }
       )
       .on(
         'presence',
         { event: 'leave' },
-        ({ leftPresences }) => {
+        ({ leftPresences }: { leftPresences: any[] }) => {
           const newState = channel.presenceState();
           const activeUsers = Object.values(newState).flatMap((users: any) => users.map((u: any) => u.user));
           queryClient.setQueryData(['active-users', documentId], activeUsers);
-          leftPresences.forEach(p => toast.info(`${p.user.name} saiu da colaboração.`));
+          leftPresences.forEach((p: any) => toast.info(`${p.user.name} saiu da colaboração.`));
         }
       )
-      .subscribe(async (status) => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ user: { id: user.id, name: user.full_name || user.email } });
         }

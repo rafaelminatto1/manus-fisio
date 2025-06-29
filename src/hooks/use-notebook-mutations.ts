@@ -51,7 +51,8 @@ export function useCreateNotebookMutation() {
 
   return useMutation<Notebook, Error, CreateNotebookInput>({
     mutationFn: async (newNotebookData) => {
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -68,13 +69,13 @@ export function useCreateNotebookMutation() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           owner_id: user.id,
-          owner: { full_name: user.email || 'Mock User' },
+          owner: { full_name: user.email || 'Mock User', email: user.email || 'mock@example.com' },
           is_public: newNotebookData.is_public || false,
         };
         return mockNotebook;
       }
 
-      const { data, error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('notebooks')
         .insert({
           ...newNotebookData,
@@ -85,7 +86,7 @@ export function useCreateNotebookMutation() {
         .single();
 
       if (error) throw error;
-      return data as Notebook;
+      return insertData as Notebook;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notebooks'] });
@@ -107,7 +108,8 @@ export function useUpdateNotebookMutation() {
   return useMutation<Notebook, Error, UpdateNotebookInput>({
     mutationFn: async (updatedNotebookData) => {
       const { id, ...dataToUpdate } = updatedNotebookData;
-      const { data: { user } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -125,13 +127,13 @@ export function useUpdateNotebookMutation() {
           created_at: new Date().toISOString(), // Manter o original em um cenário real
           updated_at: new Date().toISOString(),
           owner_id: user.id,
-          owner: { full_name: user.email || 'Mock User' },
+          owner: { full_name: user.email || 'Mock User', email: user.email || 'mock@example.com' },
           is_public: dataToUpdate.is_public || false,
         };
         return mockNotebook;
       }
 
-      const { data, error } = await supabase
+      const { data: updateData, error } = await supabase
         .from('notebooks')
         .update({
           ...dataToUpdate,
@@ -143,7 +145,7 @@ export function useUpdateNotebookMutation() {
         .single();
 
       if (error) throw error;
-      return data as Notebook;
+      return updateData as Notebook;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notebooks'] });

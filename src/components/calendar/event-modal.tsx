@@ -34,6 +34,15 @@ import {
   CreateEventData,
 } from '@/hooks/use-calendar-events'
 
+// User interface for typing
+interface User {
+  id: string
+  full_name: string
+  email: string
+  role: string
+  avatar_url?: string
+}
+
 // Schema de validação
 const eventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -133,8 +142,8 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
   }
 
   const selectedAttendees = form.watch('attendees')
-  const selectedUsers = users.filter((user: any) => selectedAttendees.includes(user.id))
-  const availableUsers = users.filter((user: any) => !selectedAttendees.includes(user.id))
+  const selectedUsers = users.filter((user: User) => selectedAttendees.includes(user.id))
+  const availableUsers = users.filter((user: User) => !selectedAttendees.includes(user.id))
 
   const eventTypeLabels = {
     appointment: 'Consulta',
@@ -270,7 +279,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Participantes selecionados:</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedUsers.map((user: any) => (
+                  {selectedUsers.map((user: User) => (
                     <Badge
                       key={user.id}
                       variant="secondary"
@@ -303,7 +312,7 @@ export function EventModal({ open, onClose, event }: EventModalProps) {
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Adicionar participantes:</p>
                 <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
-                  {availableUsers.map((user) => (
+                  {availableUsers.map((user: User) => (
                     <div
                       key={user.id}
                       className="flex items-center gap-2 p-2 hover:bg-muted rounded-md cursor-pointer"

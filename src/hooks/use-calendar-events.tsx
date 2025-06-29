@@ -229,7 +229,7 @@ export function useRealtimeEvents() {
           schema: 'public',
           table: 'calendar_events',
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Calendar event change:', payload)
           queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
         }
@@ -266,11 +266,11 @@ export function useEventStats() {
 
       const stats = {
         total: data.length,
-        byType: data.reduce((acc, event) => {
+        byType: data.reduce((acc: Record<string, number>, event: any) => {
           acc[event.event_type] = (acc[event.event_type] || 0) + 1
           return acc
         }, {} as Record<string, number>),
-        thisWeek: data.filter(event => {
+        thisWeek: data.filter((event: any) => {
           const eventDate = new Date(event.start_time)
           const weekStart = new Date(now)
           weekStart.setDate(now.getDate() - now.getDay())

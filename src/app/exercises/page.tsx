@@ -113,7 +113,7 @@ export default function ExercisesPage() {
       case 'edit':
         return (
           <ExerciseForm
-            exercise={selectedExercise}
+            exercise={selectedExercise || undefined}
             onSave={handleSaveExercise}
             onCancel={handleCancel}
             loading={loading}

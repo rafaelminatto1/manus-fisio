@@ -90,11 +90,11 @@ export function useSystemMetrics() {
         .gte('last_login_at', subDays(new Date(), 30).toISOString()); // Usuários ativos nos últimos 30 dias
       const activeUsers = activeUsersResult?.length || 0;
       const totalProjects = projectsResult.data?.length || 0
-      const completedProjects = projectsResult.data?.filter(p => p.status === 'completed').length || 0
+      const completedProjects = projectsResult.data?.filter((p: any) => p.status === 'completed').length || 0
       const totalNotebooks = notebooksResult.data?.length || 0
       const totalEvents = eventsResult.data?.length || 0
       const totalNotifications = notificationsResult.data?.length || 0
-      const unreadNotifications = notificationsResult.data?.filter(n => !n.read).length || 0
+      const unreadNotifications = notificationsResult.data?.filter((n: any) => !n.read).length || 0
 
       return {
         totalUsers,
@@ -128,13 +128,13 @@ export function useTeamMetrics() {
       const mentorshipsData = mentorshipsResult || []
 
       const totalMembers = usersData.length
-      const mentors = usersData.filter(u => u.role === 'mentor').length
-      const interns = usersData.filter(u => u.role === 'intern').length
+      const mentors = usersData.filter((u: any) => u.role === 'mentor').length
+      const interns = usersData.filter((u: any) => u.role === 'intern').length
       
-      const activeMentorships = mentorshipsData.filter(m => m.status === 'active').length
+      const activeMentorships = mentorshipsData.filter((m: any) => m.status === 'active').length
       
-      const totalHoursCompleted = mentorshipsData.reduce((sum, m) => sum + m.hours_completed, 0)
-      const totalHoursRequired = mentorshipsData.reduce((sum, m) => sum + m.hours_required, 0)
+      const totalHoursCompleted = mentorshipsData.reduce((sum: any, m: any) => sum + m.hours_completed, 0)
+      const totalHoursRequired = mentorshipsData.reduce((sum: any, m: any) => sum + m.hours_required, 0)
 
       const averageHoursPerMentorship = mentorshipsData.length > 0 
         ? parseFloat((totalHoursCompleted / mentorshipsData.length).toFixed(1))
@@ -174,13 +174,13 @@ export function useProjectAnalytics() {
       if (!projects) throw new Error('Failed to fetch projects')
 
       const totalProjects = projects.length
-      const activeProjects = projects.filter(p => p.status === 'active').length
-      const completedProjects = projects.filter(p => p.status === 'completed').length
-      const onHoldProjects = projects.filter(p => p.status === 'on_hold').length
-      const cancelledProjects = projects.filter(p => p.status === 'cancelled').length
+      const activeProjects = projects.filter((p: any) => p.status === 'active').length
+      const completedProjects = projects.filter((p: any) => p.status === 'completed').length
+      const onHoldProjects = projects.filter((p: any) => p.status === 'on_hold').length
+      const cancelledProjects = projects.filter((p: any) => p.status === 'cancelled').length
 
-      const completedProjectsData = projects.filter(p => p.status === 'completed' && p.created_at);
-      const totalCompletionTime = completedProjectsData.reduce((sum, p) => {
+      const completedProjectsData = projects.filter((p: any) => p.status === 'completed' && p.created_at);
+      const totalCompletionTime = completedProjectsData.reduce((sum: any, p: any) => {
         const created = new Date(p.created_at).getTime();
         const updated = p.updated_at ? new Date(p.updated_at).getTime() : created;
         return sum + (updated - created); // Diferença em milissegundos
@@ -191,13 +191,13 @@ export function useProjectAnalytics() {
         : 0; // dias
 
       // Agrupar por prioridade
-      const projectsByPriority = projects.reduce((acc, p) => {
+      const projectsByPriority = projects.reduce((acc: any, p: any) => {
         acc[p.priority || 'medium'] = (acc[p.priority || 'medium'] || 0) + 1
         return acc
       }, {} as Record<string, number>)
 
       // Agrupar por status
-      const projectsByStatus = projects.reduce((acc, p) => {
+      const projectsByStatus = projects.reduce((acc: any, p: any) => {
         acc[p.status || 'planning'] = (acc[p.status || 'planning'] || 0) + 1
         return acc
       }, {} as Record<string, number>)
@@ -269,22 +269,22 @@ export function useActivityData(period: 'week' | 'month' = 'week') {
         const dayEnd = new Date(date)
         dayEnd.setHours(23, 59, 59, 999)
 
-        const notebooks = (notebooksResult.data || []).filter(n => {
+        const notebooks = (notebooksResult.data || []).filter((n: any) => {
           const created = new Date(n.created_at)
           return created >= dayStart && created <= dayEnd
         }).length
 
-        const projects = (projectsResult.data || []).filter(p => {
+        const projects = (projectsResult.data || []).filter((p: any) => {
           const created = new Date(p.created_at)
           return created >= dayStart && created <= dayEnd
         }).length
 
-        const events = (eventsResult.data || []).filter(e => {
+        const events = (eventsResult.data || []).filter((e: any) => {
           const created = new Date(e.created_at)
           return created >= dayStart && created <= dayEnd
         }).length
 
-        const notifications = (notificationsResult.data || []).filter(n => {
+        const notifications = (notificationsResult.data || []).filter((n: any) => {
           const created = new Date(n.created_at)
           return created >= dayStart && created <= dayEnd
         }).length
@@ -329,11 +329,11 @@ export function useUserActivity() {
       const events = eventsResult.data || []
       const completedTasks = tasksCompletedResult.data || []
 
-      const userActivity: UserActivity[] = users.map(userData => {
-        const userNotebooks = notebooks.filter(n => n.created_by === userData.id)
-        const userProjects = projects.filter(p => p.created_by === userData.id)
-        const userEvents = events.filter(e => e.created_by === userData.id)
-        const userCompletedTasks = completedTasks.filter(t => t.assigned_to === userData.id).length
+      const userActivity: UserActivity[] = users.map((userData: any) => {
+        const userNotebooks = notebooks.filter((n: any) => n.created_by === userData.id)
+        const userProjects = projects.filter((p: any) => p.created_by === userData.id)
+        const userEvents = events.filter((e: any) => e.created_by === userData.id)
+        const userCompletedTasks = completedTasks.filter((t: any) => t.assigned_to === userData.id).length
 
         const activityScore = userNotebooks.length * 2 + userProjects.length * 5 + userEvents.length * 1 + userCompletedTasks * 3
 

@@ -60,7 +60,9 @@ const createMockSupabaseClient = () => {
 // Este arquivo fornece um cliente mock quando as credenciais não estão disponíveis
 
 // Re-exportar o cliente do auth.ts
-export const supabase = authClient()
+export const supabase = hasValidCredentials() 
+  ? authClient<Database>(supabaseUrl!, supabaseAnonKey!)
+  : createMockSupabaseClient()
 
 // Mock de dados para desenvolvimento
 const mockData = {

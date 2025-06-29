@@ -290,13 +290,19 @@ export function validateCNPJ(cnpj: string): boolean {
   
   let sum = 0;
   for (let i = 0; i < 12; i++) {
-    sum += parseInt(cnpj.charAt(i)) * weights1[i];
+    const weight = weights1[i];
+    if (weight !== undefined) {
+      sum += parseInt(cnpj.charAt(i)) * weight;
+    }
   }
   let digit1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
   
   sum = 0;
   for (let i = 0; i < 13; i++) {
-    sum += parseInt(cnpj.charAt(i)) * weights2[i];
+    const weight = weights2[i];
+    if (weight !== undefined) {
+      sum += parseInt(cnpj.charAt(i)) * weight;
+    }
   }
   let digit2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
   

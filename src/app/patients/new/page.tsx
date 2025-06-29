@@ -21,7 +21,7 @@ const patientFormSchema = z.object({
   email: z.string().email('Email inválido.').optional(),
 });
 
-type PatientFormValues = z.infer<typeof patientFormSchema>;
+export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
 export default function NewPatientPage() {
   const router = useRouter();
