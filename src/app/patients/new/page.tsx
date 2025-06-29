@@ -1,230 +1,106 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-
-import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/components/ui/use-toast'
-import { ArrowLeft } from 'lucide-react'
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useNotifications } from '@/hooks/use-notifications';
+import { createPatient } from '@/lib/api';
 
 const patientFormSchema = z.object({
-  full_name: z.string().min(3, {
-    message: 'O nome completo deve ter pelo menos 3 caracteres.',
-  }),
-  birth_date: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Por favor, insira uma data de nascimento válida.',
-  }),
-  gender: z.string({
-    required_error: 'Por favor, selecione o gênero.',
+  full_name: z.string().min(3, 'O nome completo é obrigatório.'),
+  birth_date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Data de nascimento inválida.',
   }),
   cpf: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email({ message: 'Por favor, insira um email válido.' }).optional(),
-  address: z.string().optional(),
-})
+  email: z.string().email('Email inválido.').optional(),
+});
 
-type PatientFormValues = z.infer<typeof patientFormSchema>
+type PatientFormValues = z.infer<typeof patientFormSchema>;
 
 export default function NewPatientPage() {
-    const router = useRouter()
-    const { toast } = useToast()
-    
-  const form = useForm<PatientFormValues>({
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { addNotification } = useNotifications();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
-    defaultValues: {
-        full_name: '',
-        birth_date: '',
-        gender: undefined,
-        cpf: '',
-        phone: '',
-        email: '',
-        address: ''
+  });
+
+  const mutation = useMutation({
+    mutationFn: createPatient,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      addNotification({
+        title: 'Sucesso!',
+        message: 'Paciente criado com sucesso.',
+        type: 'success',
+      });
+      router.push('/patients');
     },
-  })
+    onError: (error) => {
+      addNotification({
+        title: 'Erro!',
+        message: 'Não foi possível criar o paciente. ' + error.message,
+        type: 'error',
+      });
+    },
+  });
 
-  async function onSubmit(data: PatientFormValues) {
-    try {
-        const response = await fetch('/api/patients', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-            throw new Error('Falha ao criar o paciente. Tente novamente.')
-        }
-
-        toast({
-            title: "Sucesso!",
-            description: "Novo paciente adicionado com sucesso.",
-        })
-        
-        router.push('/patients')
-
-    } catch (error: any) {
-        toast({
-            title: "Erro",
-            description: error.message || "Ocorreu um erro inesperado.",
-            variant: "destructive"
-        })
-    }
-  }
+  const onSubmit = (data: PatientFormValues) => {
+    mutation.mutate(data);
+  };
 
   return (
-    <div className="space-y-4">
-       <Link href="/patients" className="flex items-center text-sm text-muted-foreground hover:underline">
-           <ArrowLeft className="mr-2 h-4 w-4" />
-           Voltar para a lista de pacientes
-       </Link>
-      <Card>
-        <CardHeader>
-          <CardTitle>Adicionar Novo Paciente</CardTitle>
-          <CardDescription>
-            Preencha os detalhes abaixo para cadastrar um novo paciente no sistema.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FormField
-                  control={form.control}
-                  name="full_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: João da Silva" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="birth_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Nascimento</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="gender"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Gênero</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione o gênero" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Masculino">Masculino</SelectItem>
-                            <SelectItem value="Feminino">Feminino</SelectItem>
-                            <SelectItem value="Outro">Outro</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cpf"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CPF (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="000.000.000-00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefone (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="(00) 90000-0000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="exemplo@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-               <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Rua, Número, Bairro, Cidade - Estado" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <div className="container mx-auto py-10">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold">Novo Paciente</h1>
+        <p className="text-muted-foreground">Preencha os dados para cadastrar um novo paciente.</p>
+      </header>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+        <div className="space-y-2">
+          <Label htmlFor="full_name">Nome Completo</Label>
+          <Input id="full_name" {...register('full_name')} />
+          {errors.full_name && <p className="text-red-500 text-sm">{errors.full_name.message}</p>}
+        </div>
 
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Salvando...' : 'Salvar Paciente'}
-                </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+        <div className="space-y-2">
+          <Label htmlFor="birth_date">Data de Nascimento</Label>
+          <Input id="birth_date" type="date" {...register('birth_date')} />
+          {errors.birth_date && <p className="text-red-500 text-sm">{errors.birth_date.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cpf">CPF (Opcional)</Label>
+          <Input id="cpf" {...register('cpf')} />
+          {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Telefone (Opcional)</Label>
+          <Input id="phone" {...register('phone')} />
+          {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email (Opcional)</Label>
+          <Input id="email" type="email" {...register('email')} />
+          {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+        </div>
+
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Salvando...' : 'Salvar Paciente'}
+        </Button>
+      </form>
     </div>
-  )
-} 
+  );
+}
