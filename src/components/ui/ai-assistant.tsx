@@ -366,9 +366,10 @@ export function AIAssistant({
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
-                          code({node, inline, className, children, ...props}) {
+                          code({node, className, children, ...props}) {
                             const match = /language-(\w+)/.exec(className || '')
-                            return !inline && match ? (
+                            const isInline = !(className && /language-/.test(className));
+                            return !isInline && match ? (
                               <SyntaxHighlighter
                                 style={atomOneDark}
                                 language={match[1]}
