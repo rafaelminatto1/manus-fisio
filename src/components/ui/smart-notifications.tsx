@@ -550,7 +550,7 @@ export function NotificationSettings() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className={className}>
+        <Button variant="ghost" size="sm" className={typeof className === 'string' ? className : ''}>
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
