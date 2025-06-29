@@ -301,7 +301,7 @@ export function useScrollReveal(threshold = 0.1, triggerOnce = true) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry && entry.isIntersecting) {
           setIsVisible(true)
           if (triggerOnce) {
             observer.unobserve(ref)
@@ -344,7 +344,7 @@ export function useCountAnimation(
       springValue.start(target, {
         config: { duration },
         onChange: (value) => {
-          setCount(Math.floor(value.get()))
+          setCount(Math.floor(value))
         }
       })
     }
