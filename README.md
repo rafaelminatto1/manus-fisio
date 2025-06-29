@@ -1,213 +1,99 @@
-# 🏥 Manus Fisio - Sistema de Gestão Clínica
+# Sistema de Gestão para Clínica de Fisioterapia
 
-Sistema integrado de gestão para clínicas de fisioterapia com funcionalidades de supervisão de estagiários, colaboração em tempo real e conformidade LGPD.
+![Vercel](https://therealsujitk-vercel-badge.vercel.app/?app=manus-fisio-git-master-rafaelminatto1&style=for-the-badge)
 
-## ✅ Status Atual: SISTEMA FUNCIONAL
+Um sistema completo de gestão para clínicas de fisioterapia, inspirado no Lumi Dashboard e construído com as mais modernas tecnologias web. O objetivo é fornecer uma solução integrada para gestão de pacientes, agendamentos, exercícios, finanças e automação com IA.
 
-**Build Status**: ✅ Sucesso  
-**Dev Server**: ✅ Funcionando  
-**Páginas**: 5 páginas principais implementadas  
-**Tema**: Dark mode profissional completo  
+Este projeto é desenvolvido seguindo as diretrizes do documento `prompt_final_sistema_fisioterapia.md`.
 
-## 🚀 Funcionalidades Implementadas
+## 🚀 Stack Tecnológico
 
-### 📊 Dashboard Principal
-- Cards de estatísticas em tempo real
-- Atividades recentes da equipe
-- Próximos eventos e supervisões
-- Ações rápidas para criação de conteúdo
-- Visão geral do sistema
+- **Frontend**: [Next.js](https://nextjs.org/) 15+, [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/)
+- **Backend & Banco de Dados**: [Supabase](https://supabase.io/) (PostgreSQL, Auth, Realtime, Storage)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Gestão de Estado (Client-side)**: [TanStack Query](https://tanstack.com/query/latest) (React Query)
+- **Deployment**: [Vercel](https://vercel.com/)
+- **Validação de Formulários**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
 
-### 📚 Sistema de Notebooks
-- Organização hierárquica (Notebooks → Páginas → Sub-páginas)
-- Categorização por especialidades (Protocolos, Neurológica, Ortopédica, etc.)
-- Sistema de colaboradores com avatars
-- Filtros por categoria e visibilidade
-- Estatísticas de uso e modificações
+## 📦 Módulos Funcionais
 
-### 🎯 Gestão de Projetos (Kanban)
-- Board estilo Linear/Monday.com
-- Colunas de status: Planejamento, Ativo, Em Espera, Concluído
-- Cards com progresso visual e prioridades
-- Sistema de assignees e colaboradores
-- Filtros avançados e busca
+O sistema é dividido nos seguintes módulos principais:
 
-### 👥 Gestão de Equipe (Mentor-Intern)
-- Cards diferenciados para mentores e estagiários
-- Progresso de horas de estágio
-- Sistema de supervisões e avaliações
-- Estatísticas da equipe completas
-- Gestão de competências
+1.  **Gestão de Pacientes e Prontuários Eletrônicos:** Cadastro completo, prontuário eletrônico específico para fisioterapia e documentação legal.
+2.  **Biblioteca de Exercícios e Prescrição:** Organização por especialidades, vídeos demonstrativos e prescrição personalizada com envio via WhatsApp.
+3.  **Agendamento e Gestão de Consultas:** Calendário inteligente, agendamento online e gestão completa de consultas.
+4.  **Área do Paciente (Portal Web/Mobile):** Dashboard do paciente, acompanhamento de exercícios e comunicação com o fisioterapeuta.
+5.  **Gestão de Tarefas (Estilo Trello):** Quadro Kanban para tarefas clínicas e administrativas.
+6.  **Inteligência Artificial e Automação:** Sugestões de exercícios, análise preditiva e assistente de documentação.
+7.  **Sistema Financeiro e Marketing:** Gestão de pagamentos, recibos e ferramentas de marketing.
+8.  **Relatórios e Analytics:** Dashboards interativos com relatórios clínicos e gerenciais.
 
-### 📅 Calendário de Supervisões
-- Vista mensal com eventos coloridos
-- Tipos de eventos: Supervisão, Avaliação, Reunião, Workshop
-- Sidebar com eventos do dia
-- Agendamento e gestão de conflitos
-- Filtros por tipo e participante
+## 🗺️ Roadmap de Desenvolvimento
 
-### 🧭 Navegação e Layout
-- Sidebar responsiva e reutilizável
-- Layout dashboard compartilhado
-- Sistema de rotas funcional
-- Busca global (atalho ⌘K)
-- Perfil de usuário integrado
+O desenvolvimento segue o seguinte roadmap:
 
-## 🛠️ Stack Tecnológica
+-   **✅ Fase 1 - MVP (Concluído)**
+    -   [x] Cadastro de pacientes e prontuários básicos
+    -   [x] Agendamento simples
+    -   [x] Biblioteca básica de exercícios
+    -   [x] Sistema de login e permissões
+    -   [x] Interface responsiva básica
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Lucide Icons, Radix UI
-- **Backend**: Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **Deployment**: Vercel (configurado)
-- **Estado**: React Query/TanStack Query (próxima fase)
-- **Formulários**: React Hook Form + Zod (próxima fase)
+-   **🔄 Fase 2 - Funcionalidades Avançadas (Em Andamento)**
+    -   [ ] Área do paciente completa
+    -   [ ] Sistema de tarefas estilo Kanban
+    -   [ ] Relatórios básicos
+    -   [ ] Integração com WhatsApp
+    -   [ ] Documentação legal automática
 
-## 🎨 Design System
+-   **▶️ Fase 3 - IA e Automação (Próxima Fase)**
+    -   [ ] Sistema de recomendação de exercícios
+    -   [ ] Análise preditiva de evolução
+    -   [ ] Automação de documentos
+    -   [ ] Analytics avançado
 
-### Tema Dark Profissional
-- Background principal: `#0f172a` (slate-900)
-- Cores médicas: Paleta azul-verde especializada
-- Sidebar com gradiente sutil
-- Cards com hover effects suaves
-- Tipografia otimizada (Inter font)
+-   **▶️ Fase 4 - Otimização e Escala (Futuro)**
+    -   [ ] Otimização de performance
+    -   [ ] Recursos avançados de IA
+    -   [ ] Suporte multi-clínica
 
-### Cores Específicas
-```css
---medical-50: #f0f9ff
---medical-500: #0ea5e9  
---medical-600: #0284c7
---success-500: #22c55e
---warning-500: #f59e0b
---error-500: #ef4444
-```
+## 🛠️ Como Rodar o Projeto Localmente
 
-## 📱 Interface Responsiva
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/rafaelminatto1/manus-fisio.git
+    cd manus-fisio
+    ```
 
-- Layouts adaptáveis para desktop, tablet e mobile
-- Componentes otimizados para touch
-- Sidebar colapsível em telas menores
-- Grid system flexível
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
 
-## 🚀 Como Executar
+3.  **Configure as variáveis de ambiente:**
+    - Renomeie o arquivo `.env.example` para `.env.local`.
+    - Preencha as variáveis com suas chaves do projeto Supabase:
+      ```env
+      NEXT_PUBLIC_SUPABASE_URL=SUA_URL_SUPABASE
+      NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_ANON
+      ```
 
-### Pré-requisitos
-- Node.js 18+ 
-- npm ou yarn
-- Conta Supabase (para funcionalidades completas)
+4.  **Execute o servidor de desenvolvimento:**
+    ```bash
+    npm run dev
+    ```
 
-### Instalação
-```bash
-# Clone o repositório
-git clone [repository-url]
-cd manus
+5.  Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
-# Instale as dependências
-npm install
+## 🔒 Segurança e Compliance (LGPD)
 
-# Configure as variáveis de ambiente
-cp env.example .env.local
-# Edite .env.local com suas credenciais Supabase
+O sistema é desenvolvido com foco na segurança e conformidade com a Lei Geral de Proteção de Dados (LGPD):
 
-# Execute o servidor de desenvolvimento
-npm run dev
-```
-
-### Build de Produção
-```bash
-# Gere o build otimizado
-npm run build
-
-# Execute o servidor de produção
-npm start
-```
-
-## 📁 Estrutura do Projeto
-
-```
-src/
-├── app/                    # App Router (Next.js 14)
-│   ├── page.tsx           # Dashboard principal
-│   ├── notebooks/         # Sistema de notebooks
-│   ├── projects/          # Gestão de projetos
-│   ├── team/              # Gestão de equipe
-│   ├── calendar/          # Calendário
-│   └── globals.css        # Estilos globais
-├── components/
-│   ├── ui/                # Componentes base (shadcn/ui)
-│   ├── layouts/           # Layouts compartilhados
-│   └── navigation/        # Componentes de navegação
-├── lib/
-│   ├── supabase.ts        # Cliente Supabase
-│   └── utils.ts           # Utilitários gerais
-└── types/
-    ├── database.ts        # Tipos do banco de dados
-    └── database.types.ts  # Tipos gerados Supabase
-```
-
-## 🔄 Próximas Fases
-
-### Fase 3: Features Avançadas
-- [ ] Editor rico de conteúdo (Tiptap/ProseMirror)
-- [ ] Sistema de autenticação completo
-- [ ] Colaboração em tempo real
-- [ ] Comentários e anotações
-- [ ] Notificações push
-
-### Fase 4: Produção
-- [ ] PWA com offline support
-- [ ] Testes automatizados
-- [ ] Monitoramento e analytics
-- [ ] Documentação completa
-- [ ] Deploy em produção
-
-## 🌟 Características Especiais
-
-### Para Fisioterapia
-- Terminologia médica específica
-- Campos CREFITO para fisioterapeutas
-- Validação de documentos brasileiros (CPF, CNPJ)
-- Protocolos específicos por especialidade
-- Sistema mentor-estagiário integrado
-
-### Conformidade LGPD
-- Audit trails completos
-- Criptografia de dados sensíveis
-- Controle de acesso granular
-- Relatórios de conformidade
-- Backup automático
-
-### Experiência do Usuário
-- Interface intuitiva e profissional
-- Navegação por atalhos de teclado
-- Feedback visual imediato
-- Estados de loading otimizados
-- Micro-interações cuidadosas
-
-## 📊 Métricas de Desenvolvimento
-
-- **Páginas**: 5 completas + layout base
-- **Componentes UI**: 15+ componentes reutilizáveis
-- **Tempo de build**: ~30 segundos
-- **Tamanho do bundle**: ~82kB otimizado
-- **Performance**: SSG otimizado para SEO
-
-## 🤝 Contribuição
-
-Este projeto segue as melhores práticas de desenvolvimento:
-- Código TypeScript tipado
-- Componentes reutilizáveis
-- Design system consistente
-- Documentação abrangente
-- Testes automatizados (próxima fase)
-
-## 📞 Suporte
-
-Para dúvidas ou sugestões sobre o sistema:
-- Documentação técnica incluída
-- Comentários no código
-- Arquitetura bem definida
-- Roadmap de desenvolvimento
+-   **Criptografia de Dados Sensíveis**: As informações dos pacientes são armazenadas de forma segura.
+-   **Controle de Acesso por Perfil**: Usuários (Admin, Fisioterapeuta, Paciente) têm acesso apenas às informações pertinentes à sua função.
+-   **Log de Auditoria**: Todas as ações críticas são registradas.
+-   **Backup Automático**: O Supabase fornece rotinas de backup para garantir a integridade dos dados.
+-   **Consentimento**: O sistema inclui termos de consentimento para uso de imagem e tratamento de dados.
 
 ---
-
-**Manus Fisio** - Transformando a gestão clínica através da tecnologia 🏥✨ 
+**Autor:** Manus AI 
