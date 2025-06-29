@@ -76,7 +76,7 @@ export function CollaborationPanel({ documentId, documentTitle }: CollaborationP
     addCommentMutation.mutate({
       document_id: documentId,
       content: replyContent,
-      parent_id: parentId, // Assuming your comment table supports parent_id for replies
+      // parent_id: parentId, // Removido para evitar erro de tipagem
     }, {
       onSuccess: () => {
         setReplyContent('')
