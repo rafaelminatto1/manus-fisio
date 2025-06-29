@@ -167,8 +167,9 @@ export function useMicroInteractions(config: MicroInteractionConfig = {}) {
     let index = 0
     
     const shake = () => {
-      if (index < shakeSequence.length) {
-        y.start(shakeSequence[index], { config: { tension: 800, friction: 10 } })
+      const value = shakeSequence[index]
+      if (typeof value === 'number') {
+        y.start(value, { config: { tension: 800, friction: 10 } })
           .then(() => {
             index++
             shake()
