@@ -233,10 +233,8 @@ export function AnimatedCounter({
 }) {
   const [displayValue, setDisplayValue] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.5,
-  })
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, threshold: 0.5 });
 
   const springProps = useSpring({
     number: isVisible ? value : 0,
