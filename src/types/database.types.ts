@@ -488,276 +488,42 @@ export type Database = {
           },
         ]
       }
-      patients: {
-        Row: {
-          id: string
-          full_name: string
-          birth_date: string
-          gender: string | null
-          cpf: string | null
-          phone: string | null
-          email: string | null
-          address: string | null
-          emergency_contact_name: string | null
-          emergency_contact_phone: string | null
-          initial_medical_history: string | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          full_name: string
-          birth_date: string
-          gender?: string | null
-          cpf?: string | null
-          phone?: string | null
-          email?: string | null
-          address?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          initial_medical_history?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          full_name?: string
-          birth_date?: string
-          gender?: string | null
-          cpf?: string | null
-          phone?: string | null
-          email?: string | null
-          address?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          initial_medical_history?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "patients_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      exercises: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          category: string | null
-          difficulty: string | null
-          video_url: string | null
-          muscle_group: string | null
-          duration_minutes: number | null
-          repetitions: number | null
-          sets: number | null
-          created_by: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          category?: string | null
-          difficulty?: string | null
-          video_url?: string | null
-          muscle_group?: string | null
-          duration_minutes?: number | null
-          repetitions?: number | null
-          sets?: number | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          category?: string | null
-          difficulty?: string | null
-          video_url?: string | null
-          muscle_group?: string | null
-          duration_minutes?: number | null
-          repetitions?: number | null
-          sets?: number | null
-          created_by?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exercises_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      exercise_prescriptions: {
-        Row: {
-          id: string
-          patient_id: string
-          exercise_id: string
-          prescribed_by: string
-          prescription_date: string | null
-          observations: string | null
-          status: string | null
-          prescribed_sets: number | null
-          prescribed_repetitions: number | null
-          prescribed_duration_minutes: number | null
-          frequency_per_week: number | null
-          start_date: string | null
-          end_date: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          patient_id: string
-          exercise_id: string
-          prescribed_by: string
-          prescription_date?: string | null
-          observations?: string | null
-          status?: string | null
-          prescribed_sets?: number | null
-          prescribed_repetitions?: number | null
-          prescribed_duration_minutes?: number | null
-          frequency_per_week?: number | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          patient_id?: string
-          exercise_id?: string
-          prescribed_by?: string
-          prescription_date?: string | null
-          observations?: string | null
-          status?: string | null
-          prescribed_sets?: number | null
-          prescribed_repetitions?: number | null
-          prescribed_duration_minutes?: number | null
-          frequency_per_week?: number | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exercise_prescriptions_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "exercise_prescriptions_exercise_id_fkey"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "exercise_prescriptions_prescribed_by_fkey"
-            columns: ["prescribed_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      exercise_executions: {
-        Row: {
-          id: string
-          prescription_id: string
-          execution_date: string | null
-          completed_sets: number | null
-          completed_repetitions: number | null
-          completed_duration_minutes: number | null
-          pain_level: number | null
-          difficulty_level: number | null
-          patient_feedback: string | null
-          notes: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          prescription_id: string
-          execution_date?: string | null
-          completed_sets?: number | null
-          completed_repetitions?: number | null
-          completed_duration_minutes?: number | null
-          pain_level?: number | null
-          difficulty_level?: number | null
-          patient_feedback?: string | null
-          notes?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          prescription_id?: string
-          execution_date?: string | null
-          completed_sets?: number | null
-          completed_repetitions?: number | null
-          completed_duration_minutes?: number | null
-          pain_level?: number | null
-          difficulty_level?: number | null
-          patient_feedback?: string | null
-          notes?: string | null
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exercise_executions_prescription_id_fkey"
-            columns: ["prescription_id"]
-            isOneToOne: false
-            referencedRelation: "exercise_prescriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       patient_records: {
         Row: {
+          content: Json
+          created_at: string | null
+          created_by: string
           id: string
           patient_id: string
           session_date: string
-          content: Json
-          created_by: string
-          created_at: string | null
           updated_at: string | null
         }
         Insert: {
+          content: Json
+          created_at?: string | null
+          created_by: string
           id?: string
           patient_id: string
           session_date?: string
-          content: Json
-          created_by: string
-          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          content?: Json
+          created_at?: string | null
+          created_by?: string
           id?: string
           patient_id?: string
           session_date?: string
-          content?: Json
-          created_by?: string
-          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "patient_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patient_records_patient_id_fkey"
             columns: ["patient_id"]
@@ -765,8 +531,60 @@ export type Database = {
             referencedRelation: "patients"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      patients: {
+        Row: {
+          address: string | null
+          birth_date: string
+          cpf: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          initial_medical_history: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          birth_date: string
+          cpf?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          initial_medical_history?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string
+          cpf?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          initial_medical_history?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "patient_records_created_by_fkey"
+            foreignKeyName: "patients_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -812,33 +630,33 @@ export type Database = {
       }
       project_patients: {
         Row: {
-          project_id: string
-          patient_id: string
           created_at: string | null
+          patient_id: string
+          project_id: string
         }
         Insert: {
-          project_id: string
-          patient_id: string
           created_at?: string | null
+          patient_id: string
+          project_id: string
         }
         Update: {
-          project_id?: string
-          patient_id?: string
           created_at?: string | null
+          patient_id?: string
+          project_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "project_patients_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "project_patients_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_patients_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1042,11 +860,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: {
-        Args: Record<PropertyKey, never> | { user_id?: string }
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_mentor: {
-        Args: Record<PropertyKey, never> | { user_id?: string }
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       set_limit: {

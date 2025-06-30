@@ -20,7 +20,9 @@ import {
   Monitor,
   Activity,
   HardDrive,
-  MessageSquare
+  MessageSquare,
+  ClipboardList,
+  LayoutGrid
 } from 'lucide-react'
 
 const navigationItems = [
@@ -88,6 +90,12 @@ const navigationItems = [
     href: '/collaboration',
     label: 'Colaboração',
     icon: MessageSquare,
+    badge: null
+  },
+  {
+    href: '/tasks',
+    label: 'Tarefas',
+    icon: LayoutGrid,
     badge: null
   }
 ]

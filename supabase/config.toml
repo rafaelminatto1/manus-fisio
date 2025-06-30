@@ -4,18 +4,27 @@
 # working directory name when running `supabase init`.
 project_id = "manus"
 
+[project]
+id = "manus-fisio-sistema"
+# The Supabase organization that will own the new project.
+# You can find this in the URL of your existing projects (e.g. https://app.supabase.com/org/your-org-slug/...)
+# organization_id = "your-org-slug"
+# The database major version to use. This has to be the same as your remote database's. Run `SHOW
+# server_version;` on the remote database to check.
+major_version = 15
+
 [api]
 enabled = true
 # Port to use for the API URL.
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
-# endpoints. `public` and `graphql_public` schemas are included by default.
-schemas = ["public", "graphql_public"]
+# routes. The `public` schema is exposed by default.
+schemas = ["public", "storage", "graphql"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
-max_rows = 1000
+max_rows = 10000
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
@@ -23,12 +32,12 @@ enabled = false
 
 [db]
 # Port to use for the local database URL.
-port = 54322
+port = 5432
 # Port used by db diff command to initialize the shadow database.
 shadow_port = 54320
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
 # server_version;` on the remote database to check.
-major_version = 17
+major_version = 15
 
 [db.pooler]
 enabled = false
@@ -74,6 +83,7 @@ port = 54323
 api_url = "http://127.0.0.1"
 # OpenAI API Key to use for Supabase AI in the Supabase Studio.
 openai_api_key = "env(OPENAI_API_KEY)"
+# auto_reload_on_schema_change = true
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.
@@ -107,9 +117,18 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "https://manus-rafael-minattos-projects.vercel.app/"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = [
+    "https://manus-rafael-minattos-projects.vercel.app/",
+    "https://manus-rafael-minattos-projects.vercel.app/**",
+    "https://manus-*-rafael-minattos-projects.vercel.app",
+    "https://manus-*-rafael-minattos-projects.vercel.app/**",
+    "https://manus-rafaelminatto1-rafael-minattos-projects.vercel.app/",
+    "https://manus-rafaelminatto1-rafael-minattos-projects.vercel.app/**",
+    "https://manus-*-rafaelminatto1-rafael-minattos-projects.vercel.app",
+    "https://manus-*-rafaelminatto1-rafael-minattos-projects.vercel.app/**"
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
@@ -158,11 +177,11 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+max_frequency = "1m0s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
@@ -224,8 +243,8 @@ max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]
@@ -315,3 +334,4 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+# mfa_enabled = true
