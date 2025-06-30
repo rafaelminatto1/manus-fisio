@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { EnhancedButton } from '@/components/ui/enhanced-button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
 import { NotificationsPanel } from '@/components/ui/notifications-panel'
+import { cn } from '@/lib/utils'
 import { 
   Home,
   BookOpen, 
@@ -140,11 +142,16 @@ export function Sidebar() {
   }
 
   return (
-    <div className="sidebar w-64 p-4 flex flex-col h-full">
+    <div className="sidebar w-64 p-4 flex flex-col h-full bg-gradient-to-b from-background to-background/95 border-r border-border/50">
       {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
-        <Heart className="h-8 w-8 text-medical-500" />
-        <h1 className="text-xl font-bold text-foreground">Manus Fisio</h1>
+      <div className="flex items-center gap-2 mb-8 animate-fade-in-up">
+        <div className="relative">
+          <Heart className="h-8 w-8 text-medical-500 animate-float" />
+          <div className="absolute inset-0 h-8 w-8 text-medical-500/20 animate-pulse"></div>
+        </div>
+        <h1 className="text-xl font-bold text-foreground bg-gradient-to-r from-medical-600 to-medical-500 bg-clip-text text-transparent">
+          Manus Fisio
+        </h1>
       </div>
       
       {/* Quick Search */}
@@ -155,24 +162,38 @@ export function Sidebar() {
       </Button>
 
       {/* Navigation */}
-      <nav className="space-y-2 flex-1">
-        {navigationItems.map((item) => {
+      <nav className="space-y-1 flex-1">
+        {navigationItems.map((item, index) => {
           const isActive = pathname === item.href
           return (
             <Link key={item.href} href={item.href}>
-              <Button 
-                variant={isActive ? "default" : "ghost"} 
-                className="w-full justify-start" 
+              <EnhancedButton 
+                variant={isActive ? "medical" : "ghost"} 
+                className={cn(
+                  "w-full justify-start group hover-lift animate-fade-in-up",
+                  isActive && "shadow-lg shadow-medical-500/25 bg-gradient-to-r from-medical-500 to-medical-600"
+                )}
                 size="sm"
+                animation="scale"
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
+                <item.icon className={cn(
+                  "mr-2 h-4 w-4 transition-all duration-200",
+                  isActive ? "text-white" : "text-muted-foreground group-hover:text-primary group-hover:scale-110"
+                )} />
+                <span className="flex-1 text-left">{item.label}</span>
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
+                  <Badge 
+                    variant={isActive ? "secondary" : "outline"} 
+                    className={cn(
+                      "ml-auto text-xs transition-all duration-200 animate-pulse-slow",
+                      isActive && "bg-white/20 text-white border-white/30"
+                    )}
+                  >
                     {item.badge}
                   </Badge>
                 )}
-              </Button>
+              </EnhancedButton>
             </Link>
           )
         })}

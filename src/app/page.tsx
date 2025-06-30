@@ -7,8 +7,11 @@ import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { SetupNotice } from '@/components/ui/setup-notice'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { EnhancedCard, EnhancedCardContent, EnhancedCardHeader, EnhancedCardTitle } from '@/components/ui/enhanced-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EnhancedButton } from '@/components/ui/enhanced-button'
+import { LoadingSpinner, SkeletonCard } from '@/components/ui/enhanced-loading'
 import { Progress } from '@/components/ui/progress'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
 import { ThemeCustomizer } from '@/components/ui/theme-customizer'
@@ -340,76 +343,95 @@ export default function Dashboard() {
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Notebooks</CardTitle>
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{data?.stats.totalNotebooks}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Protocolos e documentos
-                    </p>
-                  </CardContent>
-                </Card>
+                {loading ? (
+                  <>
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                  </>
+                ) : (
+                  <>
+                    <EnhancedCard variant="elevated" animation="fade" className="hover-lift bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200">
+                      <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <EnhancedCardTitle className="text-sm font-medium text-blue-700">Total de Notebooks</EnhancedCardTitle>
+                        <BookOpen className="h-4 w-4 text-blue-600 animate-float" />
+                      </EnhancedCardHeader>
+                      <EnhancedCardContent>
+                        <div className="text-2xl font-bold text-blue-800 animate-scale-in">{data?.stats.totalNotebooks}</div>
+                        <p className="text-xs text-blue-600">
+                          Protocolos e documentos
+                        </p>
+                      </EnhancedCardContent>
+                    </EnhancedCard>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
-                    <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{data?.stats.totalProjects}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Em desenvolvimento
-                    </p>
-                  </CardContent>
-                </Card>
+                    <EnhancedCard variant="elevated" animation="fade" className="hover-lift bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-emerald-200">
+                      <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <EnhancedCardTitle className="text-sm font-medium text-emerald-700">Projetos Ativos</EnhancedCardTitle>
+                        <FolderKanban className="h-4 w-4 text-emerald-600 animate-float" />
+                      </EnhancedCardHeader>
+                      <EnhancedCardContent>
+                        <div className="text-2xl font-bold text-emerald-800 animate-scale-in">{data?.stats.totalProjects}</div>
+                        <p className="text-xs text-emerald-600">
+                          Em desenvolvimento
+                        </p>
+                      </EnhancedCardContent>
+                    </EnhancedCard>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Equipe</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{data?.stats.totalTeamMembers}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {data?.stats.activeInterns} estagiários ativos
-                    </p>
-                  </CardContent>
-                </Card>
+                    <EnhancedCard variant="elevated" animation="fade" className="hover-lift bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200">
+                      <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <EnhancedCardTitle className="text-sm font-medium text-purple-700">Equipe</EnhancedCardTitle>
+                        <Users className="h-4 w-4 text-purple-600 animate-float" />
+                      </EnhancedCardHeader>
+                      <EnhancedCardContent>
+                        <div className="text-2xl font-bold text-purple-800 animate-scale-in">{data?.stats.totalTeamMembers}</div>
+                        <p className="text-xs text-purple-600">
+                          {data?.stats.activeInterns} estagiários ativos
+                        </p>
+                      </EnhancedCardContent>
+                    </EnhancedCard>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{data?.stats.completionRate}%</div>
-                    <Progress value={data?.stats.completionRate} className="mt-2" />
-                  </CardContent>
-                </Card>
+                    <EnhancedCard variant="elevated" animation="fade" className="hover-lift bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200">
+                      <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <EnhancedCardTitle className="text-sm font-medium text-amber-700">Taxa de Conclusão</EnhancedCardTitle>
+                        <TrendingUp className="h-4 w-4 text-amber-600 animate-float" />
+                      </EnhancedCardHeader>
+                      <EnhancedCardContent>
+                        <div className="text-2xl font-bold text-amber-800 animate-scale-in">{data?.stats.completionRate}%</div>
+                        <Progress value={data?.stats.completionRate} className="mt-2" />
+                      </EnhancedCardContent>
+                    </EnhancedCard>
+                  </>
+                )}
               </div>
 
               {/* Quick Actions */}
               <div>
-                <h2 className="text-lg font-semibold mb-4">Ações Rápidas</h2>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Ações Rápidas
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {quickActions.map((action, index) => (
                     <Link key={index} href={action.href}>
-                      <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                        <CardContent className="p-4">
+                      <EnhancedCard 
+                        variant="interactive" 
+                        animation="scale"
+                        className="hover-lift group"
+                      >
+                        <EnhancedCardContent className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${action.color}`}>
+                            <div className={`p-3 rounded-xl ${action.color} group-hover:scale-110 transition-transform duration-200`}>
                               <action.icon className="h-5 w-5 text-white" />
                             </div>
-                            <div>
-                              <h3 className="font-medium">{action.title}</h3>
+                            <div className="flex-1">
+                              <h3 className="font-medium group-hover:text-primary transition-colors">{action.title}</h3>
                               <p className="text-sm text-muted-foreground">{action.description}</p>
                             </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
                           </div>
-                        </CardContent>
-                      </Card>
+                        </EnhancedCardContent>
+                      </EnhancedCard>
                     </Link>
                   ))}
                 </div>

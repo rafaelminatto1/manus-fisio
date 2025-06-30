@@ -4,6 +4,8 @@ import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/hooks/use-auth'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from 'sonner'
+import { SmartNotifications } from '@/components/ui/smart-notifications'
+import { PWAInstaller } from '@/components/ui/pwa-installer'
 
 const inter = Inter({ 
   subsets: ['latin'],

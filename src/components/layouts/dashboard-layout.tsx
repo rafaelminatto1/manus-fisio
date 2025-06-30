@@ -2,9 +2,12 @@
 
 import { Sidebar } from '@/components/navigation/sidebar'
 import { Button } from '@/components/ui/button'
+import { EnhancedButton } from '@/components/ui/enhanced-button'
 import { Input } from '@/components/ui/input'
+import { EnhancedInput } from '@/components/ui/enhanced-input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { EnhancedCard } from '@/components/ui/enhanced-card'
 import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 import { AIAssistant } from '@/components/ui/ai-assistant'
