@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient, isMockMode } from '@/lib/auth'
-import type { Tables } from '@/types/database.types'
-type User = Tables<'users'>
+import type { Database } from '@/types/database.types'
+type User = Database['public']['Tables']['users']['Row']
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -21,71 +21,61 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(false) // ✅ CORREÇÃO: Iniciar como false
+  const [loading, setLoading] = useState(true)
   
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const isUsingMock = isMockMode()
 
-  // Mock completo para o tipo User
-  const fullMockUser: User = {
-    id: 'mock-user',
-    email: 'mock@mock.com',
-    full_name: 'Usuário Mock',
-    role: 'admin',
-    avatar_url: null,
-    created_at: '',
-    crefito: null,
-    is_active: true,
-    semester: null,
-    specialty: null,
-    university: null,
-    updated_at: '',
-  }
-
   useEffect(() => {
-    // ✅ CORREÇÃO: Só setar loading quando realmente precisar carregar dados
-    
-    // Se não tem credenciais do Supabase ou está em modo mock, usar dados mock
-    if (isUsingMock) {
-      console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
-      setUser(fullMockUser)
+    if (isMockMode()) {
+      setUser({
+        id: 'mock-user-id',
+        email: 'mock@example.com',
+        full_name: 'Usuário Mock',
+        avatar_url: null,
+        role: 'admin',
+        crefito: null,
+        specialty: null,
+        university: null,
+        semester: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       setLoading(false)
       return
     }
 
-    // ✅ Só setar loading quando for buscar dados do Supabase
-    setLoading(true)
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUserProfile(session.user.id)
-      } else {
-        setLoading(false)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session)
+        
+        if (session?.user) {
+          await fetchUserProfile(session.user.id)
+        } else {
+          setUser(null)
+          setLoading(false)
+        }
       }
-    })
+    )
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      
-      if (session?.user) {
-        await fetchUserProfile(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    return () => authListener.subscription.unsubscribe()
   }, [isUsingMock])
 
   const fetchUserProfile = async (userId: string) => {
     if (isUsingMock) {
-      setUser(fullMockUser)
+      setUser({
+        id: 'mock-user-id',
+        email: 'mock@example.com',
+        full_name: 'Usuário Mock',
+        avatar_url: null,
+        role: 'admin',
+        crefito: null,
+        specialty: null,
+        university: null,
+        semester: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       setLoading(false)
       return
     }
@@ -101,7 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error fetching user profile:', error)
         // Em caso de erro, usar dados mock como fallback apenas em dev
         if (process.env.NODE_ENV === 'development') {
-          setUser(fullMockUser)
+          setUser({
+            id: 'mock-user-id',
+            email: 'mock@example.com',
+            full_name: 'Usuário Mock',
+            avatar_url: null,
+            role: 'admin',
+            crefito: null,
+            specialty: null,
+            university: null,
+            semester: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
         } else {
           setUser(null)
         }
@@ -112,7 +114,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching user profile:', error)
       // Em caso de erro, usar dados mock como fallback apenas em dev
       if (process.env.NODE_ENV === 'development') {
-        setUser(fullMockUser)
+        setUser({
+          id: 'mock-user-id',
+          email: 'mock@example.com',
+          full_name: 'Usuário Mock',
+          avatar_url: null,
+          role: 'admin',
+          crefito: null,
+          specialty: null,
+          university: null,
+          semester: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
       } else {
         setUser(null)
       }
@@ -129,7 +143,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Modo mock - simular login com delay reduzido
         await new Promise(resolve => setTimeout(resolve, 800))
         if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
-          setUser(fullMockUser)
+          setUser({
+            id: 'mock-user-id',
+            email: 'mock@example.com',
+            full_name: 'Usuário Mock',
+            avatar_url: null,
+            role: 'admin',
+            crefito: null,
+            specialty: null,
+            university: null,
+            semester: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           return { error: null }
         }
         return { error: { message: 'Email ou senha inválidos' } }

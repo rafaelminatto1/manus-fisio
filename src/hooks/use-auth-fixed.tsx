@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient, mockUser, isMockMode } from '@/lib/auth'
-import type { Tables } from '@/types/database.types'
-type User = Tables<'users'>
+import type { Database } from '@/types/database.types'
+type User = Database['public']['Tables']['users']['Row']
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(false) // ✅ CORREÇÃO: Iniciar como false
+  const [loading, setLoading] = useState(true)
   
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const isUsingMock = isMockMode()
@@ -35,10 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     avatar_url: null,
     created_at: '',
     crefito: null,
-    is_active: true,
-    semester: null,
     specialty: null,
     university: null,
+    semester: null,
     updated_at: '',
   }
 
@@ -48,7 +47,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Se não tem credenciais do Supabase ou está em modo mock, usar dados mock
     if (isUsingMock) {
       console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
-      setUser(fullMockUser)
+      setUser({
+        id: mockUser.id,
+        email: mockUser.email || '',
+        full_name: 'Usuário Mock',
+        avatar_url: null,
+        role: 'admin',
+        crefito: null,
+        specialty: null,
+        university: null,
+        semester: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       setLoading(false)
       return
     }

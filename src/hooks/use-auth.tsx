@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient, isMockMode } from '@/lib/auth'
-import type { Tables } from '@/types/database.types'
-type User = Tables<'users'>
+import type { Database } from '@/types/database.types'
+type User = Database['public']['Tables']['users']['Row']
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     avatar_url: null,
     created_at: '',
     crefito: null,
-    is_active: true,
+    
     semester: null,
     specialty: null,
     university: null,

@@ -5,26 +5,7 @@ import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 import { KanbanColumn } from './KanbanColumn'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Task } from '@/types/database.types'
-
-interface User {
-  id: string
-  full_name: string | null
-  avatar_url: string | null
-}
-
-interface Task {
-  id: string
-  title: string
-  description: string | null
-  status: string
-  priority: string | null
-  due_date: string | null
-  created_at: string
-  order_index?: number
-  assignee: Pick<User, 'id' | 'full_name' | 'avatar_url'> | null
-  creator: Pick<User, 'id' | 'full_name' | 'avatar_url'> | null
-}
+import { Task } from '@/types/task.types'
 
 type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done'
 
@@ -154,9 +135,15 @@ export function KanbanBoard() {
     setColumns(newColumnsState)
 
     // Update backend
+    const newStatus = destination.droppableId as TaskStatus
+    if (!columnOrder.includes(newStatus)) {
+      console.error("Invalid destination status:", newStatus)
+      return;
+    }
+
     updateTaskMutation.mutate({
       id: draggableId,
-      status: destination.droppableId,
+      status: newStatus,
       order_index: destination.index,
     })
   }
