@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuração do Supabase
-const supabaseUrl = 'https://hycudcwtuocmufahpsnmr.supabase.co';
+const supabaseUrl = 'https://hycudcwtuocmufhpsnmr.supabase.co';
 const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Y3VkY3d0dW9jbXVmYWhwc25tciIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3MzcwNDEwODQsImV4cCI6MjA1MjYxNzA4NH0.WN6r0TejH0LKqTPmQYyQfF8Q7SMLM-yfF1x8a_BPVYs';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);

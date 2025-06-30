@@ -1,6 +1,6 @@
 const https = require('https');
 
-const supabaseUrl = 'https://hycudcwtuocmufahpsnmr.supabase.co';
+const supabaseUrl = 'https://hycudcwtuocmufhpsnmr.supabase.co';
 const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5Y3VkY3d0dW9jbXVmYWhwc25tciIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3MzcwNDEwODQsImV4cCI6MjA1MjYxNzA4NH0.WN6r0TejH0LKqTPmQYyQfF8Q7SMLM-yfF1x8a_BPVYs';
 
 async function executeSql(sql) {
@@ -8,7 +8,7 @@ async function executeSql(sql) {
     const data = JSON.stringify({ query: sql });
     
     const options = {
-      hostname: 'hycudcwtuocmufahpsnmr.supabase.co',
+      hostname: 'hycudcwtuocmufhpsnmr.supabase.co',
       port: 443,
       path: '/rest/v1/rpc/exec_sql',
       method: 'POST',
