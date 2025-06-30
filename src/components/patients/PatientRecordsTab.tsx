@@ -1,21 +1,76 @@
 "use client"
 
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { FileWarning, VenetianMask } from 'lucide-react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import type { Database } from '@/types/database.types'
 import { Badge } from '@/components/ui/badge'
 
-type PatientRecord = Database['public']['Tables']['patient_records']['Row'] & {
+interface PatientRecord {
+  id: string
+  patient_id: string
+  session_date: string
+  content: any
+  created_at: string
   created_by: {
     full_name: string | null
   } | null
 }
+
+// Dados simulados para demonstração
+const mockRecords: PatientRecord[] = [
+  {
+    id: '1',
+    patient_id: '1',
+    session_date: '2024-01-20',
+    content: {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Paciente apresentou melhora significativa na amplitude de movimento do ombro direito. ' },
+            { type: 'text', text: 'Realizou todos os exercícios prescritos sem relato de dor.' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Objetivos para próxima sessão: aumentar carga dos exercícios de fortalecimento.' }
+          ]
+        }
+      ]
+    },
+    created_at: '2024-01-20T10:00:00Z',
+    created_by: {
+      full_name: 'Dr. João Silva'
+    }
+  },
+  {
+    id: '2',
+    patient_id: '1',
+    session_date: '2024-01-18',
+    content: {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Primeira sessão de fisioterapia. Paciente relatou dor moderada (5/10) no ombro direito.' },
+            { type: 'text', text: 'Iniciado protocolo de mobilização passiva e exercícios de alongamento.' }
+          ]
+        }
+      ]
+    },
+    created_at: '2024-01-18T14:00:00Z',
+    created_by: {
+      full_name: 'Dr. João Silva'
+    }
+  }
+]
 
 // Um componente "somente leitura" para renderizar o conteúdo do prontuário
 const ReadOnlyEditor = ({ content }: { content: any }) => {
@@ -42,11 +97,9 @@ export function PatientRecordsTab({ patientId }: { patientId: string }) {
   } = useQuery<PatientRecord[]>({
     queryKey: ['patient-records', patientId],
     queryFn: async () => {
-      const response = await api.get(`/patients/${patientId}/records`)
-      if (!response.ok) {
-        throw new Error('Falha ao buscar prontuários')
-      }
-      return response.json()
+      // Simular carregamento
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return mockRecords.filter(record => record.patient_id === patientId)
     },
   })
 

@@ -1,106 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
 import { z } from 'zod'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+// Initialize the Google AI client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 const WritingAssistantRequestSchema = z.object({
   text: z.string(),
   context: z.string().optional(),
-  action: z.enum(['improve', 'suggest', 'grammar']),
-});
+  action: z.enum(['improve', 'suggest_goals', 'summarize']),
+})
+
+async function runAIAssistant(prompt: string) {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const result = await model.generateContent(prompt)
+    const response = await result.response
+    return response.text()
+  } catch (error) {
+    console.error('Error calling AI model:', error)
+    throw new Error('Failed to get response from AI model.')
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const authError = await authenticateRequest(req);
+    const authError = await authenticateRequest(req)
     if (authError) {
-      return authError;
+      return authError
     }
 
-    const body = await req.json();
-    const { text, context, action } = WritingAssistantRequestSchema.parse(body);
+    const body = await req.json()
+    const { text, context, action } = WritingAssistantRequestSchema.parse(body)
 
-    let result: any = {}
+    let resultText = ''
+    const baseContext = `Você é um assistente de IA especializado em fisioterapia. Sua tarefa é ajudar fisioterapeutas a escrever documentação clínica de alta qualidade. Seja conciso, profissional e use terminologia adequada.`
+    
+    let prompt = ''
 
     switch (action) {
       case 'improve':
-        result.improvedText = improveText(text, context)
+        prompt = `${baseContext}\n\nMelhore o seguinte texto de uma anotação clínica. Foque em clareza, concisão e profissionalismo. Contexto adicional: ${context || 'Nenhum'}.\n\nTexto para melhorar: "${text}"`
+        resultText = await runAIAssistant(prompt)
         break
-      case 'suggest':
-        result.suggestions = generateSuggestions(text)
+      case 'suggest_goals':
+        prompt = `${baseContext}\n\nCom base na seguinte anotação clínica, sugira 3-4 objetivos de tratamento de curto prazo, seguindo o formato SMART (Específico, Mensurável, Atingível, Relevante, Temporal). Retorne apenas a lista de objetivos.\n\nContexto: "${text}"`
+        resultText = await runAIAssistant(prompt)
         break
-      case 'grammar':
-        result.corrections = checkGrammar(text)
+      case 'summarize':
+        prompt = `${baseContext}\n\nResuma a seguinte anotação clínica em 2-3 frases curtas, destacando o estado atual do paciente, o tratamento aplicado e o plano futuro. Retorne apenas o resumo.\n\nContexto: "${text}"`
+        resultText = await runAIAssistant(prompt)
         break
       default:
         return new Response('Invalid action', { status: 400 })
     }
 
-    return Response.json(result)
+    return NextResponse.json({ result: resultText })
 
   } catch (error) {
     console.error('Writing Assistant Error:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
     return new Response('Internal Server Error', { status: 500 })
   }
-}
-
-function improveText(text: string, context?: string): string {
-  // Simulação de melhoria de texto
-  const improvements = [
-    'Versão melhorada e mais clara do seu texto:\n\n',
-    text
-      .replace(/\b(muito|bem|bastante)\b/g, '') // Remove advérbios desnecessários
-      .replace(/\b(que|o qual|a qual)\b/g, '') // Simplifica pronomes relativos
-      .replace(/\s+/g, ' ') // Remove espaços extras
-      .trim(),
-    '\n\n✨ Melhorias aplicadas: linguagem mais concisa, terminologia técnica adequada, estrutura otimizada.'
-  ]
-  
-  return improvements.join('')
-}
-
-function generateSuggestions(text: string): string[] {
-  // Simulação de sugestões baseadas no contexto
-  const suggestions = [
-    '📋 Adicionar seção de "Objetivos do Tratamento"',
-    '📊 Incluir métricas de progresso mensuráveis',
-    '🎯 Detalhar protocolo de exercícios específicos',
-    '📅 Estabelecer cronograma de reavaliações',
-    '📝 Documentar contraindicações relevantes',
-    '🔍 Adicionar critérios de alta do paciente'
-  ]
-  
-  return suggestions.slice(0, Math.floor(Math.random() * 4) + 2)
-}
-
-function checkGrammar(text: string): Array<{issue: string, suggestion: string, position: number}> {
-  // Simulação de verificação gramatical
-  const corrections = []
-  
-  // Verificar concordância
-  if (text.includes('dados está')) {
-    corrections.push({
-      issue: 'Concordância incorreta',
-      suggestion: 'Alterar "dados está" para "dados estão"',
-      position: text.indexOf('dados está')
-    })
-  }
-  
-  // Verificar crase
-  if (text.includes('a nível')) {
-    corrections.push({
-      issue: 'Uso incorreto de crase',
-      suggestion: 'Alterar "a nível" para "em nível"',
-      position: text.indexOf('a nível')
-    })
-  }
-  
-  // Verificar redundâncias
-  if (text.includes('reavaliar novamente')) {
-    corrections.push({
-      issue: 'Redundância',
-      suggestion: 'Remover "novamente" (reavaliar já indica repetição)',
-      position: text.indexOf('reavaliar novamente')
-    })
-  }
-  
-  return corrections
 } 

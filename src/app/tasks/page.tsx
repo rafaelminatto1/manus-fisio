@@ -1,11 +1,11 @@
+import { createServerAuthClient } from '@/lib/auth-server';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
-import { createServerClient } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TasksPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerAuthClient();
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {

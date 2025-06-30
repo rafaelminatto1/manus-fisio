@@ -1,129 +1,167 @@
-import { createServerClient } from '@/lib/auth-server';
 import { NextRequest, NextResponse } from 'next/server';
-import { Database } from '@/types/database.types';
+import { createServerAuthClient } from '@/lib/auth-server';
+import type { Database } from '@/types/database.types';
 
-type Task = Database['public']['Tables']['tasks']['Row'];
-type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
-type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
+// GET /api/tasks?project_id=<uuid> - List all tasks for a specific project
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createServerAuthClient();
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('project_id');
 
-// GET: Fetch all tasks
-export async function GET() {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .select(`
-      *,
-      assignee:users(id, full_name, avatar_url),
-      creator:users(id, full_name, avatar_url)
-    `)
-    .order('order_index', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching tasks:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
-}
-
-// POST: Create a new task
-export async function POST(req: NextRequest) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const taskData = (await req.json()) as TaskInsert;
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert({ ...taskData, created_by: user.id })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating task:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
-}
-
-// PATCH: Update an existing task (including drag and drop reordering)
-export async function PATCH(req: NextRequest) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { id, ...updateData } = (await req.json()) as { id: string } & TaskUpdate;
-
-  // Handle reordering multiple tasks at once
-  if (Array.isArray(updateData) && id === undefined) {
-    const updates = updateData.map(task => 
-      supabase.from('tasks').update({ status: task.status, order_index: task.order_index }).eq('id', task.id)
-    );
-    const results = await Promise.all(updates);
-    const firstError = results.find(res => res.error);
-
-    if (firstError) {
-      console.error('Error batch updating tasks:', firstError.error);
-      return NextResponse.json({ error: firstError.error.message }, { status: 500 });
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      );
     }
-    return NextResponse.json({ message: 'Tasks reordered successfully' });
-  }
-  
-  // Handle updating a single task
-  if (!id) {
-    return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
-  }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select(`
+        id,
+        title,
+        description,
+        status,
+        priority,
+        due_date,
+        created_at,
+        order_index,
+        assignee:assigned_to(full_name, avatar_url)
+      `)
+      .eq('project_id', projectId)
+      .order('order_index', { ascending: true });
 
-  if (error) {
-    console.error('Error updating task:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('Error fetching tasks:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch tasks' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(tasks);
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(data);
 }
 
-// DELETE: Delete a task
-export async function DELETE(req: NextRequest) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// POST /api/tasks - Create a new task
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createServerAuthClient();
+    const body = await request.json();
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { data: task, error } = await supabase
+      .from('tasks')
+      .insert([body])
+      .select(`
+        *,
+        assigned_to_user:assigned_to(full_name),
+        created_by_user:created_by(full_name),
+        project:project_id(title)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating task:', error);
+      return NextResponse.json(
+        { error: 'Failed to create task' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(task, { status: 201 });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
+}
 
-  const { id } = await req.json();
+// PUT /api/tasks - Update a task
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createServerAuthClient();
+    const body = await request.json();
+    const { id, ...updateData } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Task ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const { data: task, error } = await supabase
+      .from('tasks')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        *,
+        assigned_to_user:assigned_to(full_name),
+        created_by_user:created_by(full_name),
+        project:project_id(title)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error updating task:', error);
+      return NextResponse.json(
+        { error: 'Failed to update task' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(task);
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
+}
 
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
+// DELETE /api/tasks - Delete a task
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createServerAuthClient();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-  if (error) {
-    console.error('Error deleting task:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Task ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting task:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete task' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ message: 'Task deleted successfully' });
-} 
+}

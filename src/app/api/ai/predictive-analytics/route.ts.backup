@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/auth'
+
+export async function POST(req: NextRequest) {
+  try {
+    const authError = await authenticateRequest(req);
+    if (authError) {
+      return authError;
+    }
+
+    const body = await req.json();
+    const { patientId, analysisType, historicalData } = body;
+
+    // Simplified mock insights for demonstration
+    const insights = [
+      {
+        id: 'timeline_1',
+        type: 'timeline',
+        title: 'Previsão de Recuperação',
+        description: 'Baseado na evolução atual, estimamos 4-6 semanas para recuperação completa',
+        confidence: 87,
+        timeframe: '4-6 semanas',
+        actionable: true,
+        priority: 'medium',
+        metrics: {
+          current: 70,
+          predicted: 90,
+          improvement: 20,
+          unit: '% função'
+        },
+        recommendations: [
+          'Manter frequência atual de exercícios',
+          'Intensificar exercícios funcionais'
+        ],
+        riskFactors: [],
+        evidenceBased: true
+      },
+      {
+        id: 'risk_1',
+        type: 'risk',
+        title: 'Avaliação de Risco',
+        description: 'Risco baixo de complicações ou piora',
+        confidence: 82,
+        timeframe: 'próximas 4 semanas',
+        actionable: true,
+        priority: 'low',
+        metrics: {
+          current: 25,
+          predicted: 20,
+          improvement: -5,
+          unit: 'pontos de risco'
+        },
+        recommendations: [
+          'Continuar tratamento atual',
+          'Monitoramento regular'
+        ],
+        riskFactors: [],
+        evidenceBased: true
+      }
+    ];
+
+    return Response.json({
+      patientId,
+      analysisType,
+      insights,
+      generatedAt: new Date().toISOString(),
+      dataQuality: {
+        sessionCount: historicalData?.sessions?.length || 0,
+        timeSpan: 30,
+        reliability: 'medium'
+      }
+    })
+
+  } catch (error) {
+    console.error('Predictive Analytics Error:', error)
+    return new Response('Internal Server Error', { status: 500 })
+  }
+} 

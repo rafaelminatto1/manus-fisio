@@ -1,4 +1,4 @@
-Inherited file content will not be shown# Prompt Final para Desenvolvimento de Sistema de Gestão de Clínica de Fisioterapia
+# Prompt Final para Desenvolvimento de Sistema de Gestão de Clínica de Fisioterapia
 
 ## Contexto e Objetivo
 

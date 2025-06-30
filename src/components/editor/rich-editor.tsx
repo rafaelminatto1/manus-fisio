@@ -5,7 +5,9 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import { Button } from '@/components/ui/button'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Save } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Save, Sparkles, BrainCircuit, TextSelect } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface RichEditorProps {
   content?: string
@@ -22,6 +24,7 @@ const RichEditor = ({
   placeholder = 'Comece a escrever seu protocolo...',
   className = ''
 }: RichEditorProps) => {
+  const [isAiLoading, setIsAiLoading] = useState(false)
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -48,6 +51,43 @@ const RichEditor = ({
         }
     }
   }
+
+  const handleAiAction = async (action: 'improve' | 'suggest_goals' | 'summarize') => {
+    if (!editor || isAiLoading) return;
+
+    const text = editor.getText();
+    if (text.trim().length < 20) {
+      toast.error('O texto é muito curto para uma ação de IA.');
+      return;
+    }
+
+    setIsAiLoading(true);
+    try {
+      const response = await fetch('/api/ai/writing-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, action }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao se comunicar com o assistente de IA.');
+      }
+
+      const { result } = await response.json();
+      
+      // Append or replace content based on action
+      const currentContent = editor.getHTML();
+      const newContent = `${currentContent}<br><p><strong>Assistente de IA (${action}):</strong></p><p>${result.replace(/\n/g, '<br>')}</p>`;
+      editor.commands.setContent(newContent);
+
+      toast.success('Sugestão da IA aplicada com sucesso!');
+    } catch (error) {
+      console.error('AI Action Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   if (!editor) {
     return <div className="p-4">Carregando editor...</div>
@@ -99,6 +139,35 @@ const RichEditor = ({
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
+        <div className="flex items-center gap-1 pl-2 border-l ml-2">
+           <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleAiAction('improve')}
+            disabled={isAiLoading}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            Melhorar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleAiAction('suggest_goals')}
+            disabled={isAiLoading}
+          >
+            <BrainCircuit className="h-4 w-4 mr-1" />
+            Sugerir Metas
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleAiAction('summarize')}
+            disabled={isAiLoading}
+          >
+            <TextSelect className="h-4 w-4 mr-1" />
+            Resumir
+          </Button>
+        </div>
       </div>
 
       {/* Editor Content */}

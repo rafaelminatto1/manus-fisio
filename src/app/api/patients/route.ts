@@ -19,8 +19,10 @@ const patientSchema = z.object({
   initial_medical_history: z.string().optional(),
 })
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createRouteHandlerClient<Database>({ cookies })
+  const { searchParams } = new URL(request.url)
+  const search = searchParams.get('search')
 
   const {
     data: { user },
@@ -31,10 +33,17 @@ export async function GET() {
   }
 
   try {
-    const { data: patients, error } = await supabase
+    let query = supabase
       .from('patients')
-      .select('*')
+      .select('id, full_name, email, phone, birth_date, created_at')
       .order('created_at', { ascending: false })
+
+    if (search) {
+      // Using ilike for case-insensitive search
+      query = query.ilike('full_name', `%${search}%`)
+    }
+
+    const { data: patients, error } = await query
 
     if (error) {
       console.error('Erro ao buscar pacientes:', error)

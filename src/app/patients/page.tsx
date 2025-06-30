@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePatients, useCreatePatient } from '@/hooks/use-patients';
+import { useState } from 'react';
+import { usePatients } from '@/hooks/use-patients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,68 +9,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { PlusCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import type { Patient } from '@/types/database';
 import { format } from 'date-fns';
-
-// Mock para desenvolvimento inicial da UI
-const mockPatients: Patient[] = [
-    {
-        id: '1',
-        full_name: 'José Carlos',
-        birth_date: '1980-05-15',
-        gender: 'Masculino',
-        created_at: new Date().toISOString(),
-    },
-    {
-        id: '2',
-        full_name: 'Maria da Silva',
-        birth_date: '1992-11-20',
-        gender: 'Feminino',
-        created_at: new Date().toISOString(),
-    },
-];
+import { ptBR } from 'date-fns/locale';
+import { useDebounce } from '@/hooks/use-debounce';
+import { Patient } from '@/types/database.types';
 
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { data: patients = [], isLoading, error } = usePatients(debouncedSearchTerm);
 
-  useEffect(() => {
-    async function fetchPatients() {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/patients');
-        if (!response.ok) {
-          throw new Error('Falha ao buscar pacientes');
-        }
-        const data = await response.json();
-        setPatients(data);
-        
-        // Usando mock por enquanto
-        // setPatients(mockPatients);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+  const calculateAge = (birthDate: string | null): number | null => {
+    if (!birthDate) {
+      return null;
     }
-    fetchPatients();
-  }, []);
-
-  const filteredPatients = patients.filter((patient) =>
-    patient.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    const today = new Date();
+    const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) {
+      return null;
+    }
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pacientes</h1>
-        <Link href="/patients/new" passHref>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Pacientes</h1>
+          <p className="text-muted-foreground">
+            Gerencie os pacientes da clínica de fisioterapia
+          </p>
+        </div>
+        <Link href="/patients/new">
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Paciente
+            Novo Paciente
           </Button>
         </Link>
       </div>
@@ -79,12 +57,12 @@ export default function PatientsPage() {
         <CardHeader>
           <CardTitle>Lista de Pacientes</CardTitle>
           <CardDescription>
-            Gerencie os pacientes da clínica.
+            Visualize e gerencie todos os pacientes cadastrados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex items-center">
-            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+          <div className="mb-6 flex items-center space-x-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome..."
               value={searchTerm}
@@ -92,50 +70,83 @@ export default function PatientsPage() {
               className="max-w-sm"
             />
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Data de Nasc.</TableHead>
-                <TableHead>Gênero</TableHead>
-                <TableHead>Data de Cadastro</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-red-500">
-                    {error}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredPatients.map((patient) => (
-                  <TableRow key={patient.id}>
-                    <TableCell className="font-medium">{patient.full_name}</TableCell>
-                    <TableCell>{format(new Date(patient.birth_date), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{patient.gender}</Badge>
-                    </TableCell>
-                     <TableCell>{format(new Date(patient.created_at), 'dd/MM/yyyy HH:mm')}</TableCell>
-                    <TableCell>
-                       <Link href={`/patients/${patient.id}`}>
-                         <Button variant="outline" size="sm">
-                           Ver Detalhes
-                         </Button>
-                       </Link>
-                    </TableCell>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando pacientes...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <p className="text-red-500 mb-2">Erro ao carregar pacientes</p>
+                <p className="text-muted-foreground text-sm">
+                  {error instanceof Error ? error.message : 'Erro desconhecido'}
+                </p>
+              </div>
+            </div>
+          ) : patients.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">
+                  {searchTerm ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+                </p>
+                {!searchTerm && (
+                  <Link href="/patients/new">
+                    <Button variant="outline">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Cadastrar primeiro paciente
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Idade</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {patients.map((patient: Patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">{patient.full_name}</TableCell>
+                      <TableCell>{patient.email || 'Não informado'}</TableCell>
+                      <TableCell>{patient.phone || 'Não informado'}</TableCell>
+                      <TableCell>
+                        {patient.birth_date ? (
+                          <Badge variant="secondary">
+                            {calculateAge(patient.birth_date)} anos
+                          </Badge>
+                        ) : (
+                          'Não informado'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {patient.created_at ? format(new Date(patient.created_at), 'dd/MM/yyyy', { locale: ptBR }) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/patients/${patient.id}`}>
+                          <Button variant="outline" size="sm">
+                            Ver Detalhes
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
