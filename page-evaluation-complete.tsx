@@ -22,6 +22,7 @@ import {
   User, Target, AlertCircle, Stethoscope, CheckCircle 
 } from 'lucide-react'
 
+// Interface completa para avaliação fisioterapêutica
 interface EvaluationData {
   patientId: string
   patientName: string
@@ -58,7 +59,7 @@ interface EvaluationData {
   generalNotes: string
 }
 
-export default function PatientEvaluation({ params }: { params: { id: string } }) {
+export default function PatientEvaluationComplete({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('anamnesis')
   const [isSaving, setIsSaving] = useState(false)
@@ -102,20 +103,20 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
   const handleSaveEvaluation = async () => {
     setIsSaving(true)
     try {
-      // TODO: Salvar no Supabase
-      console.log('Salvando avaliação completa:', evaluationData)
+      // TODO: Salvar no Supabase usando a nova migration
+      console.log('🏥 Salvando avaliação completa:', evaluationData)
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      toast.success('Avaliação salva com sucesso!', {
+      toast.success('✅ Avaliação salva com sucesso!', {
         description: 'Dados salvos no prontuário do paciente'
       })
       
       router.push(`/patients/${params.id}`)
     } catch (error) {
       console.error('Erro ao salvar:', error)
-      toast.error('Erro ao salvar avaliação')
+      toast.error('❌ Erro ao salvar avaliação')
     } finally {
       setIsSaving(false)
     }
@@ -130,7 +131,7 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
       ...prev,
       rangeOfMotion: [...prev.rangeOfMotion, reading]
     }))
-    toast.success('Medição goniométrica adicionada')
+    toast.success('📐 Medição goniométrica adicionada')
   }
 
   const handleFunctionalTestResult = (testName: string, result: any) => {
@@ -138,11 +139,11 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
       ...prev,
       functionalTests: [...prev.functionalTests, { testName, ...result }]
     }))
-    toast.success(`Teste ${testName} registrado`)
+    toast.success(`🧪 Teste ${testName} registrado`)
   }
 
   const handlePhotoSaved = (photoData: any) => {
-    toast.success('Foto salva com sucesso', {
+    toast.success('📷 Foto salva com sucesso', {
       description: 'Imagem adicionada ao prontuário'
     })
   }
@@ -167,17 +168,17 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push(`/patients/${params.id}`)}
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push(`/patients/${params.id}`)}
                     className="flex items-center gap-2"
-                >
+                  >
                     <ArrowLeft className="h-4 w-4" />
-                  Voltar
-                </Button>
-                <div>
+                    Voltar
+                  </Button>
+                  <div>
                     <h1 className="text-3xl font-bold text-foreground">
-                      Avaliação Fisioterapêutica Completa
+                      🏥 Avaliação Fisioterapêutica Completa
                     </h1>
                     <p className="text-muted-foreground">
                       Paciente: {evaluationData.patientName} • {new Date(evaluationData.evaluationDate).toLocaleDateString('pt-BR')}
@@ -200,7 +201,7 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                   </EnhancedButton>
                 </div>
               </div>
-
+              
               {/* Status rápido */}
               <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                 <CompactPainScale
@@ -356,19 +357,19 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                       <Label className="text-lg font-semibold mb-4 block">
                         Escala Visual de Dor (EVA)
                       </Label>
-                    <PainScale
-                      value={evaluationData.painScale}
-                      onChange={handlePainScaleChange}
-                      showEmojis={true}
-                      showNumbers={true}
-                      showLabels={true}
-                      size="lg"
-                    />
+                      <PainScale
+                        value={evaluationData.painScale}
+                        onChange={handlePainScaleChange}
+                        showEmojis={true}
+                        showNumbers={true}
+                        showLabels={true}
+                        size="lg"
+                      />
                     </div>
-                    
+
                     {evaluationData.painScale > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                          <div>
+                        <div>
                           <Label htmlFor="painLocation">Localização da Dor</Label>
                           <Input
                             id="painLocation"
@@ -377,9 +378,9 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                             onChange={(e) => setEvaluationData(prev => ({ 
                               ...prev, painLocation: e.target.value 
                             }))}
-                            />
-                          </div>
-                          <div>
+                          />
+                        </div>
+                        <div>
                           <Label htmlFor="painCharacteristics">Características da Dor</Label>
                           <Input
                             id="painCharacteristics"
@@ -389,8 +390,8 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                               ...prev, painCharacteristics: e.target.value 
                             }))}
                           />
-                          </div>
-                          <div>
+                        </div>
+                        <div>
                           <Label htmlFor="painTriggers">Fatores que Pioram</Label>
                           <Input
                             id="painTriggers"
@@ -399,9 +400,9 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                             onChange={(e) => setEvaluationData(prev => ({ 
                               ...prev, painTriggers: e.target.value 
                             }))}
-                            />
-                          </div>
-                          <div>
+                          />
+                        </div>
+                        <div>
                           <Label htmlFor="painRelief">Fatores que Melhoram</Label>
                           <Input
                             id="painRelief"
@@ -420,8 +421,8 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
 
               {/* GONIOMETRIA */}
               <TabsContent value="goniometry" className="space-y-6">
-                    <Card>
-                      <CardHeader>
+                <Card>
+                  <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Ruler className="h-5 w-5" />
                       Goniometria Digital
@@ -429,8 +430,8 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                     <CardDescription>
                       Medição de amplitude de movimento articular
                     </CardDescription>
-                      </CardHeader>
-                      <CardContent>
+                  </CardHeader>
+                  <CardContent>
                     <Goniometer
                       onSave={handleGoniometryReading}
                       className="max-w-2xl mx-auto"
@@ -444,15 +445,15 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                             <div key={index} className="p-4 border rounded-lg">
                               <div className="font-medium">{reading.joint} - {reading.movement}</div>
                               <div className="text-sm text-muted-foreground mt-1">
-                                  Ativo: {reading.activeRom}° | Passivo: {reading.passiveRom}°
+                                Ativo: {reading.activeRom}° | Passivo: {reading.passiveRom}°
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                      </CardContent>
-                    </Card>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* TESTES FUNCIONAIS */}
@@ -468,9 +469,32 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                <FunctionalTests 
+                    <FunctionalTests
                       onTestResult={handleFunctionalTestResult}
-                />
+                    />
+                    
+                    {evaluationData.functionalTests.length > 0 && (
+                      <div className="mt-8">
+                        <h4 className="font-semibold mb-4">Testes Realizados:</h4>
+                        <div className="space-y-3">
+                          {evaluationData.functionalTests.map((test, index) => (
+                            <div key={index} className="p-4 border rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="font-medium">{test.testName}</div>
+                                  <div className="text-sm text-muted-foreground">{test.description}</div>
+                                </div>
+                                <Badge 
+                                  variant={test.result === 'positive' ? 'destructive' : 'default'}
+                                >
+                                  {test.result}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -535,8 +559,8 @@ export default function PatientEvaluation({ params }: { params: { id: string } }
                           rows={4}
                         />
                       </div>
-                      </div>
-                      
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="estimatedSessions">Sessões Estimadas</Label>
