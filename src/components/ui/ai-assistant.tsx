@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   useAIChat, 
@@ -54,7 +58,8 @@ import {
   Clock,
   BarChart3,
   Activity,
-  Dumbbell
+  Dumbbell,
+  Video
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/cn'

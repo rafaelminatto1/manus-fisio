@@ -21,6 +21,7 @@ import {
   ArrowLeft, Save, FileText, Activity, TestTube, Ruler, Camera, 
   User, Target, AlertCircle, Stethoscope, CheckCircle 
 } from 'lucide-react'
+import { use } from 'react'
 
 // Interface completa para avaliação fisioterapêutica
 interface EvaluationData {
@@ -59,15 +60,16 @@ interface EvaluationData {
   generalNotes: string
 }
 
-export default function PatientEvaluationComplete({ params }: { params: { id: string } }) {
+export default function PatientEvaluationComplete({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('anamnesis')
   const [isSaving, setIsSaving] = useState(false)
   
   const [evaluationData, setEvaluationData] = useState<EvaluationData>({
-    patientId: params.id,
+    patientId: resolvedParams.id,
     patientName: 'Maria Silva', // TODO: Buscar do banco
-    evaluationDate: new Date().toISOString().split('T')[0],
+    evaluationDate: new Date().toISOString().split('T')[0]!,
     
     // Anamnese
     mainComplaint: '',
@@ -113,7 +115,7 @@ export default function PatientEvaluationComplete({ params }: { params: { id: st
         description: 'Dados salvos no prontuário do paciente'
       })
       
-      router.push(`/patients/${params.id}`)
+      router.push(`/patients/${resolvedParams.id}`)
     } catch (error) {
       console.error('Erro ao salvar:', error)
       toast.error('❌ Erro ao salvar avaliação')
@@ -170,7 +172,7 @@ export default function PatientEvaluationComplete({ params }: { params: { id: st
                 <div className="flex items-center gap-4">
                   <Button
                     variant="ghost"
-                    onClick={() => router.push(`/patients/${params.id}`)}
+                    onClick={() => router.push(`/patients/${resolvedParams.id}`)}
                     className="flex items-center gap-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -470,7 +472,13 @@ export default function PatientEvaluationComplete({ params }: { params: { id: st
                   </CardHeader>
                   <CardContent>
                     <FunctionalTests
-                      onTestResult={handleFunctionalTestResult}
+                      onSaveResult={(result) => {
+                        setEvaluationData(prev => ({
+                          ...prev,
+                          functionalTests: [...prev.functionalTests, result]
+                        }))
+                        toast.success(`🧪 Teste registrado`)
+                      }}
                     />
                     
                     {evaluationData.functionalTests.length > 0 && (
@@ -513,9 +521,9 @@ export default function PatientEvaluationComplete({ params }: { params: { id: st
                   </CardHeader>
                   <CardContent>
                     <PhotoCapture
-                      patientId={params.id}
-                      category="initial"
-                      onPhotoSaved={handlePhotoSaved}
+                      patientId={resolvedParams.id}
+                      patientName={evaluationData.patientName}
+                      onSavePhoto={handlePhotoSaved}
                     />
                   </CardContent>
                 </Card>

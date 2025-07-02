@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let videos = [];
+    let videos: any[] = [];
     
     if (condition) {
       // Busca específica para condição fisioterapêutica
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let videos;
+    let videos: any[] = [];
     
     if (condition) {
       videos = await YouTubeService.searchPhysiotherapyVideos(condition);

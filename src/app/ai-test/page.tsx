@@ -87,7 +87,7 @@ export default function AITestPage() {
         {recommendation ? (
           <div className="space-y-6">
             {/* Status da Recomendação */}
-            <Card className={order-2 }>
+            <Card className="order-2">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

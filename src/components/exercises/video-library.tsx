@@ -59,7 +59,7 @@ export default function VideoLibrary({
     try {
       const videos = await YouTubeService.searchPhysiotherapyVideos(condition);
       setVideos(videos);
-      if (videos.length > 0) {
+      if (videos.length > 0 && videos[0]) {
         setSelectedVideo(videos[0]);
       }
     } catch (error) {
@@ -80,7 +80,7 @@ export default function VideoLibrary({
         order: 'relevance'
       });
       setVideos(videos);
-      if (videos.length > 0 && !selectedVideo) {
+      if (videos.length > 0 && videos[0]) {
         setSelectedVideo(videos[0]);
       }
     } catch (error) {

@@ -25,6 +25,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+interface AIRecommendation {
+  exercises: string[]
+  videos: string[]
+  frequency: number
+  duration: number
+  confidence: number
+  reasoning: string
+}
+
 export default function AIAutomationPage() {
   const [activeTab, setActiveTab] = useState('ai-assistant');
   
@@ -36,7 +45,7 @@ export default function AIAutomationPage() {
     painLevel: '',
     lifestyle: ''
   });
-  const [aiRecommendation, setAiRecommendation] = useState(null);
+  const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Estados para Automação
