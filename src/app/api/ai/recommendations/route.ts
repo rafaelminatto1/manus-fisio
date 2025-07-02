@@ -1,61 +1,68 @@
-import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { AIEngine, PatientProfile } from '@/services/ai';
 
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const authError = await authenticateRequest(req);
-    if (authError) {
-      return authError;
+    const body = await request.json();
+    const { profile } = body;
+
+    // Validar dados obrigatórios
+    if (!profile || !profile.age || !profile.condition || !profile.severity || 
+        profile.painLevel === undefined || !profile.lifestyle) {
+      return NextResponse.json(
+        { error: 'Dados do perfil incompletos' },
+        { status: 400 }
+      );
     }
 
-    // Simular recomendações baseadas em IA
-    const recommendations = [
-      {
-        id: '1',
-        type: 'project',
-        title: 'Otimizar Protocolo de Reabilitação',
-        description: 'Com base nos dados, pacientes com lesões similares respondem melhor a exercícios funcionais nas primeiras 3 semanas.',
-        confidence: 87,
-        reasoning: 'Análise de 150+ casos similares mostra 23% melhora no tempo de recuperação',
-        actionable: true,
-        priority: 'high'
-      },
-      {
-        id: '2',
-        type: 'notebook',
-        title: 'Padronizar Documentação de Avaliação',
-        description: 'Criar template para avaliação inicial que inclua escalas de dor e testes funcionais específicos.',
-        confidence: 92,
-        reasoning: 'Templates estruturados reduzem tempo de documentação em 40%',
-        actionable: true,
-        priority: 'medium'
-      },
-      {
-        id: '3',
-        type: 'mentorship',
-        title: 'Revisar Cronograma de Supervisão',
-        description: 'Estagiários com supervisão semanal mostram 35% melhor performance em avaliações.',
-        confidence: 78,
-        reasoning: 'Dados históricos de 24 meses de programa de estágio',
-        actionable: true,
-        priority: 'medium'
-      },
-      {
-        id: '4',
-        type: 'task',
-        title: 'Implementar Sistema de Feedback',
-        description: 'Pacientes que recebem feedback estruturado têm 28% maior aderência ao tratamento.',
-        confidence: 84,
-        reasoning: 'Meta-análise de estudos sobre aderência em fisioterapia',
-        actionable: true,
-        priority: 'high'
-      }
-    ]
+    // Gerar recomendação usando IA
+    const recommendation = AIEngine.generateRecommendation(profile as PatientProfile);
 
-    return Response.json({ recommendations })
+    // Log para auditoria
+    console.log('🤖 IA Recommendation Generated:', {
+      condition: profile.condition,
+      severity: profile.severity,
+      confidence: recommendation.confidence,
+      timestamp: new Date().toISOString()
+    });
+
+    return NextResponse.json({
+      success: true,
+      recommendation,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        engine_version: '1.0',
+        profile_completeness: 100
+      }
+    });
 
   } catch (error) {
-    console.error('Recommendations Error:', error)
-    return new Response('Internal Server Error', { status: 500 })
+    console.error('❌ Erro ao gerar recomendação de IA:', error);
+    
+    return NextResponse.json(
+      { 
+        error: 'Erro interno do servidor',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
+      { status: 500 }
+    );
   }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    message: '🤖 API de Recomendações de IA - Manus Fisio',
+    version: '1.0',
+    endpoints: {
+      'POST /api/ai/recommendations': 'Gerar recomendação baseada no perfil do paciente'
+    },
+    status: 'ativo',
+    features: [
+      'Análise inteligente de perfil',
+      'Recomendações personalizadas',
+      'Base de conhecimento clínico',
+      'Score de confiança',
+      'Justificativa baseada em evidências'
+    ]
+  });
 } 
