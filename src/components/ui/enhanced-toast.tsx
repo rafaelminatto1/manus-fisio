@@ -44,31 +44,33 @@ export function Toast({ id, title, description, type, duration = 5000, onClose }
   const Icon = variant.icon
 
   React.useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        handleClose()
-      }, duration)
+    if (duration <= 0) {
+      return
+    }
 
-      const progressTimer = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev - (100 / (duration / 100))
-          return newProgress <= 0 ? 0 : newProgress
-        })
-      }, 100)
+    const timer = setTimeout(() => {
+      handleClose()
+    }, duration)
 
-      return () => {
-        clearTimeout(timer)
-        clearInterval(progressTimer)
-      }
+    const progressTimer = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev - (100 / (duration / 100))
+        return newProgress <= 0 ? 0 : newProgress
+      })
+    }, 100)
+
+    return () => {
+      clearTimeout(timer)
+      clearInterval(progressTimer)
     }
   }, [duration])
 
-  const handleClose = () => {
+  const handleClose = React.useCallback(() => {
     setIsVisible(false)
     setTimeout(() => {
       onClose?.(id)
     }, 300)
-  }
+  }, [id, onClose])
 
   return (
     <div
