@@ -98,7 +98,10 @@ export function ExercisePrescriptionComponent({
 
   const handleUpdatePrescription = (index: number, updates: Partial<ExercisePrescription>) => {
     const updated = [...selectedExercises]
-    updated[index] = { ...updated[index], ...updates }
+    updated[index] = {
+      ...updated[index],
+      ...Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined && v !== null))
+    } as ExercisePrescription
     setSelectedExercises(updated)
   }
 
