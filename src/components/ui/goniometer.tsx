@@ -13,6 +13,15 @@ interface GoniometerProps {
   className?: string
 }
 
+interface GoniometerReading {
+  joint: string
+  movement: string
+  activeRom: number
+  passiveRom: number
+  notes: string
+  date: string
+}
+
 const joints = [
   { name: 'Ombro', movements: ['Flexão', 'Abdução', 'Rotação'] },
   { name: 'Cotovelo', movements: ['Flexão', 'Extensão'] },

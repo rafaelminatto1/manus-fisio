@@ -73,8 +73,10 @@ export class YouTubeService {
    */
   static async searchPhysiotherapyVideos(condition: string): Promise<YouTubeVideo[]> {
     const queries = this.getPhysiotherapyQueries(condition);
+    const query = (queries[0] ?? `exercícios ${condition} fisioterapia`) as string;
+    
     const videos = await this.searchVideos({
-      query: queries[0], // Usa a primeira query mais específica
+      query,
       maxResults: 8,
       order: 'relevance'
     });

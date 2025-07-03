@@ -196,7 +196,7 @@ export class AutomationEngine {
       successfulExecutions,
       successRate: Math.round(successRate),
       lastExecution: this.executions.length > 0 ? 
-        this.executions[this.executions.length - 1].triggeredAt : null
+        this.executions[this.executions.length - 1]?.triggeredAt : null
     };
   }
 }
