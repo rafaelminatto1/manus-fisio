@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { type PhysiotherapyEvaluation } from '@/types/database.types' // Assumindo que o tipo existe
 
@@ -11,7 +11,6 @@ export interface EvaluationFormData extends Partial<PhysiotherapyEvaluation> {
 }
 
 export function usePatientEvaluation(patientId: string, evaluationId?: string) {
-  const supabase = createClient()
   const [evaluationData, setEvaluationData] = useState<EvaluationFormData | null>(null)
   const [patientName, setPatientName] = useState<string>('')
   const [loading, setLoading] = useState(true)

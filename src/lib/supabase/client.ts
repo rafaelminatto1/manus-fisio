@@ -7,8 +7,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase client: variáveis de ambiente não definidas (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)')
 }
 
-export function createClientInstance() {
-  return createClient(supabaseUrl, supabaseAnonKey)
-}
-
-export const supabase = createClientInstance() 
+export const supabase = createClient(supabaseUrl, supabaseAnonKey) 
