@@ -26,13 +26,20 @@ import {
 
 // A interface de dados local foi removida, pois agora usamos a do hook.
 
-export default function PatientEvaluationPage({ params }: { params: { id: string } }) {
+export default function PatientEvaluationPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  const patientId = params.id
+  const [patientId, setPatientId] = useState<string>('')
   // Permite carregar uma avaliação específica para edição
   const evaluationId = searchParams.get('evaluationId') || undefined
+
+  // Handle the Promise params in Next.js 15
+  React.useEffect(() => {
+    params.then((resolvedParams) => {
+      setPatientId(resolvedParams.id)
+    })
+  }, [params])
 
   const {
     evaluationData,
@@ -102,7 +109,7 @@ export default function PatientEvaluationPage({ params }: { params: { id: string
     return Math.round((fields.filter(Boolean).length / fields.length) * 100)
   }
 
-  if (loading) {
+  if (!patientId || loading) {
     return (
       <AuthGuard>
         <DashboardLayout>
