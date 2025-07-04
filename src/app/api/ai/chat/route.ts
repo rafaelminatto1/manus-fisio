@@ -75,15 +75,18 @@ function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   const realIP = request.headers.get('x-real-ip')
   
-  if (forwarded != null && typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim()
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    const parts = forwarded.split(',');
+    if (parts.length > 0 && typeof parts[0] === 'string') {
+      return parts[0].trim();
+    }
   }
   
-  if (realIP != null && typeof realIP === 'string' && realIP.length > 0) {
-    return realIP
+  if (typeof realIP === 'string' && realIP.length > 0) {
+    return realIP;
   }
   
-  return 'unknown'
+  return 'unknown';
 }
 
 // Função de rate limiting
