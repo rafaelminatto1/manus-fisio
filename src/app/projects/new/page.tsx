@@ -7,608 +7,348 @@ import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  ArrowLeft, 
-  FolderPlus, 
-  Stethoscope, 
-  GraduationCap, 
-  FileSearch,
-  Users,
-  Calendar as CalendarIcon,
-  Target,
-  DollarSign,
-  Tag,
-  Save,
-  Sparkles,
-  Activity,
-  Heart,
-  Brain
-} from 'lucide-react'
+import { createClient } from '@/lib/auth'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
-import { useCreateProjectMutation } from '@/hooks/use-project-mutations'
-import { supabase } from '@/lib/supabase'
+import { ArrowLeft, FolderKanban, Save, X, Calendar, User } from 'lucide-react'
 
-// Templates específicos para projetos de fisioterapia
-const PROJECT_TEMPLATES = [
-  {
-    id: 'protocolo-reabilitacao',
-    name: 'Protocolo de Reabilitação',
-    description: 'Desenvolvimento de protocolos específicos para diferentes condições',
-    icon: Activity,
-    category: 'clinical',
-    priority: 'high',
-    estimated_hours: 120,
-    tasks: [
-      'Revisão bibliográfica sobre a condição',
-      'Análise de evidências científicas',
-      'Desenvolvimento do protocolo inicial',
-      'Validação com equipe multidisciplinar',
-      'Teste piloto com pacientes',
-      'Refinamento baseado nos resultados',
-      'Documentação final e aprovação'
-    ]
-  },
-  {
-    id: 'supervisao-estagiarios',
-    name: 'Programa de Supervisão de Estagiários',
-    description: 'Estruturação do programa de supervisão e mentoria de estagiários',
-    icon: GraduationCap,
-    category: 'education',
-    priority: 'medium',
-    estimated_hours: 80,
-    tasks: [
-      'Definição de objetivos de aprendizagem',
-      'Criação de cronograma de atividades',
-      'Desenvolvimento de ferramentas de avaliação',
-      'Treinamento de supervisores',
-      'Implementação do programa piloto',
-      'Coleta de feedback dos estagiários',
-      'Ajustes e melhorias no programa'
-    ]
-  },
-  {
-    id: 'pesquisa-clinica',
-    name: 'Pesquisa Clínica',
-    description: 'Desenvolvimento de projeto de pesquisa clínica em fisioterapia',
-    icon: FileSearch,
-    category: 'research',
-    priority: 'high',
-    estimated_hours: 200,
-    tasks: [
-      'Formulação da questão de pesquisa',
-      'Revisão sistemática da literatura',
-      'Desenvolvimento do protocolo de pesquisa',
-      'Submissão ao comitê de ética',
-      'Recrutamento de participantes',
-      'Coleta de dados',
-      'Análise estatística',
-      'Redação do artigo científico',
-      'Submissão para publicação'
-    ]
-  },
-  {
-    id: 'melhoria-qualidade',
-    name: 'Projeto de Melhoria da Qualidade',
-    description: 'Implementação de melhorias nos processos de atendimento',
-    icon: Target,
-    category: 'administrative',
-    priority: 'medium',
-    estimated_hours: 60,
-    tasks: [
-      'Identificação de oportunidades de melhoria',
-      'Análise de processos atuais',
-      'Definição de indicadores de qualidade',
-      'Desenvolvimento de plano de ação',
-      'Implementação das melhorias',
-      'Monitoramento de resultados',
-      'Padronização das boas práticas'
-    ]
-  },
-  {
-    id: 'educacao-continuada',
-    name: 'Programa de Educação Continuada',
-    description: 'Desenvolvimento de programa de capacitação da equipe',
-    icon: Brain,
-    category: 'education',
-    priority: 'medium',
-    estimated_hours: 100,
-    tasks: [
-      'Levantamento de necessidades de capacitação',
-      'Planejamento do programa educacional',
-      'Desenvolvimento de material didático',
-      'Agendamento de palestras e workshops',
-      'Execução das atividades educativas',
-      'Avaliação da efetividade do programa',
-      'Certificação dos participantes'
-    ]
-  },
-  {
-    id: 'estudo-caso',
-    name: 'Estudo de Caso Multicêntrico',
-    description: 'Documentação e análise de casos clínicos complexos',
-    icon: Heart,
-    category: 'research',
-    priority: 'low',
-    estimated_hours: 40,
-    tasks: [
-      'Seleção de casos relevantes',
-      'Coleta de dados clínicos',
-      'Documentação fotográfica (quando aplicável)',
-      'Análise do desfecho terapêutico',
-      'Redação do estudo de caso',
-      'Revisão por pares',
-      'Apresentação em eventos científicos'
-    ]
-  }
+interface ProjectFormData {
+  title: string
+  description: string
+  status: string
+  priority: string
+  start_date: string
+  end_date: string
+  tags: string[]
+}
+
+const STATUS_OPTIONS = [
+  { value: 'planning', label: 'Planejamento' },
+  { value: 'active', label: 'Ativo' },
+  { value: 'on_hold', label: 'Em Espera' },
+  { value: 'completed', label: 'Concluído' }
 ]
 
-export default function NewProjectPage() {
+const PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Baixa' },
+  { value: 'medium', label: 'Média' },
+  { value: 'high', label: 'Alta' },
+  { value: 'urgent', label: 'Urgente' }
+]
+
+export default function NewProject() {
   const router = useRouter()
   const { user } = useAuth()
-  const createProjectMutation = useCreateProjectMutation()
-  
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof PROJECT_TEMPLATES[0] | null>(null)
-  const [status, setStatus] = useState<'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'>('planning')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium')
-  const [category, setCategory] = useState<'clinical' | 'research' | 'education' | 'administrative'>('clinical')
-  const [dueDate, setDueDate] = useState<Date>()
-  const [budget, setBudget] = useState('')
-  const [tags, setTags] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState<ProjectFormData>({
+    title: '',
+    description: '',
+    status: 'planning',
+    priority: 'medium',
+    start_date: '',
+    end_date: '',
+    tags: []
+  })
+  const [tagInput, setTagInput] = useState('')
 
-  const handleCreateProject = async () => {
-    if (!title.trim() || !selectedTemplate) {
-      toast.error('Título e template são obrigatórios')
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!user) {
+      toast.error('Você precisa estar logado para criar um projeto')
+      return
+    }
+
+    if (!formData.title.trim()) {
+      toast.error('O título é obrigatório')
       return
     }
 
     setIsLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('Usuário não autenticado')
-        return
-      }
-
-      // Criar projeto
-      const projectData = {
-        title: title.trim(),
-        description: description.trim() || null,
-        template_type: selectedTemplate.id,
-        estimated_hours: selectedTemplate.estimated_hours,
-        deadline: dueDate?.toISOString(),
-        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
-        status: 'planning',
-        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        created_by: user.id,
-        metadata: {
-          template_name: selectedTemplate.name,
-          category: selectedTemplate.category,
-          created_from: 'projects_new_page'
-        }
-      }
-
-      const { data: project, error: projectError } = await supabase
+      const { data, error } = await supabase
         .from('projects')
-        .insert(projectData)
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          start_date: formData.start_date || null,
+          end_date: formData.end_date || null,
+          tags: formData.tags,
+          created_by: user.id,
+          metadata: {
+            created_at: new Date().toISOString(),
+            project_type: 'clinical'
+          }
+        })
         .select()
         .single()
 
-      if (projectError) throw projectError
+      if (error) throw error
 
-      // Criar tarefas automáticas baseadas no template
-      if (selectedTemplate.tasks) {
-        const tasks = selectedTemplate.tasks.map((taskName: string, index: number) => ({
-          title: taskName,
-          description: `Tarefa automática criada a partir do template ${selectedTemplate.name}`,
-          project_id: project.id,
-          status: 'todo',
-          priority: 'medium',
-          created_by: user.id,
-          due_date: dueDate ? new Date(dueDate) : null,
-          metadata: {
-            auto_generated: true,
-            template_task: true,
-            task_order: index + 1
-          }
-        }))
-
-        const { error: tasksError } = await supabase
-          .from('tasks')
-          .insert(tasks)
-
-        if (tasksError) {
-          console.warn('Erro ao criar tarefas automáticas:', tasksError)
-        }
-      }
-
-      // Criar notificação de sucesso
+      // Log da atividade
       await supabase
-        .from('notifications')
+        .from('activity_logs')
         .insert({
           user_id: user.id,
-          title: '🎯 Projeto criado com sucesso',
-          message: `"${title}" foi criado usando template ${selectedTemplate.name}`,
-          type: 'success',
-          metadata: {
-            project_id: project.id,
-            template_used: selectedTemplate.name
+          action: 'create',
+          entity_type: 'project',
+          entity_id: data.id,
+          details: {
+            title: formData.title,
+            status: formData.status,
+            priority: formData.priority
           }
         })
 
       toast.success('Projeto criado com sucesso!')
-      router.push(`/projects?highlight=${project.id}`)
-      
-    } catch (error) {
+      router.push(`/projects/${data.id}`)
+    } catch (error: any) {
       console.error('Erro ao criar projeto:', error)
-      toast.error('Erro ao criar projeto. Tente novamente.')
+      toast.error('Erro ao criar projeto: ' + error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'clinical': return 'bg-blue-100 text-blue-800'
-      case 'research': return 'bg-purple-100 text-purple-800'
-      case 'education': return 'bg-green-100 text-green-800'
-      case 'administrative': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
+  const handleAddTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }))
+      setTagInput('')
     }
   }
 
-  const getCategoryName = (category: string) => {
-    switch (category) {
-      case 'clinical': return 'Clínico'
-      case 'research': return 'Pesquisa'
-      case 'education': return 'Educação'
-      case 'administrative': return 'Administrativo'
-      default: return 'Geral'
-    }
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }))
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800'
-      case 'high': return 'bg-orange-100 text-orange-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'low': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
     }
   }
 
   return (
     <AuthGuard>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+          <div className="flex items-center gap-4 mb-8">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => router.back()}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               Voltar
             </Button>
-            <div>
+            <div className="flex items-center gap-3">
+              <FolderKanban className="h-6 w-6 text-green-500" />
               <h1 className="text-2xl font-bold">Criar Novo Projeto</h1>
-              <p className="text-muted-foreground">
-                Crie um projeto usando templates específicos para fisioterapia
-              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FolderPlus className="h-5 w-5" />
-                    Informações Básicas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Título *</label>
-                    <Input
-                      placeholder="Ex: Protocolo de Reabilitação Pós-Cirúrgica"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
+          {/* Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Projeto</CardTitle>
+              <CardDescription>
+                Crie um novo projeto clínico para organizar tarefas, procedimentos e acompanhamento de pacientes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Título */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título do Projeto *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Ex: Reabilitação Pós-Cirúrgica - Paciente João Silva"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="text-sm font-medium">Descrição</label>
-                    <Textarea
-                      placeholder="Descreva os objetivos e escopo do projeto..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
+                {/* Descrição */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Descreva os objetivos, procedimentos e metas deste projeto..."
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    disabled={isLoading}
+                    rows={4}
+                  />
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planning">Planejamento</SelectItem>
-                          <SelectItem value="active">Ativo</SelectItem>
-                          <SelectItem value="on_hold">Em Espera</SelectItem>
-                          <SelectItem value="completed">Concluído</SelectItem>
-                          <SelectItem value="cancelled">Cancelado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Prioridade</label>
-                      <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Baixa</SelectItem>
-                          <SelectItem value="medium">Média</SelectItem>
-                          <SelectItem value="high">Alta</SelectItem>
-                          <SelectItem value="urgent">Urgente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Categoria</label>
-                      <Select value={category} onValueChange={(v: any) => setCategory(v)}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="clinical">Clínico</SelectItem>
-                          <SelectItem value="research">Pesquisa</SelectItem>
-                          <SelectItem value="education">Educação</SelectItem>
-                          <SelectItem value="administrative">Administrativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Data de Entrega</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full mt-1 justify-start text-left font-normal",
-                              !dueDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dueDate ? format(dueDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={dueDate}
-                            onSelect={setDueDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Orçamento (R$)</label>
-                      <div className="relative mt-1">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          placeholder="0,00"
-                          value={budget}
-                          onChange={(e) => setBudget(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Tags</label>
-                      <div className="relative mt-1">
-                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="ortopedia, neurologia, cardiologia"
-                          value={tags}
-                          onChange={(e) => setTags(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    Templates de Projeto
-                  </CardTitle>
-                  <CardDescription>
-                    Escolha um template para começar com tarefas e estrutura predefinidas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4">
-                    {PROJECT_TEMPLATES.map((template) => {
-                      const Icon = template.icon
-                      return (
-                        <div
-                          key={template.id}
-                          className={cn(
-                            'p-4 border rounded-lg cursor-pointer transition-all',
-                            selectedTemplate?.id === template.id 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-border hover:border-primary/50'
-                          )}
-                          onClick={() => setSelectedTemplate(template)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              <Icon className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-medium">{template.name}</h3>
-                                <Badge className={`text-xs ${getCategoryColor(template.category)}`}>
-                                  {getCategoryName(template.category)}
-                                </Badge>
-                                <Badge className={`text-xs ${getPriorityColor(template.priority)}`}>
-                                  {template.priority}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {template.description}
-                              </p>
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span>📅 {template.estimated_hours}h estimadas</span>
-                                <span>📋 {template.tasks.length} tarefas</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    
-                    {/* Opção em branco */}
-                    <div
-                      className={cn(
-                        'p-4 border rounded-lg cursor-pointer transition-all',
-                        selectedTemplate === null 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      )}
-                      onClick={() => setSelectedTemplate(null)}
+                {/* Status e Prioridade */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                      disabled={isLoading}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <FolderPlus className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium mb-1">Projeto em Branco</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Comece com um projeto vazio e adicione tarefas conforme necessário
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleCreateProject}
-                  disabled={!title.trim() || createProjectMutation.isPending || isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {isLoading ? 'Criando...' : createProjectMutation.isPending ? 'Criando...' : 'Criar Projeto'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.back()}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Prioridade</Label>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a prioridade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRIORITY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            {/* Preview */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Preview do Template</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedTemplate ? (
-                    <div className="space-y-4">
-                      {(() => {
-                        const template = PROJECT_TEMPLATES.find(t => t.id === selectedTemplate.id)
-                        if (!template) return null
-                        const Icon = template.icon
-                        return (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-5 w-5 text-blue-600" />
-                              <span className="font-medium">{template.name}</span>
-                            </div>
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">
-                                {template.description}
-                              </p>
-                              <div className="flex gap-2">
-                                <Badge className={getCategoryColor(template.category)}>
-                                  {getCategoryName(template.category)}
-                                </Badge>
-                                <Badge className={getPriorityColor(template.priority)}>
-                                  {template.priority}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-sm mb-2">Tarefas Incluídas:</h4>
-                              <div className="space-y-1 max-h-40 overflow-y-auto">
-                                {template.tasks.map((task, index) => (
-                                  <div key={index} className="text-xs p-2 bg-gray-50 rounded text-muted-foreground">
-                                    {index + 1}. {task}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FolderPlus className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">
-                        Selecione um template para ver o preview
-                      </p>
+                {/* Datas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_date">Data de Início</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="end_date">Data Prevista de Conclusão</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                      disabled={isLoading}
+                      min={formData.start_date}
+                    />
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="tags"
+                      placeholder="Ex: ortopedia, reabilitação, pós-cirúrgico..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddTag}
+                      disabled={isLoading || !tagInput.trim()}
+                    >
+                      Adicionar
+                    </Button>
+                  </div>
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="ml-1 hover:text-red-500"
+                            disabled={isLoading}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
+
+                {/* Informações Adicionais */}
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    📋 Próximos Passos
+                  </h3>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>• Após criar o projeto, você poderá adicionar tarefas e colaboradores</li>
+                    <li>• Configure marcos e prazos importantes</li>
+                    <li>• Associe pacientes e documentos relevantes</li>
+                    <li>• Monitore o progresso através do dashboard</li>
+                  </ul>
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !formData.title.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isLoading ? 'Criando...' : 'Criar Projeto'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}

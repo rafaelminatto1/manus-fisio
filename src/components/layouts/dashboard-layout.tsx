@@ -11,6 +11,7 @@ import { EnhancedCard } from '@/components/ui/enhanced-card'
 import { GlobalSearch, useGlobalSearch } from '@/components/ui/global-search'
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 import { AIAssistant } from '@/components/ui/ai-assistant'
+import { AIAssistant as NewAIAssistant, AIAssistantToggle } from '@/components/AIAssistant'
 import { ThemeCustomizer } from '@/components/ui/theme-customizer'
 import { PerformanceMonitor } from '@/components/ui/performance-monitor'
 import { useAuth } from '@/hooks/use-auth'
@@ -32,6 +33,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
   const router = useRouter()
 
   // Hooks para sistemas avançados
@@ -214,17 +216,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-6">
           {children}
         </main>
       </div>
 
-      {/* Sistemas Globais */}
+      {/* AI Assistant Integration */}
+      <AIAssistantToggle
+        isOpen={isAIAssistantOpen}
+        onClick={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+        hasNewInsights={false} // TODO: Implementar lógica de novos insights
+      />
+      
+      <NewAIAssistant
+        isOpen={isAIAssistantOpen}
+        onToggle={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+      />
+
+      {/* Existing overlays */}
       <GlobalSearch isOpen={searchOpen} onClose={closeSearch} />
       <KeyboardShortcuts isOpen={shortcutsOpen} onClose={closeShortcuts} />
-      
-      {/* AI Assistant */}
       <AIAssistant />
+      <ThemeCustomizer />
+      <PerformanceMonitor />
     </div>
   )
 } 

@@ -31,7 +31,10 @@
     "vercel:login": "vercel login",
     "supabase:status": "npx supabase status",
     "supabase:types": "npx supabase gen types typescript --project-id hycudcwtuocmufahpsnmr --schema public > src/types/database.types.ts",
-    "supabase:reset": "npx supabase db reset"
+    "supabase:reset": "npx supabase db reset",
+    "analyze": "cross-env ANALYZE=true next build",
+    "analyze:server": "cross-env BUNDLE_ANALYZE=server next build",
+    "analyze:browser": "cross-env BUNDLE_ANALYZE=browser next build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -39,9 +42,9 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.4",
-    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.10.0",
+    "@next/bundle-analyzer": "^15.3.5",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -75,8 +78,6 @@
     "@tanstack/react-query": "^5.81.2",
     "@tanstack/react-query-devtools": "^5.81.2",
     "@tiptap/extension-character-count": "^2.22.3",
-    "@tiptap/extension-collaboration": "^2.22.3",
-    "@tiptap/extension-collaboration-cursor": "^2.22.3",
     "@tiptap/extension-color": "^2.22.3",
     "@tiptap/extension-highlight": "^2.22.3",
     "@tiptap/extension-image": "^2.22.3",
@@ -100,16 +101,15 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^0.2.0",
+    "cross-env": "^7.0.3",
     "date-fns": "^3.6.0",
     "dotenv": "^16.6.1",
     "framer-motion": "^12.19.1",
-    "lottie-react": "^2.4.1",
     "lucide-react": "^0.303.0",
     "next": "^15.1.5",
     "next-pwa": "^5.6.0",
     "openai": "^5.8.1",
     "react": "^18.2.0",
-    "react-beautiful-dnd": "^13.1.1",
     "react-big-calendar": "^1.19.4",
     "react-chartjs-2": "^5.3.0",
     "react-countup": "^6.5.3",
@@ -119,7 +119,6 @@
     "react-hotkeys-hook": "^5.1.0",
     "react-intersection-observer": "^9.16.0",
     "react-markdown": "^9.1.0",
-    "react-spring": "^9.7.5",
     "react-syntax-highlighter": "^5.8.0",
     "react-youtube": "^10.1.0",
     "recharts": "^2.15.4",
@@ -127,12 +126,8 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "twilio": "^5.7.1",
     "typescript": "^5.3.3",
-    "use-gesture": "^1.0.0",
     "vaul": "^0.8.0",
-    "y-websocket": "^2.1.0",
-    "yjs": "^13.6.27",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -161,12 +156,13 @@
     "postcss": "^8.4.32",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.9",
-    "supabase": "^2.26.9",
+    "supabase": "^2.30.4",
     "tailwindcss": "^3.4.0",
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  }
+  },
+  "packageManager": "npm@8.19.2"
 }

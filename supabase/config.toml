@@ -4,14 +4,14 @@
 # working directory name when running `supabase init`.
 project_id = "manus"
 
-[project]
-id = "manus-fisio-sistema"
+# [project]
+# id = "manus-fisio-sistema"
 # The Supabase organization that will own the new project.
 # You can find this in the URL of your existing projects (e.g. https://app.supabase.com/org/your-org-slug/...)
 # organization_id = "your-org-slug"
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
 # server_version;` on the remote database to check.
-major_version = 15
+# major_version = 15
 
 [api]
 enabled = true

@@ -6,6 +6,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from 'sonner'
 import { SmartNotifications } from '@/components/ui/smart-notifications'
 import { PWAInstaller } from '@/components/ui/pwa-installer'
+import { AIAssistantProvider } from '@/contexts/AIAssistantContext'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -103,18 +104,20 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <QueryProvider>
-          <AuthProvider>
-            <div id="root" className="min-h-screen bg-background text-foreground">
-              {children}
-            </div>
-            <Toaster 
-              position="top-right"
-              richColors
-              closeButton
-            />
-          </AuthProvider>
-        </QueryProvider>
+        <AIAssistantProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <div id="root" className="min-h-screen bg-background text-foreground">
+                {children}
+              </div>
+              <Toaster 
+                position="top-right"
+                richColors
+                closeButton
+              />
+            </AuthProvider>
+          </QueryProvider>
+        </AIAssistantProvider>
       </body>
     </html>
   )

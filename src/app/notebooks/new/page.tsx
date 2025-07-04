@@ -7,618 +7,291 @@ import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  ArrowLeft, 
-  FileText, 
-  Stethoscope, 
-  Brain, 
-  Heart, 
-  Activity,
-  Users,
-  Calendar,
-  Target,
-  ClipboardList,
-  Save,
-  Sparkles
-} from 'lucide-react'
+import { createClient } from '@/lib/auth'
 import { toast } from 'sonner'
-import { useCreateNotebookMutation } from '@/hooks/use-notebook-mutations'
-import { supabase } from '@/lib/supabase'
-import { cn } from '@/lib/utils'
+import { ArrowLeft, BookOpen, Save, X } from 'lucide-react'
 
-// Templates específicos para fisioterapia
-const FISIO_TEMPLATES = [
-  {
-    id: 'protocolo-reabilitacao',
-    name: 'Protocolo de Reabilitação',
-    description: 'Template estruturado para protocolos de reabilitação ortopédica',
-    icon: Activity,
-    category: 'clinical',
-    content: `# Protocolo de Reabilitação
+interface NotebookFormData {
+  title: string
+  description: string
+  category: string
+  is_public: boolean
+  tags: string[]
+}
 
-## 📋 Dados do Paciente
-- **Nome:** 
-- **Idade:** 
-- **Diagnóstico:** 
-- **Data de Início:** 
-
-## 🎯 Objetivos do Tratamento
-1. 
-2. 
-3. 
-
-## 💪 Exercícios Prescritos
-
-### Fase 1 - Inicial (Semanas 1-2)
-- **Exercício 1:** 
-  - Séries: 
-  - Repetições: 
-  - Carga: 
-- **Exercício 2:** 
-
-### Fase 2 - Intermediária (Semanas 3-4)
-- **Exercício 1:** 
-
-### Fase 3 - Avançada (Semanas 5-6)
-- **Exercício 1:** 
-
-## 📈 Progressão Esperada
-- **Semana 1-2:** 
-- **Semana 3-4:** 
-- **Semana 5-6:** 
-
-## ✅ Critérios de Alta
-1. 
-2. 
-3. `
-  },
-  {
-    id: 'avaliacao-estagiario',
-    name: 'Avaliação de Estagiário',
-    description: 'Formulário para avaliação de desempenho de estagiários',
-    icon: Users,
-    category: 'education',
-    content: `# Avaliação de Estagiário
-
-## 👤 Informações do Estagiário
-- **Nome:** 
-- **Universidade:** 
-- **Período:** 
-- **Supervisor:** 
-
-## 🎯 Competências Técnicas
-
-### Avaliação Clínica
-- **Anamnese:** ⭐⭐⭐⭐⭐
-- **Exame Físico:** ⭐⭐⭐⭐⭐
-- **Diagnóstico Funcional:** ⭐⭐⭐⭐⭐
-
-### Técnicas Terapêuticas
-- **Exercícios Terapêuticos:** ⭐⭐⭐⭐⭐
-- **Terapia Manual:** ⭐⭐⭐⭐⭐
-- **Recursos Físicos:** ⭐⭐⭐⭐⭐
-
-### Habilidades Interpessoais
-- **Comunicação com Pacientes:** ⭐⭐⭐⭐⭐
-- **Trabalho em Equipe:** ⭐⭐⭐⭐⭐
-- **Ética Profissional:** ⭐⭐⭐⭐⭐
-
-## 📝 Áreas de Melhoria
-1. 
-2. 
-3. 
-
-## 🎯 Plano de Desenvolvimento
-1. 
-2. 
-3. 
-
-## 💬 Feedback do Supervisor
-`
-  },
-  {
-    id: 'plano-tratamento',
-    name: 'Plano de Tratamento',
-    description: 'Template para elaboração de planos de tratamento fisioterapêutico',
-    icon: Target,
-    category: 'clinical',
-    content: `# Plano de Tratamento Fisioterapêutico
-
-## 📋 Informações do Paciente
-- **Nome:** 
-- **Idade:** 
-- **Profissão:** 
-- **Diagnóstico Médico:** 
-
-## 🔍 Diagnóstico Fisioterapêutico
-- **Disfunção Principal:** 
-- **Disfunções Secundárias:** 
-- **Prognóstico:** 
-
-## 🎯 Metas Funcionais
-
-### Curto Prazo (2-4 semanas)
-1. 
-2. 
-3. 
-
-### Médio Prazo (1-2 meses)
-1. 
-2. 
-3. 
-
-### Longo Prazo (3-6 meses)
-1. 
-2. 
-3. 
-
-## 🛠️ Intervenções Planejadas
-
-### Recursos Terapêuticos
-- **Cinesioterapia:** 
-- **Terapia Manual:** 
-- **Eletroterapia:** 
-- **Outras:** 
-
-### Frequência de Tratamento
-- **Sessões por semana:** 
-- **Duração da sessão:** 
-- **Tempo total estimado:** 
-
-## 📅 Cronograma de Reavaliação
-- **1ª Reavaliação:** 
-- **2ª Reavaliação:** 
-- **Reavaliação Final:** 
-
-## 📋 Orientações Domiciliares
-1. 
-2. 
-3. `
-  },
-  {
-    id: 'relatorio-progresso',
-    name: 'Relatório de Progresso',
-    description: 'Template para acompanhamento da evolução do paciente',
-    icon: Heart,
-    category: 'clinical',
-    content: `# Relatório de Progresso
-
-## 📋 Dados da Sessão
-- **Data:** 
-- **Paciente:** 
-- **Sessão nº:** 
-- **Fisioterapeuta:** 
-
-## 📈 Status Atual do Paciente
-
-### Avaliação Subjetiva
-- **Queixas do Paciente:** 
-- **Nível de Dor (0-10):** 
-- **Limitações Funcionais:** 
-
-### Avaliação Objetiva
-- **ADM (Amplitude de Movimento):** 
-- **Força Muscular:** 
-- **Funcionalidade:** 
-- **Outros Achados:** 
-
-## 🔄 Evolução desde Última Avaliação
-
-### Melhorias Observadas
-1. 
-2. 
-3. 
-
-### Dificuldades Encontradas
-1. 
-2. 
-3. 
-
-## 🛠️ Ajustes no Tratamento
-- **Exercícios Modificados:** 
-- **Novos Recursos:** 
-- **Orientações Atualizadas:** 
-
-## 🎯 Próximos Passos
-1. 
-2. 
-3. 
-
-## 📅 Próxima Sessão
-- **Data:** 
-- **Foco:** 
-- **Objetivos:** `
-  },
-  {
-    id: 'estudo-caso',
-    name: 'Estudo de Caso',
-    description: 'Template para documentação de estudos de caso clínicos',
-    icon: Brain,
-    category: 'research',
-    content: `# Estudo de Caso Clínico
-
-## 📋 Apresentação do Caso
-- **Idade:** 
-- **Sexo:** 
-- **Profissão:** 
-- **Queixa Principal:** 
-
-## 📖 História Clínica
-
-### História da Doença Atual
-- **Início dos Sintomas:** 
-- **Evolução:** 
-- **Tratamentos Anteriores:** 
-
-### História Pregressa
-- **Doenças Relevantes:** 
-- **Cirurgias:** 
-- **Medicamentos:** 
-
-## 🔍 Exame Físico
-
-### Inspeção
-- **Postura:** 
-- **Marcha:** 
-- **Deformidades:** 
-
-### Palpação
-- **Pontos Dolorosos:** 
-- **Temperatura:** 
-- **Edema:** 
-
-### Testes Específicos
-- **Teste 1:** 
-- **Teste 2:** 
-- **Teste 3:** 
-
-## 🎯 Raciocínio Clínico
-
-### Hipóteses Diagnósticas
-1. 
-2. 
-3. 
-
-### Diagnóstico Fisioterapêutico
-- **Principal:** 
-- **Secundário:** 
-
-## 💡 Plano Terapêutico
-- **Objetivos:** 
-- **Intervenções:** 
-- **Prognóstico:** 
-
-## 📊 Resultados
-- **Desfecho:** 
-- **Aprendizados:** 
-- **Considerações:** `
-  }
+const CATEGORIES = [
+  'Protocolos Clínicos',
+  'Procedimentos',
+  'Estudos de Caso',
+  'Documentação',
+  'Templates',
+  'Pesquisa',
+  'Outros'
 ]
 
-export default function NewNotebookPage() {
+export default function NewNotebook() {
   const router = useRouter()
   const { user } = useAuth()
-  const createNotebookMutation = useCreateNotebookMutation()
-  
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof FISIO_TEMPLATES[0] | null>(null)
-  const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private')
-  const [tags, setTags] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState<NotebookFormData>({
+    title: '',
+    description: '',
+    category: '',
+    is_public: false,
+    tags: []
+  })
+  const [tagInput, setTagInput] = useState('')
 
-  const handleCreateNotebook = async () => {
-    if (!title.trim() || !selectedTemplate) {
-      toast.error('Título e template são obrigatórios')
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!user) {
+      toast.error('Você precisa estar logado para criar um notebook')
+      return
+    }
+
+    if (!formData.title.trim()) {
+      toast.error('O título é obrigatório')
       return
     }
 
     setIsLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('Usuário não autenticado')
-        return
-      }
-
-      // Criar notebook
-      const notebookData = {
-        title: title.trim(),
-        content: selectedTemplate.content,
-        template_type: selectedTemplate.id,
-        status: 'draft',
-        visibility: visibility as 'private' | 'team' | 'public',
-        tags: tags.split(',').map((tag: string) => tag.trim()).filter(Boolean),
-        created_by: user.id,
-        metadata: {
-          template_name: selectedTemplate.name,
-          category: selectedTemplate.category,
-          created_from: 'notebooks_new_page'
-        }
-      }
-
-      const { data: notebook, error: notebookError } = await supabase
+      const { data, error } = await supabase
         .from('notebooks')
-        .insert(notebookData)
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          is_public: formData.is_public,
+          tags: formData.tags,
+          created_by: user.id,
+          metadata: {
+            created_at: new Date().toISOString(),
+            template_type: 'clinical'
+          }
+        })
         .select()
         .single()
 
-      if (notebookError) throw notebookError
+      if (error) throw error
 
-      // Criar página inicial do notebook
-      const pageData = {
-        title: 'Página Principal',
-        content: selectedTemplate.content,
-        notebook_id: notebook.id,
-        order_index: 0,
-        created_by: user.id,
-        metadata: {
-          auto_generated: true,
-          template_page: true
-        }
-      }
-
-      const { error: pageError } = await supabase
-        .from('pages')
-        .insert(pageData)
-
-      if (pageError) {
-        console.warn('Erro ao criar página inicial:', pageError)
-      }
-
-      // Criar notificação de sucesso
+      // Log da atividade
       await supabase
-        .from('notifications')
+        .from('activity_logs')
         .insert({
           user_id: user.id,
-          title: '📝 Notebook criado com sucesso',
-          message: `"${title}" foi criado usando template ${selectedTemplate.name}`,
-          type: 'success',
-          metadata: {
-            notebook_id: notebook.id,
-            template_used: selectedTemplate.name
+          action: 'create',
+          entity_type: 'notebook',
+          entity_id: data.id,
+          details: {
+            title: formData.title,
+            category: formData.category
           }
         })
 
       toast.success('Notebook criado com sucesso!')
-      router.push(`/notebooks?highlight=${notebook.id}`)
-      
-    } catch (error) {
+      router.push(`/notebooks/${data.id}`)
+    } catch (error: any) {
       console.error('Erro ao criar notebook:', error)
-      toast.error('Erro ao criar notebook. Tente novamente.')
+      toast.error('Erro ao criar notebook: ' + error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'clinical': return 'bg-blue-100 text-blue-800'
-      case 'education': return 'bg-green-100 text-green-800'
-      case 'research': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+  const handleAddTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }))
+      setTagInput('')
     }
   }
 
-  const getCategoryName = (category: string) => {
-    switch (category) {
-      case 'clinical': return 'Clínico'
-      case 'education': return 'Educação'
-      case 'research': return 'Pesquisa'
-      default: return 'Geral'
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }))
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
     }
   }
 
   return (
     <AuthGuard>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+          <div className="flex items-center gap-4 mb-8">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => router.back()}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               Voltar
             </Button>
-            <div>
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-6 w-6 text-blue-500" />
               <h1 className="text-2xl font-bold">Criar Novo Notebook</h1>
-              <p className="text-muted-foreground">
-                Crie um notebook usando templates específicos para fisioterapia
-              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Informações Básicas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Título *</label>
+          {/* Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Notebook</CardTitle>
+              <CardDescription>
+                Crie um novo notebook para organizar protocolos, procedimentos ou documentação clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Título */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Ex: Protocolo de Reabilitação Pós-Cirúrgica"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+
+                {/* Descrição */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Descreva o objetivo e conteúdo deste notebook..."
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    disabled={isLoading}
+                    rows={3}
+                  />
+                </div>
+
+                {/* Categoria */}
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tags */}
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2">
                     <Input
-                      placeholder="Ex: Protocolo de Reabilitação Pós-Cirúrgica"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="mt-1"
+                      id="tags"
+                      placeholder="Adicionar tag..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium">Descrição</label>
-                    <Textarea
-                      placeholder="Breve descrição do conteúdo do notebook..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium">Visibilidade:</label>
-                    <Select value={visibility} onValueChange={(v) => setVisibility(v as 'private' | 'team' | 'public')}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="private">Privado</SelectItem>
-                        <SelectItem value="team">Equipe</SelectItem>
-                        <SelectItem value="public">Público</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    Templates de Fisioterapia
-                  </CardTitle>
-                  <CardDescription>
-                    Escolha um template específico para começar com uma estrutura organizada
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {FISIO_TEMPLATES.map((template) => {
-                      const Icon = template.icon
-                      return (
-                        <div
-                          key={template.id}
-                          className={cn(
-                            'p-4 border rounded-lg cursor-pointer transition-all',
-                            selectedTemplate?.id === template.id 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-border hover:border-primary/50'
-                          )}
-                          onClick={() => setSelectedTemplate(template)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              <Icon className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-medium text-sm">{template.name}</h3>
-                                <Badge className={`text-xs ${getCategoryColor(template.category)}`}>
-                                  {getCategoryName(template.category)}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                {template.description}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    
-                    {/* Opção em branco */}
-                    <div
-                      className={cn(
-                        'p-4 border rounded-lg cursor-pointer transition-all',
-                        selectedTemplate === null 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      )}
-                      onClick={() => setSelectedTemplate(null)}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddTag}
+                      disabled={isLoading || !tagInput.trim()}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <FileText className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm mb-1">Notebook em Branco</h3>
-                          <p className="text-xs text-muted-foreground">
-                            Comece com um documento completamente vazio
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      Adicionar
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleCreateNotebook}
-                  disabled={!title.trim() || createNotebookMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {createNotebookMutation.isPending ? 'Criando...' : 'Criar Notebook'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.back()}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedTemplate ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const template = FISIO_TEMPLATES.find(t => t.id === selectedTemplate.id)
-                          if (!template) return null
-                          const Icon = template.icon
-                          return (
-                            <>
-                              <Icon className="h-5 w-5 text-blue-600" />
-                              <span className="font-medium">{template.name}</span>
-                            </>
-                          )
-                        })()}
-                      </div>
-                      <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-md max-h-64 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-xs">
-                          {selectedTemplate.content.slice(0, 500)}
-                          {(selectedTemplate.content.length || 0) > 500 && '...'}
-                        </pre>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">
-                        Selecione um template para ver o preview
-                      </p>
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="ml-1 hover:text-red-500"
+                            disabled={isLoading}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
+
+                {/* Visibilidade */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_public"
+                    checked={formData.is_public}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_public: e.target.checked }))}
+                    disabled={isLoading}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="is_public" className="text-sm">
+                    Tornar este notebook público (visível para toda a equipe)
+                  </Label>
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !formData.title.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isLoading ? 'Criando...' : 'Criar Notebook'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     </AuthGuard>
   )
-} 
+}
