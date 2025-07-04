@@ -5,9 +5,7 @@ import { X, Send, Loader2, Copy, ChevronDown, MessageSquare, Brain, BarChart3, S
 import { useAIAssistant } from '@/contexts/AIAssistantContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
@@ -99,23 +97,14 @@ const MessageComponent = React.memo(({
             </div>
           )}
           
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onCopy(message.content)}
-                  className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Copiar mensagem</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onCopy(message.content)}
+            className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+          >
+            <Copy className="w-3 h-3" />
+          </Button>
         </div>
       </div>
     </div>
@@ -345,49 +334,44 @@ export const AIAssistant = React.memo<AIAssistantProps>(({
 
         {/* Messages */}
         <div className="flex-1 flex flex-col min-h-0">
-          <ScrollArea 
-            ref={scrollAreaRef}
-            className="flex-1 p-3"
-          >
-            <div className="space-y-4">
-              {messages.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">
-                    Olá! Como posso ajudar você hoje?
-                  </p>
-                  <p className="text-xs mt-2">
-                    Faça perguntas sobre fisioterapia, análise de pacientes ou gestão da clínica.
-                  </p>
+          <div className="space-y-4 p-3 flex-1 overflow-y-auto">
+            {messages.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">
+                  Olá! Como posso ajudar você hoje?
+                </p>
+                <p className="text-xs mt-2">
+                  Faça perguntas sobre fisioterapia, análise de pacientes ou gestão da clínica.
+                </p>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <MessageComponent
+                  key={message.id}
+                  message={message}
+                  onCopy={handleCopyMessage}
+                  isLatest={index === messages.length - 1}
+                />
+              ))
+            )}
+            
+            {state.isLoading && (
+              <div className="flex gap-3 p-3 rounded-lg bg-muted/30 mr-8">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                  <Bot className="w-4 h-4" />
                 </div>
-              ) : (
-                messages.map((message, index) => (
-                  <MessageComponent
-                    key={message.id}
-                    message={message}
-                    onCopy={handleCopyMessage}
-                    isLatest={index === messages.length - 1}
-                  />
-                ))
-              )}
-              
-              {state.isLoading && (
-                <div className="flex gap-3 p-3 rounded-lg bg-muted/30 mr-8">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">
-                      Processando sua solicitação...
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">
+                    Processando sua solicitação...
+                  </span>
                 </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
 
           {/* Quick Actions */}
           {showQuickActions && messages.length === 0 && (
