@@ -1,5 +1,8 @@
-/** @type {import('next').NextConfig} */
-const withPWA = require('next-pwa')({
+import withPWA from 'next-pwa'
+import withBundleAnalyzer from '@next/bundle-analyzer'
+import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
+
+const pwaConfig = withPWA({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
@@ -30,10 +33,11 @@ const withPWA = require('next-pwa')({
   ]
 })
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+const bundleAnalyzerConfig = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 })
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   // Performance optimizations
   swcMinify: true,
@@ -78,7 +82,6 @@ const nextConfig = {
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Bundle analysis
     if (process.env.BUNDLE_ANALYZE === 'server' && isServer) {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
       config.plugins.push(
         new BundleAnalyzerPlugin({
           analyzerMode: 'static',
@@ -89,7 +92,6 @@ const nextConfig = {
     }
 
     if (process.env.BUNDLE_ANALYZE === 'browser' && !isServer) {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
       config.plugins.push(
         new BundleAnalyzerPlugin({
           analyzerMode: 'static',
@@ -241,4 +243,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withBundleAnalyzer(withPWA(nextConfig))
+export default bundleAnalyzerConfig(pwaConfig(nextConfig))
