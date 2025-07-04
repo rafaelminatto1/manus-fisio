@@ -75,11 +75,11 @@ function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   const realIP = request.headers.get('x-real-ip')
   
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
+  if (forwarded != null && typeof forwarded === 'string' && forwarded.length > 0) {
     return forwarded.split(',')[0].trim()
   }
   
-  if (typeof realIP === 'string' && realIP.length > 0) {
+  if (realIP != null && typeof realIP === 'string' && realIP.length > 0) {
     return realIP
   }
   
