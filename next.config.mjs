@@ -40,7 +40,6 @@ const bundleAnalyzerConfig = withBundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Performance optimizations
-  swcMinify: true,
   compress: true,
   poweredByHeader: false,
   
@@ -54,14 +53,6 @@ const nextConfig = {
       'react-chartjs-2',
       'recharts'
     ],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
 
   // Image optimization
