@@ -216,6 +216,7 @@ export const AIAssistant = React.memo<AIAssistantProps>(({
       const timeoutId = setTimeout(scrollToBottom, 100)
       return () => clearTimeout(timeoutId)
     }
+    return () => {} // Return empty cleanup function
   }, [messages.length, scrollToBottom])
 
   // Focus input when opened
@@ -226,6 +227,7 @@ export const AIAssistant = React.memo<AIAssistantProps>(({
       }, 100)
       return () => clearTimeout(timeoutId)
     }
+    return () => {} // Return empty cleanup function
   }, [isOpen])
 
   // Create conversation if none exists
