@@ -153,6 +153,7 @@ export function PrescriptionForm({ exercise, onSave, onCancel, loading = false }
       endDate.setDate(endDate.getDate() + (weeksToComplete * 7))
       return endDate
     }
+    return null // Return null when conditions are not met
   }
 
   return (
