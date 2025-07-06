@@ -280,6 +280,7 @@ export function AnimatedToast({
       const timer = setTimeout(onClose, duration)
       return () => clearTimeout(timer)
     }
+    return () => {} // Return empty cleanup function
   }, [isVisible, duration, onClose])
 
   const typeConfig = {
