@@ -156,6 +156,10 @@ const nextConfig = {
       }
     }
 
+    if (isServer) {
+      config.externals.push('@supabase/supabase-js');
+    }
+
     return config
   },
 
