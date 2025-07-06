@@ -126,8 +126,8 @@ export const isMockMode = () => {
   return true
 }
 
-// Cliente principal do Supabase
-export const supabasePrincipal = hasValidCredentials() 
+// Cliente principal do Supabase - só inicializar no browser
+const supabasePrincipal = typeof window !== 'undefined' && hasValidCredentials() 
   ? createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
       auth: {
         autoRefreshToken: true,
