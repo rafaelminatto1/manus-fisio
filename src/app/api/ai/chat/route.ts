@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Chamar OpenAI com timeout e retry
-    let completion
+    let completion: OpenAI.Chat.Completions.ChatCompletion | undefined
     let retryCount = 0
     const maxRetries = 2
 
@@ -253,19 +253,21 @@ export async function POST(request: NextRequest) {
             setTimeout(() => reject(new Error('Timeout')), 30000)
           )
         ]) as OpenAI.Chat.Completions.ChatCompletion
-
         break // Sucesso, sair do loop
       } catch (error) {
         retryCount++
         if (retryCount > maxRetries) {
           throw error
         }
-        // Aguardar antes do retry
         await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
       }
     }
 
-    const response = completion.choices[0]?.message?.content
+    if (!completion) {
+      throw new Error('Falha ao obter resposta da IA')
+    }
+
+    const response = completion!.choices[0]?.message?.content
 
     if (!response) {
       throw new Error('Resposta vazia da IA')
