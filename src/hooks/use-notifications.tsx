@@ -464,18 +464,8 @@ export function useNotificationStats() {
   })
 }
 
-// Função para configurar push notifications service worker
-export function setupPushNotifications() {
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('SW registered: ', registration)
-      })
-      .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError)
-      })
-  }
-}
+// Commenting out service worker registration to prevent 'self is not defined' errors during build
+// navigator.serviceWorker.register('/sw.js')
 
 // Hook para notificações inteligentes baseadas em contexto
 export function useSmartNotifications() {
