@@ -4,7 +4,7 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
 
 const pwaConfig = withPWA({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
+  disable: true, // Temporarily disable PWA to fix build issues
   register: true,
   skipWaiting: true,
   runtimeCaching: [
