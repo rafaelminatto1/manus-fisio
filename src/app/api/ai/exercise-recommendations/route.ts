@@ -154,7 +154,7 @@ function generateRecommendations(
   // Score exercises based on multiple factors
   const scoredExercises = relevantExercises.map(exercise => {
     let score = 0
-    let reasoning = []
+    const reasoning = []
 
     // Base relevance score
     const relevanceScore = exercise.indications.filter(indication =>

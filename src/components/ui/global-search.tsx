@@ -109,7 +109,6 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       return () => clearTimeout(timer)
     } else {
       setResults([])
-      return undefined;
     }
   }, [query])
 

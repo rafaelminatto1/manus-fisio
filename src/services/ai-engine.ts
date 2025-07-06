@@ -135,7 +135,7 @@ export class AIEngine {
    * Aplica modificações baseadas no perfil
    */
   private static applyModifications(baseRec: any, profile: PatientProfile) {
-    let modifiedRec = { ...baseRec };
+    const modifiedRec = { ...baseRec };
 
     // Modificação por idade
     const ageModifier = profile.age < 30 ? 1.1 : profile.age > 60 ? 0.8 : 1.0;

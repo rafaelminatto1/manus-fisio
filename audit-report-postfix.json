@@ -1,0 +1,97 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "prismjs": {
+      "name": "prismjs",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1105770,
+          "name": "prismjs",
+          "dependency": "prismjs",
+          "title": "PrismJS DOM Clobbering vulnerability",
+          "url": "https://github.com/advisories/GHSA-x7hr-w5r2-h6wg",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-94"
+          ],
+          "cvss": {
+            "score": 4.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:L/I:L/A:N"
+          },
+          "range": "<1.30.0"
+        }
+      ],
+      "effects": [
+        "refractor"
+      ],
+      "range": "<1.30.0",
+      "nodes": [
+        "node_modules/refractor/node_modules/prismjs"
+      ],
+      "fixAvailable": {
+        "name": "react-syntax-highlighter",
+        "version": "5.8.0",
+        "isSemVerMajor": true
+      }
+    },
+    "react-syntax-highlighter": {
+      "name": "react-syntax-highlighter",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "refractor"
+      ],
+      "effects": [],
+      "range": ">=6.0.0",
+      "nodes": [
+        "node_modules/react-syntax-highlighter"
+      ],
+      "fixAvailable": {
+        "name": "react-syntax-highlighter",
+        "version": "5.8.0",
+        "isSemVerMajor": true
+      }
+    },
+    "refractor": {
+      "name": "refractor",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "prismjs"
+      ],
+      "effects": [
+        "react-syntax-highlighter"
+      ],
+      "range": "<=4.6.0",
+      "nodes": [
+        "node_modules/refractor"
+      ],
+      "fixAvailable": {
+        "name": "react-syntax-highlighter",
+        "version": "5.8.0",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 3,
+      "high": 0,
+      "critical": 0,
+      "total": 3
+    },
+    "dependencies": {
+      "prod": 953,
+      "dev": 528,
+      "optional": 72,
+      "peer": 43,
+      "peerOptional": 0,
+      "total": 1555
+    }
+  }
+}

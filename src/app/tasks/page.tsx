@@ -1,5 +1,6 @@
 import { createServerAuthClient } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
+import KanbanBoard from '@/components/tasks/KanbanBoard';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,7 @@ export default async function TasksPage() {
         <p className="text-muted-foreground">Gerencie suas tarefas com o quadro Kanban.</p>
       </header>
       <main className="flex-grow overflow-hidden">
-        <div className="p-4 text-center text-muted-foreground">
-          O quadro de tarefas está em manutenção.
-        </div>
+        <KanbanBoard />
       </main>
     </div>
   );

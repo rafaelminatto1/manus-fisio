@@ -230,7 +230,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       
       <NewAIAssistant
         isOpen={isAIAssistantOpen}
-        onToggle={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+        onClose={() => setIsAIAssistantOpen(false)}
       />
 
       {/* Existing overlays */}

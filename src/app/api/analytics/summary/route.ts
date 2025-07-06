@@ -5,6 +5,12 @@ import { Database } from '@/types/database.types';
 export async function GET() {
   const supabase = await createServerAuthClient();
 
+  // Checagem explícita de autenticação
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  }
+
   try {
     // Execute all analytics queries in parallel
     const [

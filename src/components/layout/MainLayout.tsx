@@ -1,5 +1,9 @@
 import { AIAssistant, AIAssistantToggle } from '@/components/AIAssistant'
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
+
+interface MainLayoutProps {
+  children: ReactNode;
+}
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
@@ -17,7 +21,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       
       <AIAssistant
         isOpen={isAIAssistantOpen}
-        onToggle={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+        onClose={() => setIsAIAssistantOpen(false)}
       />
       
       {/* ... rest of existing code ... */}

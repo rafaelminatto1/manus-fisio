@@ -165,3 +165,16 @@ SELECT * FROM public.verify_critical_fixes();
 -- 3. Monitorar performance por 24h
 -- 
 -- ===================================================== 
+
+-- Correções críticas de segurança Supabase
+
+-- 1. Definir search_path explícito na função public.verify_optimizations
+ALTER FUNCTION public.verify_optimizations() SET search_path = public;
+
+-- 2. Mover extensão pg_trgm para schema dedicado (extensions)
+CREATE SCHEMA IF NOT EXISTS extensions;
+ALTER EXTENSION pg_trgm SET SCHEMA extensions;
+
+-- 3. Ativar proteção contra senhas vazadas (executar no painel Supabase Auth)
+-- No painel Supabase: Auth > Passwords > Leaked password protection > Enable
+-- Não há comando SQL direto para esta configuração, faça pelo painel web. 
