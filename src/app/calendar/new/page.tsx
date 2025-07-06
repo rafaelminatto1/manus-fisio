@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { AuthGuard } from '@/components/auth/auth-guard'
@@ -152,7 +152,7 @@ export default function NewEvent() {
   }
 
   // Configurar horários padrão na primeira carga
-  React.useEffect(() => {
+  useEffect(() => {
     if (!formData.start_time && !formData.end_time) {
       setDefaultTimes()
     }
