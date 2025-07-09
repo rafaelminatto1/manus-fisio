@@ -10,8 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAuth } from '@/hooks/use-auth'
-import { createClient } from '@/lib/auth'
+import { useAuth } from '@/hooks/use-auth-fixed'
+import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { ArrowLeft, Calendar, Save, Clock, MapPin, Users } from 'lucide-react'
 
@@ -48,11 +48,6 @@ export default function NewEvent() {
     location: '',
     attendees: []
   })
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/auth';
+import { supabase } from '@/lib/supabase/client'; // CORREÇÃO
 import { toast } from 'sonner';
 import { Project, Task, TeamMember } from './use-projects-data'; // Importar tipos
 
@@ -29,10 +29,7 @@ interface UpdateProjectInput {
 
 export function useCreateProjectMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // REMOVED: createClient call
 
   return useMutation<Project, Error, CreateProjectInput>({
     mutationFn: async (newProjectData) => {
@@ -81,10 +78,7 @@ export function useCreateProjectMutation() {
 
 export function useUpdateProjectMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // REMOVED: createClient call
 
   return useMutation<Project, Error, UpdateProjectInput>({
     mutationFn: async (updatedProjectData) => {
@@ -167,10 +161,7 @@ interface UpdateTaskInput {
 
 export function useCreateTaskMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // REMOVED: createClient call
 
   return useMutation<Task, Error, CreateTaskInput>({
     mutationFn: async (newTaskData) => {
@@ -220,10 +211,7 @@ export function useCreateTaskMutation() {
 
 export function useUpdateTaskMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // REMOVED: createClient call
 
   return useMutation<Task, Error, UpdateTaskInput>({
     mutationFn: async (updatedTaskData) => {

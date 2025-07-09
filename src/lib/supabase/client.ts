@@ -1,41 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database.types'
 
-// Verificar se estamos no lado do servidor
-const isServer = typeof window === 'undefined'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase environment variables are not set!');
+}
 
-// Configurações específicas para evitar erros
-const supabaseOptions = {
+// Cria e exporta uma instância única do cliente Supabase para o lado do cliente.
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: !isServer,
-    persistSession: !isServer,
-    detectSessionInUrl: !isServer,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
-  global: {
-    headers: {
-      'X-Client-Info': 'manus-fisio',
-    },
-  },
-}
-
-// Criar cliente do Supabase
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  supabaseOptions
-)
-
-// Função para criar cliente específico para server-side
-export function createSupabaseClient() {
-  return createClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    supabaseOptions
-  )
-}
-
-export default supabase 
+}); 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/auth';
+import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 interface Notebook {
@@ -20,10 +20,6 @@ interface Notebook {
 }
 
 const fetchNotebooks = async (): Promise<Notebook[]> => {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session?.user) {

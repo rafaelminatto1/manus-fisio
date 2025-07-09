@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { createClient, isMockMode } from '@/lib/auth'
-import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
+import { isMockMode } from '@/lib/auth'
+import { useAuth } from '@/hooks/use-auth-fixed'
 import { 
   Bell, 
   X, 
@@ -140,10 +141,6 @@ export function SmartNotifications({
   const updateSettingsMutation = useUpdateNotificationSettings()
   const { permission, requestPermission, isSupported } = usePushNotificationPermission()
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const isUsingMock = isMockMode()
 
   useEffect(() => {

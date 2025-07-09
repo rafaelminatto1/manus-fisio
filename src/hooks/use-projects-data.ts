@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/auth';
+import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 // Interfaces expandidas (duplicadas para evitar dependência circular, idealmente em um types/projects.ts)
@@ -200,10 +200,6 @@ export function useProjectsQuery() {
         console.warn('Fetching mock projects data.');
         return mockProjects;
       }
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -233,10 +229,6 @@ export function useTasksQuery() {
         console.warn('Fetching mock tasks data.');
         return mockTasks;
       }
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data, error } = await supabase
         .from('tasks')
         .select(`
@@ -260,18 +252,13 @@ export function useTasksQuery() {
 // Hook para buscar estatísticas de projetos
 export function useProjectStatsQuery() {
   return useQuery<ProjectStats, Error>({
-    queryKey: ['project-stats'],
+    queryKey: ['projectStats'],
     queryFn: async () => {
       if (isMockMode) {
         console.warn('Fetching mock project stats data.');
         return mockStats;
       }
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      const { data, error } = await supabase
-        .rpc('get_project_stats'); // Assumindo que esta RPC existe e retorna ProjectStats
+      const { data, error } = await supabase.rpc('get_project_stats');
 
       if (error) {
         console.error('Error fetching project stats:', error);

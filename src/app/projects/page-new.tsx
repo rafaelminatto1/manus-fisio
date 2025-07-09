@@ -6,8 +6,9 @@ import { AuthGuard } from '@/components/auth/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/hooks/use-auth'
-import { createClient } from '@/lib/auth'
+import { useAuth } from '@/hooks/use-auth-fixed' // CORREÇÃO: Usar o hook refatorado
+import { supabase } from '@/lib/supabase/client' // CORREÇÃO: Importar a instância do cliente
+import { isMockMode as checkIsMockMode } from '@/lib/auth' // Renomeado para evitar conflito
 import { 
   Plus, 
   Filter, 
@@ -86,11 +87,7 @@ export default function ProjectsPageNew() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const isMockMode = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL
+  const isMockMode = checkIsMockMode() || !process.env.NEXT_PUBLIC_SUPABASE_URL
 
   useEffect(() => {
     if (isMockMode || !user) {

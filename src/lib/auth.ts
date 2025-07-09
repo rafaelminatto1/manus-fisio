@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as supabaseCreateClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database.types'; // Assumindo que você tem este tipo
+import { createClient as createServerClient } from '@/lib/supabase/server'; // Importando o cliente de servidor
 
-// Configuração do Supabase para o lado do servidor
-const supabase = supabaseCreateClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Usar a service role key para validação de token no backend
-);
-
-// Exportação compatível para frontend e hooks
 export const createClient = supabaseCreateClient;
 export const isMockMode = () => process.env.NEXT_PUBLIC_MOCK_MODE === 'true';
 export const mockUser = {
@@ -28,22 +21,14 @@ export async function authenticateRequest(req: NextRequest): Promise<NextRespons
   const token = authHeader.split(' ')[1];
 
   try {
-    // Validar o token JWT usando o Supabase Auth
-    // Nota: Para validação de token de sessão de usuário, o ideal é usar supabase.auth.getUser()
-    // que verifica o token e retorna o usuário.
+    const supabase = createServerClient(); // Instancia o cliente de servidor
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
       console.error('Authentication error:', error?.message || 'User not found');
       return new NextResponse('Unauthorized: Invalid token', { status: 401 });
     }
-
-    // Se a autenticação for bem-sucedida, você pode anexar o objeto 'user' à requisição
-    // ou retornar o 'user' para ser usado na rota.
-    // Para Next.js, como 'req' é imutável, você pode retornar o user e a rota o utiliza.
-    // Por simplicidade, aqui retornamos null para sucesso e a rota pode inferir o usuário
-    // ou você pode modificar esta função para retornar { user: user } em caso de sucesso.
-    // Por enquanto, vamos manter o null para sucesso e a rota fará a própria validação.
+    
     return null; // Autenticação bem-sucedida
   } catch (error) {
     console.error('Token validation failed:', error);

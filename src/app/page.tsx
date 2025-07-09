@@ -16,8 +16,9 @@ import { Progress } from '@/components/ui/progress'
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard'
 import { ThemeCustomizer } from '@/components/ui/theme-customizer'
 import { DashboardWidgets, useDashboardWidgets } from '@/components/ui/dashboard-widgets'
-import { useAuth } from '@/hooks/use-auth'
-import { createClient, isMockMode } from '@/lib/auth'
+import { useAuth } from '@/hooks/use-auth-fixed' // CORREÇÃO: Usar o hook refatorado
+import { supabase } from '@/lib/supabase/client' // CORREÇÃO: Importar a instância do cliente
+import { isMockMode } from '@/lib/auth'
 import { 
   BookOpen, 
   Users, 
@@ -190,10 +191,6 @@ export default function Dashboard() {
   const dashboardWidgets = useDashboardWidgets()
   const [showAdvancedDashboard, setShowAdvancedDashboard] = useState(false)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const isUsingMock = isMockMode()
 
   

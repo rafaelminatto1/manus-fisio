@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/auth';
+import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 // Interfaces (duplicadas para evitar dependência circular, idealmente em um types/team.ts)
@@ -137,10 +137,6 @@ export function useTeamMembersQuery() {
         console.warn('Fetching mock team members data.');
         return mockTeamMembers;
       }
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data, error } = await supabase
         .from('users')
         .select('id, full_name, email, role, crefito, phone, specialty, university, semester, is_active, created_at, updated_at')
@@ -168,10 +164,6 @@ export function useMentorshipsQuery() {
         console.warn('Fetching mock mentorships data.');
         return mockMentorships;
       }
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data, error } = await supabase
         .from('mentorships')
         .select(`
@@ -204,10 +196,6 @@ interface AddProgressNoteInput {
 
 export function useAddProgressNoteMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   return useMutation<ProgressNote, Error, AddProgressNoteInput>({
     mutationFn: async (newNoteData) => {
@@ -271,13 +259,9 @@ interface CreateCompetencyInput {
 
 export function useUpsertCompetencyMutation() {
   const queryClient = useQueryClient();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   return useMutation<CompetencyEvaluation, Error, UpdateCompetencyInput | CreateCompetencyInput>({
-    mutationFn: async (data) => {
+    mutationFn: async (competencyData) => {
       const { data: sessionData } = await supabase.auth.getSession();
       const user = sessionData.session?.user;
       if (!user) {
@@ -286,20 +270,20 @@ export function useUpsertCompetencyMutation() {
 
       if (isMockMode) {
         const mockCompetency: CompetencyEvaluation = {
-          id: (data as UpdateCompetencyInput).competency_id || Date.now().toString(),
-          competency: data.competency,
-          level: data.level,
+          id: (competencyData as UpdateCompetencyInput).competency_id || Date.now().toString(),
+          competency: competencyData.competency,
+          level: competencyData.level,
           evaluation_date: new Date().toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'),
-          notes: data.notes,
+          notes: competencyData.notes,
         };
         queryClient.invalidateQueries({ queryKey: ['mentorships'] });
         return mockCompetency;
       }
 
       let result;
-      if ((data as UpdateCompetencyInput).competency_id) {
+      if ((competencyData as UpdateCompetencyInput).competency_id) {
         // Update existing competency
-        const { mentorship_id, competency_id, ...updateData } = data as UpdateCompetencyInput;
+        const { mentorship_id, competency_id, ...updateData } = competencyData as UpdateCompetencyInput;
         const { data: updated, error } = await supabase
           .from('competency_evaluations') // Assumindo uma tabela 'competency_evaluations'
           .update(updateData)
@@ -310,7 +294,7 @@ export function useUpsertCompetencyMutation() {
         result = updated;
       } else {
         // Create new competency
-        const { mentorship_id, ...createData } = data as CreateCompetencyInput;
+        const { mentorship_id, ...createData } = competencyData as CreateCompetencyInput;
         const { data: created, error } = await supabase
           .from('competency_evaluations') // Assumindo uma tabela 'competency_evaluations'
           .insert({

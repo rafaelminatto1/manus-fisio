@@ -1,230 +1,89 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient, mockUser, isMockMode } from '@/lib/auth'
-import type { Database } from '@/types/database.types'
-type User = Database['public']['Tables']['users']['Row']
-import type { Session } from '@supabase/supabase-js'
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client'; // CORREÇÃO: Importar a instância pronta
+import { isMockMode, mockUser as mockUserData } from '@/lib/auth';
+import { Database } from '@/types/database.types';
+
+type AppUser = Database['public']['Tables']['users']['Row'];
 
 interface AuthContextType {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>
-  signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: any }>
+  user: AppUser | null;
+  loading: boolean;
+  session: Session | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  session: null,
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-  
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-  const isUsingMock = isMockMode()
-
-  // Mock completo para o tipo User
-  const fullMockUser: User = {
-    id: 'mock-user',
-    email: 'mock@mock.com',
-    full_name: 'Usuário Mock',
-    role: 'admin',
-    avatar_url: null,
-    created_at: '',
-    crefito: null,
-    specialty: null,
-    university: null,
-    semester: null,
-    updated_at: '',
-  }
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const isUsingMock = isMockMode();
 
   useEffect(() => {
-    // ✅ CORREÇÃO: Só setar loading quando realmente precisar carregar dados
-    
-    // Se não tem credenciais do Supabase ou está em modo mock, usar dados mock
     if (isUsingMock) {
-      console.warn('⚠️ Usando modo mock - Configure as credenciais Supabase para produção')
-      setUser({
-        id: mockUser.id,
-        email: mockUser.email || '',
-        full_name: 'Usuário Mock',
-        avatar_url: null,
-        role: 'admin',
-        crefito: null,
-        specialty: null,
-        university: null,
-        semester: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      setLoading(false)
-      return
+      setUser(mockUserData as AppUser);
+      setLoading(false);
+      return;
     }
 
-    // ✅ Só setar loading quando for buscar dados do Supabase
-    setLoading(true)
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUserProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      
-      if (session?.user) {
-        await fetchUserProfile(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [isUsingMock])
-
-  const fetchUserProfile = async (userId: string) => {
-    if (isUsingMock) {
-      setUser(fullMockUser)
-      setLoading(false)
-      return
-    }
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        console.error('Error fetching user profile:', error)
-        // Em caso de erro, usar dados mock como fallback apenas em dev
-        if (process.env.NODE_ENV === 'development') {
-          setUser(fullMockUser)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        if (session?.user) {
+          // Fetch user profile
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setUser(userProfile);
         } else {
-          setUser(null)
+          setUser(null);
         }
-      } else {
-        setUser(profile as User)
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
-      // Em caso de erro, usar dados mock como fallback apenas em dev
-      if (process.env.NODE_ENV === 'development') {
-        setUser(fullMockUser)
-      } else {
-        setUser(null)
+    );
+
+    // Initial load
+    const initializeAuth = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      setSession(initialSession);
+      if (initialSession?.user) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', initialSession.user.id)
+          .single();
+        setUser(userProfile);
       }
-    } finally {
-      setLoading(false)
-    }
-  }
+      setLoading(false);
+    };
 
-  const signIn = async (email: string, password: string) => {
-    setLoading(true)
-    
-    try {
-      if (isUsingMock) {
-        // Modo mock - simular login com delay reduzido
-        await new Promise(resolve => setTimeout(resolve, 800))
-        if (email === 'admin@clinica.com' || email === 'rafael.minatto@yahoo.com.br') {
-          setUser(fullMockUser)
-          return { error: null }
-        }
-        return { error: { message: 'Email ou senha inválidos' } }
-      }
+    initializeAuth();
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      // ✅ CORREÇÃO: Deixar o onAuthStateChange gerenciar o perfil do usuário
-      return { error }
-    } catch (error) {
-      console.error('Erro no signIn:', error)
-      return { error: { message: 'Erro interno do sistema' } }
-    } finally {
-      // ✅ CORREÇÃO CRÍTICA: Sempre resetar loading no finally
-      setLoading(false)
-    }
-  }
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isUsingMock]);
 
-  const signUp = async (email: string, password: string, userData?: any) => {
-    setLoading(true)
-    
-    try {
-      if (isUsingMock) {
-        return { error: { message: 'Cadastro não disponível no modo mock' } }
-      }
+  return (
+    <AuthContext.Provider value={{ user, session, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userData,
-        },
-      })
-      
-      return { error }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const signOut = async () => {
-    setLoading(true)
-    
-    try {
-      if (!isUsingMock) {
-        await supabase.auth.signOut()
-      }
-      
-      setUser(null)
-      setSession(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const resetPassword = async (email: string) => {
-    if (isUsingMock) {
-      return { error: { message: 'Reset de senha não disponível no modo mock' } }
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
-    return { error }
-  }
-
-  const value = {
-    user,
-    session,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
+export const useAuth = () => {
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-} 
+  return context;
+}; 

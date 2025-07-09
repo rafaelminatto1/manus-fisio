@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/auth';
+import { supabase } from '@/lib/supabase/client';
 
 // Types for consolidated dashboard data
 export interface DashboardStats {
@@ -33,11 +33,6 @@ export interface UpcomingEvent {
   scheduled_for: string
   participants?: string[]
 }
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const fetchDashboardData = async () => {
   const { data: { session } } = await supabase.auth.getSession()

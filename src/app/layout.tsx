@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { AuthProvider } from '@/hooks/use-auth'
+import { AuthProvider } from '@/hooks/use-auth-fixed'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from 'sonner'
 import { SmartNotifications } from '@/components/ui/smart-notifications'
