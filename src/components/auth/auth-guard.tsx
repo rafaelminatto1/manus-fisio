@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/use-auth-fixed'
 import { Loading } from '@/components/ui/loading'
 import { LoginForm } from '@/components/auth/login-form'
 
