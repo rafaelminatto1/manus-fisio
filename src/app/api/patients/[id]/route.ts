@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import type { Database } from '@/types/database.types'
@@ -21,10 +21,18 @@ const patientUpdateSchema = z.object({
 
 
 // GET a single patient by ID
-export async function GET(
-  request: Request
-) {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
+export async function GET(request: NextRequest) {
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+      },
+    }
+  )
   const url = new URL(request.url);
   const id = url.pathname.split('/').pop();
 
@@ -54,9 +62,19 @@ export async function GET(
 
 // UPDATE a patient by ID
 export async function PUT(
-  request: Request
+  request: NextRequest
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+        },
+      }
+    )
     const url = new URL(request.url);
     const id = url.pathname.split('/').pop();
 
@@ -93,9 +111,19 @@ export async function PUT(
 
 // DELETE a patient by ID
 export async function DELETE(
-  request: Request
+  request: NextRequest
 ) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+        },
+      }
+    )
     const url = new URL(request.url);
     const id = url.pathname.split('/').pop();
 

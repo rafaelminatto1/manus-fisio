@@ -1,10 +1,41 @@
 import { createClient } from '@supabase/supabase-js'
+import { Database } from '@/types/database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+// Verificar se estamos no lado do servidor
+const isServer = typeof window === 'undefined'
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase client: variáveis de ambiente não definidas (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)')
+// Configuração do Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+// Configurações específicas para evitar erros
+const supabaseOptions = {
+  auth: {
+    autoRefreshToken: !isServer,
+    persistSession: !isServer,
+    detectSessionInUrl: !isServer,
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'manus-fisio',
+    },
+  },
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey) 
+// Criar cliente do Supabase
+export const supabase = createClient<Database>(
+  supabaseUrl,
+  supabaseAnonKey,
+  supabaseOptions
+)
+
+// Função para criar cliente específico para server-side
+export function createSupabaseClient() {
+  return createClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    supabaseOptions
+  )
+}
+
+export default supabase 

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import type { Database } from '@/types/database.types'
@@ -19,8 +19,18 @@ const patientSchema = z.object({
   initial_medical_history: z.string().optional(),
 })
 
-export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient<Database>({ cookies })
+export async function GET(request: NextRequest) {
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+      },
+    }
+  )
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search')
 
@@ -59,8 +69,18 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
-  const supabase = createRouteHandlerClient<Database>({ cookies })
+export async function POST(request: NextRequest) {
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+      },
+    }
+  )
 
   const {
     data: { user },

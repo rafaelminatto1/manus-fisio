@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import type { Database } from '@/types/database.types'
@@ -10,10 +10,18 @@ const recordSchema = z.object({
 })
 
 // GET all records for a specific patient
-export async function GET(
-  request: Request
-) {
-  const supabase = createRouteHandlerClient<Database>({ cookies })
+export async function GET(request: NextRequest) {
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+      },
+    }
+  )
   const url = new URL(request.url)
   // O ID do paciente é o penúltimo segmento da URL: /api/patients/{id}/records
   const pathSegments = url.pathname.split('/')
@@ -45,9 +53,19 @@ export async function GET(
 
 // POST a new record for a specific patient
 export async function POST(
-  request: Request
+  request: NextRequest
 ) {
-  const supabase = createRouteHandlerClient<Database>({ cookies })
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+      },
+    }
+  )
   const url = new URL(request.url)
   const pathSegments = url.pathname.split('/')
   const patientId = pathSegments[pathSegments.length - 2]

@@ -5,7 +5,6 @@ import { AuthProvider } from '@/hooks/use-auth'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from 'sonner'
 import { SmartNotifications } from '@/components/ui/smart-notifications'
-import { PWAInstaller } from '@/components/ui/pwa-installer'
 import { AIAssistantProvider } from '@/contexts/AIAssistantContext'
 
 const inter = Inter({ 

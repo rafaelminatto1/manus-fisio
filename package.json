@@ -159,6 +159,7 @@
     "postcss": "^8.4.32",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.9",
+    "string-replace-loader": "^3.2.0",
     "supabase": "^2.30.4",
     "tailwindcss": "^3.4.0",
     "webpack-bundle-analyzer": "^4.10.2"

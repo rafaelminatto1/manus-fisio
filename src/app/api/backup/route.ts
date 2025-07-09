@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database.types';
 import { createClient as createServiceRoleClient } from '@supabase/supabase-js'; // Cliente com service_role_key
@@ -11,7 +11,17 @@ const supabaseAdmin = createServiceRoleClient(
 );
 
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value;
+        },
+      },
+    }
+  );
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {

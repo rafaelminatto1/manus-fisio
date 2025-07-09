@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { z } from 'zod'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Função para criar cliente OpenAI apenas quando necessário
+function createOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set')
+  }
+  
+  return new OpenAI({
+    apiKey: apiKey,
+  })
+}
 
 // Rate limiting simples em memória (em produção, usar Redis)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -241,7 +250,7 @@ export async function POST(request: NextRequest) {
     while (retryCount <= maxRetries) {
       try {
         completion = await Promise.race([
-          openai.chat.completions.create({
+          createOpenAIClient().chat.completions.create({
             model: 'gpt-4',
             messages,
             max_tokens: 1000,
